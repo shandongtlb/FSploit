@@ -11,11 +11,14 @@ import kotlinx.coroutines.withContext
 import org.fsploit.android.R
 import org.fsploit.android.core.ResourceProvider
 import org.fsploit.android.core.ShellTaskPreset
+import org.fsploit.android.domain.model.MitmLaunchRequest
+import org.fsploit.android.domain.model.MitmMode
 import org.fsploit.android.domain.model.PortScanConfig
 import org.fsploit.android.domain.model.PortState
 import org.fsploit.android.domain.usecase.BlockHostUseCase
 import org.fsploit.android.domain.usecase.GetPreferredInterfaceUseCase
 import org.fsploit.android.domain.usecase.LoadMitmReadinessUseCase
+import org.fsploit.android.domain.usecase.LoadMitmSessionUseCase
 import org.fsploit.android.domain.usecase.LoadNetworkOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadPortScanConfigUseCase
 import org.fsploit.android.domain.usecase.ProbeShellUseCase
@@ -24,6 +27,8 @@ import org.fsploit.android.domain.usecase.RunPortScanUseCase
 import org.fsploit.android.domain.usecase.RunShellCommandUseCase
 import org.fsploit.android.domain.usecase.SavePortScanConfigUseCase
 import org.fsploit.android.domain.usecase.SavePreferredInterfaceUseCase
+import org.fsploit.android.domain.usecase.StartMitmSessionUseCase
+import org.fsploit.android.domain.usecase.StopMitmSessionUseCase
 import org.fsploit.android.domain.usecase.UnblockHostUseCase
 import org.fsploit.android.feature.target.PortResultFilter
 
@@ -36,11 +41,14 @@ class HomeViewModel(
     private val savePortScanConfig: SavePortScanConfigUseCase,
     private val probeShell: ProbeShellUseCase,
     private val loadMitmReadinessUseCase: LoadMitmReadinessUseCase,
+    private val loadMitmSessionUseCase: LoadMitmSessionUseCase,
     private val runHostSweep: RunHostSweepUseCase,
     private val runPortScanUseCase: RunPortScanUseCase,
     private val runShellCommandUseCase: RunShellCommandUseCase,
     private val blockHostUseCase: BlockHostUseCase,
-    private val unblockHostUseCase: UnblockHostUseCase
+    private val unblockHostUseCase: UnblockHostUseCase,
+    private val startMitmSessionUseCase: StartMitmSessionUseCase,
+    private val stopMitmSessionUseCase: StopMitmSessionUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -54,6 +62,7 @@ class HomeViewModel(
             parallelism = loadPortScanConfig().parallelism.toString(),
             rootGateSummary = resourceProvider.getString(R.string.root_gate_pending),
             mitmSummary = resourceProvider.getString(R.string.mitm_pending),
+            mitmSessionSummary = resourceProvider.getString(R.string.mitm_session_idle),
             portScanSummary = resourceProvider.getString(R.string.port_scan_not_run),
             connectionBlockSummary = resourceProvider.getString(R.string.block_idle),
             selectedShellTaskLabel = resourceProvider.getString(R.string.shell_task_custom),
@@ -68,6 +77,7 @@ class HomeViewModel(
             val overview = loadNetworkOverview()
             val shellStatus = probeShell()
             val mitmReadiness = loadMitmReadinessUseCase(shellStatus)
+            val mitmSession = loadMitmSessionUseCase()
             val currentState = _uiState.value
             val preferredInterfaceName = getPreferredInterface()
                 .takeIf { it.isNotBlank() }
@@ -108,7 +118,14 @@ class HomeViewModel(
                 mitmSummary = mitmReadiness.summary,
                 iptablesAvailable = mitmReadiness.iptablesAvailable,
                 tcpdumpAvailable = mitmReadiness.tcpdumpAvailable,
+                arpspoofAvailable = mitmReadiness.arpspoofAvailable,
+                ettercapAvailable = mitmReadiness.ettercapAvailable,
+                mitmdumpAvailable = mitmReadiness.mitmdumpAvailable,
                 certificateStoreAccessible = mitmReadiness.certificateStoreAccessible,
+                mitmSession = mitmSession,
+                mitmSessionSummary = mitmSession.summary.ifBlank {
+                    resourceProvider.getString(R.string.mitm_session_idle)
+                },
                 scannedPortResults = currentState.scannedPortResults,
                 selectedPortResultFilter = currentState.selectedPortResultFilter,
                 isPortScanning = false,
@@ -117,6 +134,7 @@ class HomeViewModel(
                     resourceProvider.getString(R.string.block_idle)
                 },
                 isBlockingConnection = false,
+                isStartingMitmSession = false,
                 selectedShellTaskLabel = currentState.selectedShellTaskLabel,
                 selectedShellTaskDescription = currentState.selectedShellTaskDescription,
                 isExecutingShell = false
@@ -140,6 +158,89 @@ class HomeViewModel(
                 resourceProvider.getString(R.string.port_scan_ready, trimmed)
             }
         )
+    }
+
+    fun selectMitmMode(mode: MitmMode) {
+        _uiState.value = _uiState.value.copy(selectedMitmMode = mode)
+    }
+
+    fun updateMitmPrimaryInput(value: String) {
+        _uiState.value = _uiState.value.copy(mitmPrimaryInput = value)
+    }
+
+    fun updateMitmSecondaryInput(value: String) {
+        _uiState.value = _uiState.value.copy(mitmSecondaryInput = value)
+    }
+
+    fun updateMitmPayloadInput(value: String) {
+        _uiState.value = _uiState.value.copy(mitmPayloadInput = value)
+    }
+
+    fun startMitmSession() {
+        if (!ensureRootReady()) {
+            return
+        }
+
+        val state = _uiState.value
+        val hostAddress = state.selectedHostAddress.trim()
+        if (hostAddress.isBlank()) {
+            _uiState.value = state.copy(
+                mitmSessionSummary = resourceProvider.getString(R.string.block_select_target_first)
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = state.copy(
+                isStartingMitmSession = true,
+                mitmSessionSummary = resourceProvider.getString(
+                    R.string.mitm_session_starting,
+                    resourceProvider.getString(state.selectedMitmMode.titleRes)
+                )
+            )
+
+            val result = withContext(Dispatchers.Default) {
+                startMitmSessionUseCase(
+                    MitmLaunchRequest(
+                        mode = state.selectedMitmMode,
+                        targetHost = hostAddress,
+                        interfaceName = state.preferredInterfaceName,
+                        primaryValue = state.mitmPrimaryInput,
+                        secondaryValue = state.mitmSecondaryInput,
+                        payloadValue = state.mitmPayloadInput
+                    )
+                )
+            }
+
+            _uiState.value = _uiState.value.copy(
+                isStartingMitmSession = false,
+                mitmSession = result.session,
+                mitmSessionSummary = result.summary
+            )
+        }
+    }
+
+    fun stopMitmSession() {
+        if (!ensureRootReady()) {
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isStartingMitmSession = true,
+                mitmSessionSummary = resourceProvider.getString(R.string.mitm_session_stopping)
+            )
+
+            val result = withContext(Dispatchers.Default) {
+                stopMitmSessionUseCase()
+            }
+
+            _uiState.value = _uiState.value.copy(
+                isStartingMitmSession = false,
+                mitmSession = result.session,
+                mitmSessionSummary = result.summary
+            )
+        }
     }
 
     fun updatePortSpec(portSpec: String) {
@@ -380,7 +481,8 @@ class HomeViewModel(
         _uiState.value = _uiState.value.copy(
             connectionBlockSummary = resourceProvider.getString(R.string.root_gate_blocked),
             portScanSummary = resourceProvider.getString(R.string.root_gate_blocked),
-            shellExecutionSummary = resourceProvider.getString(R.string.root_gate_blocked)
+            shellExecutionSummary = resourceProvider.getString(R.string.root_gate_blocked),
+            mitmSessionSummary = resourceProvider.getString(R.string.root_gate_blocked)
         )
         return false
     }

@@ -3,6 +3,8 @@ package org.fsploit.android.feature.home
 import org.fsploit.android.domain.model.NetworkInterfaceInfo
 import org.fsploit.android.domain.model.HostScanResult
 import org.fsploit.android.domain.model.MitmReadiness
+import org.fsploit.android.domain.model.MitmMode
+import org.fsploit.android.domain.model.MitmSession
 import org.fsploit.android.domain.model.PortScanResult
 import org.fsploit.android.feature.target.PortResultFilter
 
@@ -31,7 +33,17 @@ data class HomeUiState(
     val mitmSummary: String = "",
     val iptablesAvailable: Boolean = false,
     val tcpdumpAvailable: Boolean = false,
+    val arpspoofAvailable: Boolean = false,
+    val ettercapAvailable: Boolean = false,
+    val mitmdumpAvailable: Boolean = false,
     val certificateStoreAccessible: Boolean = false,
+    val selectedMitmMode: MitmMode = MitmMode.SNIFFER,
+    val mitmPrimaryInput: String = "",
+    val mitmSecondaryInput: String = "",
+    val mitmPayloadInput: String = "",
+    val mitmSession: MitmSession = MitmSession(),
+    val mitmSessionSummary: String = "",
+    val isStartingMitmSession: Boolean = false,
     val portScanSummary: String = "",
     val scannedPortResults: List<PortScanResult> = emptyList(),
     val portScanResults: List<String> = emptyList(),
