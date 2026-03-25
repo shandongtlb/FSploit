@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -14,7 +15,11 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.ViewModelProvider
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.launch
+import org.fsploit.android.data.mitm.BettercapPackageManager
 import org.fsploit.android.databinding.ActivityMainBinding
 import org.fsploit.android.feature.discovery.DiscoveryFragment
 import org.fsploit.android.feature.home.HomeViewModel
@@ -29,9 +34,11 @@ class MainActivity : AppCompatActivity() {
     lateinit var viewModelFactory: ViewModelProvider.Factory
         private set
 
+    private lateinit var bettercapPackageManager: BettercapPackageManager
     private lateinit var binding: ActivityMainBinding
     private lateinit var drawerToggle: ActionBarDrawerToggle
     private var currentScreen: MainScreen = MainScreen.OVERVIEW
+    private var bettercapPromptHandled = false
 
     private val viewModel: HomeViewModel by viewModels { viewModelFactory }
 
@@ -44,6 +51,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val appContainer = (application as FSploitApp).appContainer
         viewModelFactory = appContainer.homeViewModelFactory
+        bettercapPackageManager = appContainer.bettercapPackageManager
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
@@ -100,6 +108,10 @@ class MainActivity : AppCompatActivity() {
         } else {
             refreshFromUi()
         }
+        if (bettercapPackageManager.syncInstalledBinaryPath()) {
+            refreshFromUi()
+        }
+        maybePromptBettercapDownload()
     }
 
     override fun onResume() {
@@ -187,6 +199,59 @@ class MainActivity : AppCompatActivity() {
                 getString(R.string.permission_nearby_wifi)
 
             else -> permission
+        }
+    }
+
+    private fun maybePromptBettercapDownload() {
+        if (bettercapPromptHandled || !bettercapPackageManager.shouldOfferManagedDownload()) {
+            return
+        }
+        bettercapPromptHandled = true
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.bettercap_download_title)
+            .setMessage(R.string.bettercap_download_message)
+            .setPositiveButton(R.string.bettercap_download_action) { _, _ ->
+                downloadManagedBettercap()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun downloadManagedBettercap() {
+        val progressDialog = MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.bettercap_download_progress_title)
+            .setMessage(R.string.bettercap_download_progress_message)
+            .setCancelable(false)
+            .create()
+        progressDialog.show()
+
+        lifecycleScope.launch {
+            val result = bettercapPackageManager.downloadManagedPackage()
+            progressDialog.dismiss()
+            result.onSuccess {
+                refreshFromUi()
+                Toast.makeText(
+                    this@MainActivity,
+                    getString(R.string.bettercap_download_success),
+                    Toast.LENGTH_LONG
+                ).show()
+            }.onFailure { exception ->
+                bettercapPromptHandled = false
+                MaterialAlertDialogBuilder(this@MainActivity)
+                    .setTitle(R.string.bettercap_download_failed_title)
+                    .setMessage(
+                        getString(
+                            R.string.bettercap_download_failed_message,
+                            exception.message ?: exception.javaClass.simpleName
+                        )
+                    )
+                    .setPositiveButton(R.string.bettercap_download_retry) { _, _ ->
+                        bettercapPromptHandled = true
+                        downloadManagedBettercap()
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+            }
         }
     }
 

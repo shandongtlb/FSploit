@@ -431,9 +431,77 @@ class ExternalToolMitmBackend(
         interfaceName: String,
         capletFile: File
     ): String {
+        val bettercapPath = config.bettercapPath.trim()
+        if (bettercapPath.contains('/')) {
+            val sourceBinary = File(bettercapPath)
+            val sourceDirectory = sourceBinary.parentFile
+                ?: throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
+            val sourceLibusb = File(sourceDirectory, "libusb1.0.so")
+            val sourceCompatLibusb = File(sourceDirectory, "libusb-1.0.so")
+            return buildString {
+                append("set -e\n")
+                append("mkdir -p ")
+                append(shellQuote(BETTERCAP_RUNTIME_DIRECTORY))
+                append('\n')
+                append("cp ")
+                append(shellQuote(sourceBinary.absolutePath))
+                append(' ')
+                append(shellQuote("$BETTERCAP_RUNTIME_DIRECTORY/bettercap"))
+                append('\n')
+                append("if [ -f ")
+                append(shellQuote(sourceLibusb.absolutePath))
+                append(" ]; then cp ")
+                append(shellQuote(sourceLibusb.absolutePath))
+                append(' ')
+                append(shellQuote("$BETTERCAP_RUNTIME_DIRECTORY/libusb1.0.so"))
+                append("; fi\n")
+                append("if [ -f ")
+                append(shellQuote(sourceCompatLibusb.absolutePath))
+                append(" ]; then cp ")
+                append(shellQuote(sourceCompatLibusb.absolutePath))
+                append(' ')
+                append(shellQuote("$BETTERCAP_RUNTIME_DIRECTORY/libusb-1.0.so"))
+                append("; fi\n")
+                append("if [ ! -f ")
+                append(shellQuote("$BETTERCAP_RUNTIME_DIRECTORY/libusb-1.0.so"))
+                append(" ] && [ -f ")
+                append(shellQuote("$BETTERCAP_RUNTIME_DIRECTORY/libusb1.0.so"))
+                append(" ]; then cp ")
+                append(shellQuote("$BETTERCAP_RUNTIME_DIRECTORY/libusb1.0.so"))
+                append(' ')
+                append(shellQuote("$BETTERCAP_RUNTIME_DIRECTORY/libusb-1.0.so"))
+                append("; fi\n")
+                append("chmod 755 ")
+                append(shellQuote("$BETTERCAP_RUNTIME_DIRECTORY/bettercap"))
+                append('\n')
+                append("if [ -f ")
+                append(shellQuote("$BETTERCAP_RUNTIME_DIRECTORY/libusb1.0.so"))
+                append(" ]; then chmod 755 ")
+                append(shellQuote("$BETTERCAP_RUNTIME_DIRECTORY/libusb1.0.so"))
+                append("; fi\n")
+                append("if [ -f ")
+                append(shellQuote("$BETTERCAP_RUNTIME_DIRECTORY/libusb-1.0.so"))
+                append(" ]; then chmod 755 ")
+                append(shellQuote("$BETTERCAP_RUNTIME_DIRECTORY/libusb-1.0.so"))
+                append("; fi\n")
+                append("cd ")
+                append(shellQuote(BETTERCAP_RUNTIME_DIRECTORY))
+                append(" || exit 1\n")
+                append("export LD_LIBRARY_PATH=")
+                append(shellQuote(BETTERCAP_RUNTIME_DIRECTORY))
+                append(":\"${'$'}{LD_LIBRARY_PATH}\"\n")
+                append("exec ")
+                append(shellQuote("$BETTERCAP_RUNTIME_DIRECTORY/bettercap"))
+                append(" -iface ")
+                append(shellQuote(interfaceName))
+                append(" -no-colors -caplet ")
+                append(shellQuote(capletFile.absolutePath))
+                append('\n')
+            }
+        }
         return buildString {
             append("exec ")
-            append(shellCommandToken(config.bettercapPath))
+            append(shellCommandToken(bettercapPath))
             append(" -iface ")
             append(shellQuote(interfaceName))
             append(" -no-colors -caplet ")
@@ -817,5 +885,6 @@ def request(flow: http.HTTPFlow) -> None:
     companion object {
         private const val PROBE_TIMEOUT_MS = 2000L
         private const val FIREWALL_TIMEOUT_MS = 4000L
+        private const val BETTERCAP_RUNTIME_DIRECTORY = "/data/local/tmp/fsploit-bettercap"
     }
 }

@@ -246,6 +246,15 @@
     <string name="mitm_settings_saving">Saving MITM toolchain settings...</string>
     <string name="mitm_settings_saved">MITM toolchain settings saved.</string>
     <string name="mitm_settings_paths_required">All MITM tool path fields are required.</string>
+    <string name="bettercap_download_title">bettercap package required</string>
+    <string name="bettercap_download_message">The managed Android bettercap package is missing. Download it from the configured GitHub repository and wire it into MITM now?</string>
+    <string name="bettercap_download_action">Download</string>
+    <string name="bettercap_download_progress_title">Downloading bettercap</string>
+    <string name="bettercap_download_progress_message">Fetching bettercap and its libusb runtime files. Keep the app open until the download finishes.</string>
+    <string name="bettercap_download_success">bettercap package downloaded and configured.</string>
+    <string name="bettercap_download_failed_title">bettercap download failed</string>
+    <string name="bettercap_download_failed_message">Failed to download the managed bettercap package.\n%1$s</string>
+    <string name="bettercap_download_retry">Retry</string>
     <string name="block_idle">No connection block action has been run yet.</string>
     <string name="block_select_target_first">Select a target host before changing firewall rules.</string>
     <string name="block_running">Applying DROP rules for %1$s...</string>
