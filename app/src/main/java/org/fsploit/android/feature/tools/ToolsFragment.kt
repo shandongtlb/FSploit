@@ -12,6 +12,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import org.fsploit.android.MainActivity
 import org.fsploit.android.R
+import org.fsploit.android.core.ShellTaskPreset
 import org.fsploit.android.databinding.FragmentToolsBinding
 import org.fsploit.android.feature.home.HomeUiState
 import org.fsploit.android.feature.home.HomeViewModel
@@ -46,17 +47,17 @@ class ToolsFragment : Fragment() {
         binding.runCommandButton.setOnClickListener {
             viewModel.runShellCommand()
         }
-        binding.presetIdButton.setOnClickListener {
-            viewModel.applyShellPreset("id")
+        binding.presetInterfacesButton.setOnClickListener {
+            viewModel.applyShellTaskPreset(ShellTaskPreset.NETWORK_INTERFACES)
         }
-        binding.presetIpButton.setOnClickListener {
-            viewModel.applyShellPreset("ip addr show")
+        binding.presetArpButton.setOnClickListener {
+            viewModel.applyShellTaskPreset(ShellTaskPreset.ARP_NEIGHBORS)
         }
         binding.presetIptablesButton.setOnClickListener {
-            viewModel.applyShellPreset("iptables -L -n")
+            viewModel.applyShellTaskPreset(ShellTaskPreset.IPTABLES_RULES)
         }
         binding.presetTcpdumpButton.setOnClickListener {
-            viewModel.applyShellPreset("tcpdump --version")
+            viewModel.applyShellTaskPreset(ShellTaskPreset.TCPDUMP_VERSION)
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -68,6 +69,8 @@ class ToolsFragment : Fragment() {
 
     private fun render(state: HomeUiState) {
         binding.shellSummaryValue.text = state.shellSummary
+        binding.selectedTaskLabelValue.text = state.selectedShellTaskLabel
+        binding.selectedTaskDescriptionValue.text = state.selectedShellTaskDescription
         if (binding.commandInput.text?.toString() != state.shellCommandInput) {
             binding.commandInput.setText(state.shellCommandInput)
             binding.commandInput.setSelection(binding.commandInput.text?.length ?: 0)

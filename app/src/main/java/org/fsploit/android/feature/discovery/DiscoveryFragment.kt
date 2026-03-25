@@ -14,6 +14,7 @@ import org.fsploit.android.MainActivity
 import org.fsploit.android.MainScreen
 import org.fsploit.android.R
 import org.fsploit.android.databinding.FragmentDiscoveryBinding
+import org.fsploit.android.databinding.ItemResponsiveTargetBinding
 import org.fsploit.android.feature.home.HomeUiState
 import org.fsploit.android.feature.home.HomeViewModel
 
@@ -66,6 +67,11 @@ class DiscoveryFragment : Fragment() {
         binding.saveInterfaceButton.isEnabled = state.interfaces.isNotEmpty()
         binding.runSweepButton.isEnabled = state.canContinue && !state.isScanning
         binding.openTargetButton.isEnabled = state.selectedHostAddress.isNotBlank()
+        binding.selectedTargetValue.text = if (state.selectedHostAddress.isBlank()) {
+            getString(R.string.discovery_no_target_selected)
+        } else {
+            getString(R.string.discovery_selected_target, state.selectedHostAddress)
+        }
 
         binding.preferredInterfaceInput.setAdapter(
             ArrayAdapter(
@@ -84,6 +90,12 @@ class DiscoveryFragment : Fragment() {
         } else {
             state.scanResults.joinToString(separator = "\n")
         }
+        binding.targetsEmptyValue.text = if (state.responsiveTargetResults.isEmpty()) {
+            getString(R.string.discovery_no_targets)
+        } else {
+            ""
+        }
+        renderResponsiveTargets(state)
 
         binding.targetHostInput.setAdapter(
             ArrayAdapter(
@@ -94,6 +106,33 @@ class DiscoveryFragment : Fragment() {
         )
         if (binding.targetHostInput.text?.toString() != state.selectedHostAddress) {
             binding.targetHostInput.setText(state.selectedHostAddress, false)
+        }
+    }
+
+    private fun renderResponsiveTargets(state: HomeUiState) {
+        binding.responsiveTargetsContainer.removeAllViews()
+        state.responsiveTargetResults.forEach { target ->
+            val itemBinding = ItemResponsiveTargetBinding.inflate(layoutInflater, binding.responsiveTargetsContainer, false)
+            itemBinding.hostAddressValue.text = target.hostAddress
+            itemBinding.hostFindingValue.text = target.finding
+            val isSelected = target.hostAddress == state.selectedHostAddress
+            itemBinding.root.strokeWidth = if (isSelected) {
+                resources.getDimensionPixelSize(R.dimen.discovery_target_selected_stroke)
+            } else {
+                resources.getDimensionPixelSize(R.dimen.discovery_target_default_stroke)
+            }
+            itemBinding.root.strokeColor = requireContext().getColor(
+                if (isSelected) {
+                    R.color.fsploit_primary
+                } else {
+                    R.color.fsploit_stroke
+                }
+            )
+            itemBinding.root.setOnClickListener {
+                viewModel.selectHost(target.hostAddress)
+                (requireActivity() as MainActivity).openScreen(MainScreen.TARGET_DETAIL)
+            }
+            binding.responsiveTargetsContainer.addView(itemBinding.root)
         }
     }
 

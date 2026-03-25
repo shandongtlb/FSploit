@@ -27,6 +27,10 @@
     <string name="run_host_sweep">Run Host Sweep</string>
     <string name="scan_summary">Host sweep summary</string>
     <string name="scan_results">Responsive hosts</string>
+    <string name="discovered_targets">Discovered targets</string>
+    <string name="discovery_selected_target">Selected target: %1$s</string>
+    <string name="discovery_no_target_selected">No target is selected yet.</string>
+    <string name="discovery_no_targets">Run a host sweep to populate clickable targets.</string>
     <string name="target_host">Target host</string>
     <string name="run_port_scan">Run Port Scan</string>
     <string name="port_scan_summary">Port scan summary</string>
@@ -38,12 +42,31 @@
     <string name="port_timeout_label">Timeout ms</string>
     <string name="port_parallelism_label">Parallelism</string>
     <string name="port_spec_hint">Examples: 22,80,443 or 20-25,53,8080. Limit the profile to 256 ports per run.</string>
+    <string name="port_filter_all">All</string>
+    <string name="port_filter_open">Open</string>
+    <string name="port_filter_closed">Closed</string>
+    <string name="port_filter_filtered">Filtered</string>
 
     <string name="shell_command_label">Shell command</string>
     <string name="shell_run_as_root">Run via su -c</string>
     <string name="shell_run_command">Run Command</string>
     <string name="shell_command_status">Command status</string>
     <string name="shell_command_output">Command output</string>
+    <string name="shell_task_selected">Selected task</string>
+    <string name="shell_task_custom">Custom command</string>
+    <string name="shell_task_custom_desc">Use this mode to prepare and run arbitrary shell commands.</string>
+    <string name="shell_task_network_interfaces">Network interfaces</string>
+    <string name="shell_task_network_interfaces_short">Interfaces</string>
+    <string name="shell_task_network_interfaces_desc">Inspect active links and addresses before running scans.</string>
+    <string name="shell_task_arp_neighbors">ARP and neighbor cache</string>
+    <string name="shell_task_arp_neighbors_short">ARP</string>
+    <string name="shell_task_arp_neighbors_desc">Read the kernel neighbor table as groundwork for future ARP tooling.</string>
+    <string name="shell_task_iptables_rules">iptables rules</string>
+    <string name="shell_task_iptables_rules_short">iptables</string>
+    <string name="shell_task_iptables_rules_desc">Inspect current IPv4 firewall tables. Root is usually required.</string>
+    <string name="shell_task_tcpdump_version">tcpdump probe</string>
+    <string name="shell_task_tcpdump_version_short">tcpdump</string>
+    <string name="shell_task_tcpdump_version_desc">Check whether tcpdump is available before wiring packet capture flows.</string>
 
     <string name="settings_language">Language</string>
     <string name="settings_preferred_interface">Preferred interface</string>
@@ -109,6 +132,7 @@
     <string name="port_scan_parallelism_invalid">Parallelism must be between 1 and 64.</string>
     <string name="no_target_hosts">Run a host sweep to populate responsive targets.</string>
     <string name="no_port_scan_results">No port scan results are available yet.</string>
+    <string name="no_port_results_for_filter">No ports match the current filter.</string>
     <string name="port_note_accepted_connection">accepted connection</string>
     <string name="port_note_actively_refused">actively refused</string>
     <string name="port_note_timed_out">timed out</string>

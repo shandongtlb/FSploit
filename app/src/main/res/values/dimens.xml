@@ -1,0 +1,4 @@
+<resources>
+    <dimen name="discovery_target_default_stroke">1dp</dimen>
+    <dimen name="discovery_target_selected_stroke">2dp</dimen>
+</resources>

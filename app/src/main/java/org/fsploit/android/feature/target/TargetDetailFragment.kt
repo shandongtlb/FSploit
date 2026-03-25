@@ -16,6 +16,7 @@ import org.fsploit.android.R
 import org.fsploit.android.databinding.FragmentTargetDetailBinding
 import org.fsploit.android.feature.home.HomeUiState
 import org.fsploit.android.feature.home.HomeViewModel
+import org.fsploit.android.feature.target.PortResultFilter
 
 class TargetDetailFragment : Fragment() {
 
@@ -50,6 +51,18 @@ class TargetDetailFragment : Fragment() {
         }
         binding.parallelismInput.doAfterTextChanged {
             viewModel.updateParallelism(it?.toString().orEmpty())
+        }
+        binding.portFilterGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) {
+                return@addOnButtonCheckedListener
+            }
+            val filter = when (checkedId) {
+                R.id.filterOpenButton -> PortResultFilter.OPEN
+                R.id.filterClosedButton -> PortResultFilter.CLOSED
+                R.id.filterFilteredButton -> PortResultFilter.FILTERED
+                else -> PortResultFilter.ALL
+            }
+            viewModel.selectPortResultFilter(filter)
         }
         binding.runPortScanButton.setOnClickListener {
             viewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
@@ -92,16 +105,45 @@ class TargetDetailFragment : Fragment() {
         } else {
             getString(R.string.target_detail_summary, state.selectedHostAddress)
         }
+        val checkedFilterButton = when (state.selectedPortResultFilter) {
+            PortResultFilter.ALL -> R.id.filterAllButton
+            PortResultFilter.OPEN -> R.id.filterOpenButton
+            PortResultFilter.CLOSED -> R.id.filterClosedButton
+            PortResultFilter.FILTERED -> R.id.filterFilteredButton
+        }
+        if (binding.portFilterGroup.checkedButtonId != checkedFilterButton) {
+            binding.portFilterGroup.check(checkedFilterButton)
+        }
         binding.runPortScanButton.isEnabled = state.selectedHostAddress.isNotBlank() && !state.isPortScanning
         binding.portScanSummaryValue.text = state.portScanSummary
-        binding.portScanResultsValue.text = if (state.portScanResults.isEmpty()) {
+        val filteredResults = state.scannedPortResults.filter { result ->
+            when (state.selectedPortResultFilter) {
+                PortResultFilter.ALL -> true
+                PortResultFilter.OPEN -> result.state == org.fsploit.android.domain.model.PortState.OPEN
+                PortResultFilter.CLOSED -> result.state == org.fsploit.android.domain.model.PortState.CLOSED
+                PortResultFilter.FILTERED -> result.state == org.fsploit.android.domain.model.PortState.FILTERED
+            }
+        }
+        binding.portScanResultsValue.text = if (filteredResults.isEmpty()) {
             if (state.responsiveHosts.isEmpty()) {
                 getString(R.string.no_target_hosts)
+            } else if (state.scannedPortResults.isNotEmpty()) {
+                getString(R.string.no_port_results_for_filter)
             } else {
                 getString(R.string.no_port_scan_results)
             }
         } else {
-            state.portScanResults.joinToString(separator = "\n")
+            filteredResults.joinToString(separator = "\n") { result ->
+                "${result.port.toString().padStart(5, ' ')}  ${result.protocol.padEnd(9, ' ')}  ${portStateLabel(result.state).padEnd(9, ' ')}  ${result.note}"
+            }
+        }
+    }
+
+    private fun portStateLabel(state: org.fsploit.android.domain.model.PortState): String {
+        return when (state) {
+            org.fsploit.android.domain.model.PortState.OPEN -> getString(R.string.port_state_open)
+            org.fsploit.android.domain.model.PortState.CLOSED -> getString(R.string.port_state_closed)
+            org.fsploit.android.domain.model.PortState.FILTERED -> getString(R.string.port_state_filtered)
         }
     }
 

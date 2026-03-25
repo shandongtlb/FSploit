@@ -40,6 +40,27 @@
                 android:layout_marginTop="4dp"
                 android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="@string/shell_task_selected"
+                android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+
+            <TextView
+                android:id="@+id/selectedTaskLabelValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+
+            <TextView
+                android:id="@+id/selectedTaskDescriptionValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -68,19 +89,19 @@
                 android:orientation="horizontal">
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/presetIdButton"
+                    android:id="@+id/presetInterfacesButton"
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="id" />
+                    android:text="@string/shell_task_network_interfaces_short" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/presetIpButton"
+                    android:id="@+id/presetArpButton"
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="ip addr" />
+                    android:text="@string/shell_task_arp_neighbors_short" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/presetIptablesButton"
@@ -88,7 +109,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="iptables" />
+                    android:text="@string/shell_task_iptables_rules_short" />
             </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
@@ -97,7 +118,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="tcpdump --version" />
+                android:text="@string/shell_task_tcpdump_version_short" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/runCommandButton"

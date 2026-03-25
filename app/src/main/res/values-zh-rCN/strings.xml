@@ -27,6 +27,10 @@
     <string name="run_host_sweep">执行主机探测</string>
     <string name="scan_summary">主机探测摘要</string>
     <string name="scan_results">响应主机</string>
+    <string name="discovered_targets">已发现目标</string>
+    <string name="discovery_selected_target">当前目标：%1$s</string>
+    <string name="discovery_no_target_selected">当前还没有选中的目标。</string>
+    <string name="discovery_no_targets">请先执行主机探测以生成可点击的目标列表。</string>
     <string name="target_host">目标主机</string>
     <string name="run_port_scan">执行端口扫描</string>
     <string name="port_scan_summary">端口扫描摘要</string>
@@ -38,12 +42,31 @@
     <string name="port_timeout_label">超时毫秒</string>
     <string name="port_parallelism_label">并发度</string>
     <string name="port_spec_hint">示例：22,80,443 或 20-25,53,8080。单次扫描最多 256 个端口。</string>
+    <string name="port_filter_all">全部</string>
+    <string name="port_filter_open">开放</string>
+    <string name="port_filter_closed">关闭</string>
+    <string name="port_filter_filtered">过滤</string>
 
     <string name="shell_command_label">Shell 命令</string>
     <string name="shell_run_as_root">通过 su -c 执行</string>
     <string name="shell_run_command">执行命令</string>
     <string name="shell_command_status">命令状态</string>
     <string name="shell_command_output">命令输出</string>
+    <string name="shell_task_selected">当前任务</string>
+    <string name="shell_task_custom">自定义命令</string>
+    <string name="shell_task_custom_desc">用于准备并执行任意 shell 命令。</string>
+    <string name="shell_task_network_interfaces">网络接口</string>
+    <string name="shell_task_network_interfaces_short">接口</string>
+    <string name="shell_task_network_interfaces_desc">在扫描前检查当前链路和地址信息。</string>
+    <string name="shell_task_arp_neighbors">ARP 与邻居缓存</string>
+    <string name="shell_task_arp_neighbors_short">ARP</string>
+    <string name="shell_task_arp_neighbors_desc">读取内核邻居表，为后续 ARP 工具能力铺路。</string>
+    <string name="shell_task_iptables_rules">iptables 规则</string>
+    <string name="shell_task_iptables_rules_short">iptables</string>
+    <string name="shell_task_iptables_rules_desc">检查当前 IPv4 防火墙规则表。通常需要 root。</string>
+    <string name="shell_task_tcpdump_version">tcpdump 探测</string>
+    <string name="shell_task_tcpdump_version_short">tcpdump</string>
+    <string name="shell_task_tcpdump_version_desc">先确认 tcpdump 是否可用，再继续接入抓包流程。</string>
 
     <string name="settings_language">语言</string>
     <string name="settings_preferred_interface">首选网卡</string>
@@ -109,6 +132,7 @@
     <string name="port_scan_parallelism_invalid">并发度必须在 1 到 64 之间。</string>
     <string name="no_target_hosts">请先执行主机探测以填充响应目标。</string>
     <string name="no_port_scan_results">当前还没有端口扫描结果。</string>
+    <string name="no_port_results_for_filter">当前筛选条件下没有匹配的端口。</string>
     <string name="port_note_accepted_connection">接受连接</string>
     <string name="port_note_actively_refused">主动拒绝</string>
     <string name="port_note_timed_out">超时</string>

@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.fsploit.android.R
 import org.fsploit.android.core.ResourceProvider
+import org.fsploit.android.core.ShellTaskPreset
 import org.fsploit.android.domain.model.PortScanConfig
 import org.fsploit.android.domain.model.PortState
 import org.fsploit.android.domain.usecase.GetPreferredInterfaceUseCase
@@ -21,6 +22,7 @@ import org.fsploit.android.domain.usecase.RunPortScanUseCase
 import org.fsploit.android.domain.usecase.RunShellCommandUseCase
 import org.fsploit.android.domain.usecase.SavePortScanConfigUseCase
 import org.fsploit.android.domain.usecase.SavePreferredInterfaceUseCase
+import org.fsploit.android.feature.target.PortResultFilter
 
 class HomeViewModel(
     private val resourceProvider: ResourceProvider,
@@ -45,6 +47,8 @@ class HomeViewModel(
             connectTimeoutMs = loadPortScanConfig().connectTimeoutMs.toString(),
             parallelism = loadPortScanConfig().parallelism.toString(),
             portScanSummary = resourceProvider.getString(R.string.port_scan_not_run),
+            selectedShellTaskLabel = resourceProvider.getString(R.string.shell_task_custom),
+            selectedShellTaskDescription = resourceProvider.getString(R.string.shell_task_custom_desc),
             shellExecutionSummary = resourceProvider.getString(R.string.shell_command_idle)
         )
     )
@@ -72,6 +76,7 @@ class HomeViewModel(
                 canContinue = permissionsGranted && overview.interfaces.isNotEmpty(),
                 shellSummary = shellStatus.summary,
                 preferredInterfaceName = preferredInterfaceName,
+                responsiveTargetResults = currentState.responsiveTargetResults,
                 responsiveHosts = currentState.responsiveHosts,
                 selectedHostAddress = selectedHostAddress,
                 isScanning = false,
@@ -82,7 +87,11 @@ class HomeViewModel(
                 parallelism = currentState.parallelism.ifBlank {
                     storedPortScanConfig.parallelism.toString()
                 },
+                scannedPortResults = currentState.scannedPortResults,
+                selectedPortResultFilter = currentState.selectedPortResultFilter,
                 isPortScanning = false,
+                selectedShellTaskLabel = currentState.selectedShellTaskLabel,
+                selectedShellTaskDescription = currentState.selectedShellTaskDescription,
                 isExecutingShell = false
             )
         }
@@ -119,7 +128,11 @@ class HomeViewModel(
     }
 
     fun updateShellCommand(command: String) {
-        _uiState.value = _uiState.value.copy(shellCommandInput = command)
+        _uiState.value = _uiState.value.copy(
+            shellCommandInput = command,
+            selectedShellTaskLabel = resourceProvider.getString(R.string.shell_task_custom),
+            selectedShellTaskDescription = resourceProvider.getString(R.string.shell_task_custom_desc)
+        )
     }
 
     fun updateShellRunAsRoot(asRoot: Boolean) {
@@ -130,14 +143,32 @@ class HomeViewModel(
         _uiState.value = _uiState.value.copy(shellCommandInput = command)
     }
 
+    fun applyShellTaskPreset(task: ShellTaskPreset) {
+        _uiState.value = _uiState.value.copy(
+            selectedShellTaskLabel = resourceProvider.getString(task.titleRes),
+            selectedShellTaskDescription = resourceProvider.getString(task.descriptionRes),
+            shellCommandInput = task.command,
+            shellRunAsRoot = task.runAsRoot
+        )
+    }
+
+    fun selectPortResultFilter(filter: PortResultFilter) {
+        _uiState.value = _uiState.value.copy(selectedPortResultFilter = filter)
+    }
+
     fun runSweep() {
         val interfaceName = _uiState.value.preferredInterfaceName
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
                 isScanning = true,
                 scanSummary = resourceProvider.getString(R.string.host_sweep_running),
+                responsiveTargetResults = emptyList(),
+                responsiveHosts = emptyList(),
+                selectedHostAddress = "",
                 portScanSummary = resourceProvider.getString(R.string.port_scan_not_run),
+                scannedPortResults = emptyList(),
                 portScanResults = emptyList(),
+                selectedPortResultFilter = PortResultFilter.ALL,
                 isPortScanning = false
             )
 
@@ -154,6 +185,7 @@ class HomeViewModel(
                 isScanning = false,
                 scanSummary = report.summary,
                 scanResults = report.responsiveHosts.map { "${it.hostAddress}  ${it.finding}" },
+                responsiveTargetResults = report.responsiveHosts,
                 responsiveHosts = responsiveHosts,
                 selectedHostAddress = selectedHostAddress,
                 portScanSummary = if (selectedHostAddress.isBlank()) {
@@ -170,6 +202,7 @@ class HomeViewModel(
         if (hostAddress.isBlank()) {
             _uiState.value = _uiState.value.copy(
                 portScanSummary = resourceProvider.getString(R.string.port_scan_select_target),
+                scannedPortResults = emptyList(),
                 portScanResults = emptyList()
             )
             return
@@ -195,6 +228,7 @@ class HomeViewModel(
                     connectTimeoutMs = config.connectTimeoutMs.toString(),
                     parallelism = config.parallelism.toString(),
                     portScanSummary = report.summary,
+                    scannedPortResults = report.scannedPorts,
                     portScanResults = report.scannedPorts.map { result ->
                         buildString {
                             append(result.port.toString().padStart(5, ' '))
@@ -212,6 +246,7 @@ class HomeViewModel(
                     isPortScanning = false,
                     portScanSummary = exception.message
                         ?: resourceProvider.getString(R.string.port_scan_config_invalid),
+                    scannedPortResults = emptyList(),
                     portScanResults = emptyList()
                 )
             }
