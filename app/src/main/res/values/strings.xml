@@ -184,7 +184,7 @@
     <string name="host_sweep_not_run">No host sweep has been run yet.</string>
     <string name="host_sweep_unavailable">No usable IPv4 interface is available for host sweep.</string>
     <string name="host_sweep_running">Running host sweep...</string>
-    <string name="host_sweep_none">Sweep completed on %1$s. No responsive hosts were identified in the sampled range.</string>
+    <string name="host_sweep_none">Sweep completed on %1$s. No responsive hosts were identified in the scanned range.</string>
     <string name="host_sweep_found">Sweep completed on %1$s. %2$d responsive host(s) found.</string>
     <string name="host_result_open_tcp">open tcp/%1$d</string>
     <string name="host_result_refused_tcp">reachable, refused tcp/%1$d</string>

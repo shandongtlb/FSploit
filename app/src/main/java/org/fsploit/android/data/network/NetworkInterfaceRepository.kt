@@ -140,7 +140,6 @@ class NetworkInterfaceRepository(
         val effectivePrefix = max(rawPrefix, 24)
         val hostCandidates = buildHostCandidates(localAddress, effectivePrefix)
             .filterNot { it == localAddress }
-            .take(64)
 
         return SweepTarget(
             interfaceName = chosenInterface.name,
