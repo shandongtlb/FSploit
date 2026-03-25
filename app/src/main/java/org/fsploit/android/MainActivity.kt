@@ -20,6 +20,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 import org.fsploit.android.data.mitm.BettercapPackageManager
+import org.fsploit.android.data.mitm.MitmdumpPackageManager
 import org.fsploit.android.databinding.ActivityMainBinding
 import org.fsploit.android.feature.discovery.DiscoveryFragment
 import org.fsploit.android.feature.home.HomeViewModel
@@ -35,10 +36,12 @@ class MainActivity : AppCompatActivity() {
         private set
 
     private lateinit var bettercapPackageManager: BettercapPackageManager
+    private lateinit var mitmdumpPackageManager: MitmdumpPackageManager
     private lateinit var binding: ActivityMainBinding
     private lateinit var drawerToggle: ActionBarDrawerToggle
     private var currentScreen: MainScreen = MainScreen.OVERVIEW
     private var bettercapPromptHandled = false
+    private var mitmdumpPromptHandled = false
 
     private val viewModel: HomeViewModel by viewModels { viewModelFactory }
 
@@ -52,6 +55,7 @@ class MainActivity : AppCompatActivity() {
         val appContainer = (application as FSploitApp).appContainer
         viewModelFactory = appContainer.homeViewModelFactory
         bettercapPackageManager = appContainer.bettercapPackageManager
+        mitmdumpPackageManager = appContainer.mitmdumpPackageManager
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
@@ -108,10 +112,10 @@ class MainActivity : AppCompatActivity() {
         } else {
             refreshFromUi()
         }
-        if (bettercapPackageManager.syncInstalledBinaryPath()) {
+        if (bettercapPackageManager.syncInstalledBinaryPath() || mitmdumpPackageManager.syncInstalledBinaryPath()) {
             refreshFromUi()
         }
-        maybePromptBettercapDownload()
+        maybePromptManagedDownloads()
     }
 
     override fun onResume() {
@@ -202,6 +206,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun maybePromptManagedDownloads() {
+        when {
+            !bettercapPromptHandled && bettercapPackageManager.shouldOfferManagedDownload() -> {
+                maybePromptBettercapDownload()
+            }
+
+            !mitmdumpPromptHandled && mitmdumpPackageManager.shouldOfferManagedDownload() -> {
+                maybePromptMitmdumpDownload()
+            }
+        }
+    }
+
     private fun maybePromptBettercapDownload() {
         if (bettercapPromptHandled || !bettercapPackageManager.shouldOfferManagedDownload()) {
             return
@@ -213,7 +229,9 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton(R.string.bettercap_download_action) { _, _ ->
                 downloadManagedBettercap()
             }
-            .setNegativeButton(android.R.string.cancel, null)
+            .setNegativeButton(android.R.string.cancel) { _, _ ->
+                maybePromptManagedDownloads()
+            }
             .show()
     }
 
@@ -235,6 +253,7 @@ class MainActivity : AppCompatActivity() {
                     getString(R.string.bettercap_download_success),
                     Toast.LENGTH_LONG
                 ).show()
+                maybePromptManagedDownloads()
             }.onFailure { exception ->
                 bettercapPromptHandled = false
                 MaterialAlertDialogBuilder(this@MainActivity)
@@ -248,6 +267,61 @@ class MainActivity : AppCompatActivity() {
                     .setPositiveButton(R.string.bettercap_download_retry) { _, _ ->
                         bettercapPromptHandled = true
                         downloadManagedBettercap()
+                    }
+                    .setNegativeButton(android.R.string.cancel) { _, _ ->
+                        maybePromptManagedDownloads()
+                    }
+                    .show()
+            }
+        }
+    }
+
+    private fun maybePromptMitmdumpDownload() {
+        if (mitmdumpPromptHandled || !mitmdumpPackageManager.shouldOfferManagedDownload()) {
+            return
+        }
+        mitmdumpPromptHandled = true
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.mitmdump_download_title)
+            .setMessage(R.string.mitmdump_download_message)
+            .setPositiveButton(R.string.mitmdump_download_action) { _, _ ->
+                downloadManagedMitmdump()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun downloadManagedMitmdump() {
+        val progressDialog = MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.mitmdump_download_progress_title)
+            .setMessage(R.string.mitmdump_download_progress_message)
+            .setCancelable(false)
+            .create()
+        progressDialog.show()
+
+        lifecycleScope.launch {
+            val result = mitmdumpPackageManager.downloadManagedPackage()
+            progressDialog.dismiss()
+            result.onSuccess {
+                refreshFromUi()
+                Toast.makeText(
+                    this@MainActivity,
+                    getString(R.string.mitmdump_download_success),
+                    Toast.LENGTH_LONG
+                ).show()
+            }.onFailure { exception ->
+                mitmdumpPromptHandled = false
+                MaterialAlertDialogBuilder(this@MainActivity)
+                    .setTitle(R.string.mitmdump_download_failed_title)
+                    .setMessage(
+                        getString(
+                            R.string.mitmdump_download_failed_message,
+                            exception.message ?: exception.javaClass.simpleName
+                        )
+                    )
+                    .setPositiveButton(R.string.mitmdump_download_retry) { _, _ ->
+                        mitmdumpPromptHandled = true
+                        downloadManagedMitmdump()
                     }
                     .setNegativeButton(android.R.string.cancel, null)
                     .show()

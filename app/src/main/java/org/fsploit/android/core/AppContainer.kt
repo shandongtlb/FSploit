@@ -3,6 +3,7 @@ package org.fsploit.android.core
 import android.content.Context
 import org.fsploit.android.data.mitm.BettercapPackageManager
 import org.fsploit.android.data.mitm.ExternalToolMitmBackend
+import org.fsploit.android.data.mitm.MitmdumpPackageManager
 import org.fsploit.android.data.mitm.MitmRepository
 import org.fsploit.android.data.network.HostSweepRepository
 import org.fsploit.android.data.network.NetworkInterfaceRepository
@@ -33,6 +34,7 @@ class AppContainer(
     val resourceProvider = AndroidResourceProvider(context)
     private val preferencesRepository = AppPreferencesRepository(context)
     val bettercapPackageManager = BettercapPackageManager(context, preferencesRepository)
+    val mitmdumpPackageManager = MitmdumpPackageManager(context, preferencesRepository)
     private val networkRepository = NetworkInterfaceRepository(context, resourceProvider)
     private val shellRepository = ShellRepository(resourceProvider)
     private val mitmBackend = ExternalToolMitmBackend(

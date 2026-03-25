@@ -570,9 +570,68 @@ sleep 31536000
         addonFile: File,
         redirectPort: Int
     ): String {
+        val mitmdumpPath = config.mitmdumpPath.trim()
+        if (mitmdumpPath.contains('/')) {
+            val sourceBinary = File(mitmdumpPath)
+            val binDirectory = sourceBinary.parentFile
+            val bundleRoot = binDirectory?.parentFile
+            if (binDirectory?.name == "bin" && bundleRoot != null && File(bundleRoot, "python").isDirectory) {
+                return buildManagedMitmdumpScript(bundleRoot, addonFile, redirectPort)
+            }
+        }
         return buildString {
             append("exec ")
-            append(shellCommandToken(config.mitmdumpPath))
+            append(shellCommandToken(mitmdumpPath))
+            append(" --mode transparent --showhost ")
+            append("--set block_global=false ")
+            append("--listen-host 0.0.0.0 ")
+            append("--listen-port ")
+            append(redirectPort)
+            append(" -s ")
+            append(shellQuote(addonFile.absolutePath))
+            append('\n')
+        }
+    }
+
+    private fun buildManagedMitmdumpScript(
+        bundleRoot: File,
+        addonFile: File,
+        redirectPort: Int
+    ): String {
+        return buildString {
+            append("set -e\n")
+            append("rm -rf ")
+            append(shellQuote(MITMDUMP_RUNTIME_DIRECTORY))
+            append('\n')
+            append("mkdir -p ")
+            append(shellQuote(MITMDUMP_RUNTIME_DIRECTORY))
+            append('\n')
+            append("cp -R ")
+            append(shellQuote("${bundleRoot.absolutePath}/."))
+            append(' ')
+            append(shellQuote(MITMDUMP_RUNTIME_DIRECTORY))
+            append('\n')
+            append("find ")
+            append(shellQuote(MITMDUMP_RUNTIME_DIRECTORY))
+            append(" -type d -exec chmod 755 {} \\;\n")
+            append("if [ -f ")
+            append(shellQuote("$MITMDUMP_RUNTIME_DIRECTORY/bin/mitmdump"))
+            append(" ]; then chmod 755 ")
+            append(shellQuote("$MITMDUMP_RUNTIME_DIRECTORY/bin/mitmdump"))
+            append("; fi\n")
+            append("if [ -f ")
+            append(shellQuote("$MITMDUMP_RUNTIME_DIRECTORY/python/bin/python3"))
+            append(" ]; then chmod 755 ")
+            append(shellQuote("$MITMDUMP_RUNTIME_DIRECTORY/python/bin/python3"))
+            append("; fi\n")
+            append("find ")
+            append(shellQuote(MITMDUMP_RUNTIME_DIRECTORY))
+            append(" -type f -name '*.so' -exec chmod 755 {} \\; 2>/dev/null || true\n")
+            append("cd ")
+            append(shellQuote(MITMDUMP_RUNTIME_DIRECTORY))
+            append(" || exit 1\n")
+            append("exec ")
+            append(shellQuote("$MITMDUMP_RUNTIME_DIRECTORY/bin/mitmdump"))
             append(" --mode transparent --showhost ")
             append("--set block_global=false ")
             append("--listen-host 0.0.0.0 ")
@@ -886,5 +945,6 @@ def request(flow: http.HTTPFlow) -> None:
         private const val PROBE_TIMEOUT_MS = 2000L
         private const val FIREWALL_TIMEOUT_MS = 4000L
         private const val BETTERCAP_RUNTIME_DIRECTORY = "/data/local/tmp/fsploit-bettercap"
+        private const val MITMDUMP_RUNTIME_DIRECTORY = "/data/local/tmp/fsploit-mitmdump"
     }
 }
