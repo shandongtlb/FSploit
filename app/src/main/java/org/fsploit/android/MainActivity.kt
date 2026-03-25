@@ -19,6 +19,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import org.fsploit.android.data.network.HostSweepRepository
 import org.fsploit.android.data.network.NetworkInterfaceRepository
+import org.fsploit.android.data.network.PortScanRepository
 import org.fsploit.android.data.settings.AppPreferencesRepository
 import org.fsploit.android.data.shell.ShellRepository
 import org.fsploit.android.databinding.ActivityMainBinding
@@ -27,6 +28,7 @@ import org.fsploit.android.domain.usecase.GetPreferredInterfaceUseCase
 import org.fsploit.android.domain.usecase.LoadNetworkOverviewUseCase
 import org.fsploit.android.domain.usecase.ProbeShellUseCase
 import org.fsploit.android.domain.usecase.RunHostSweepUseCase
+import org.fsploit.android.domain.usecase.RunPortScanUseCase
 import org.fsploit.android.domain.usecase.SavePreferredInterfaceUseCase
 import org.fsploit.android.feature.home.HomeUiState
 import org.fsploit.android.feature.home.HomeViewModel
@@ -48,7 +50,8 @@ class MainActivity : AppCompatActivity() {
                     getPreferredInterface = GetPreferredInterfaceUseCase(preferencesRepository),
                     savePreferredInterfaceUseCase = SavePreferredInterfaceUseCase(preferencesRepository),
                     probeShell = ProbeShellUseCase(shellRepository),
-                    runHostSweep = RunHostSweepUseCase(HostSweepRepository(networkRepository))
+                    runHostSweep = RunHostSweepUseCase(HostSweepRepository(networkRepository)),
+                    runPortScanUseCase = RunPortScanUseCase(PortScanRepository())
                 ) as T
             }
         }
@@ -83,8 +86,16 @@ class MainActivity : AppCompatActivity() {
             viewModel.savePreferredInterface(binding.preferredInterfaceInput.text?.toString().orEmpty())
             viewModel.runSweep()
         }
+        binding.runPortScanButton.setOnClickListener {
+            viewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
+            viewModel.runPortScan()
+        }
         binding.refreshButton.setOnClickListener {
             refresh()
+        }
+        binding.targetHostInput.setOnItemClickListener { _, _, position, _ ->
+            val selected = binding.targetHostInput.adapter.getItem(position)?.toString().orEmpty()
+            viewModel.selectHost(selected)
         }
 
         lifecycleScope.launch {
@@ -108,6 +119,10 @@ class MainActivity : AppCompatActivity() {
         binding.requestPermissionsButton.isEnabled = !hasAllRequiredPermissions()
         binding.runSweepButton.isEnabled = state.canContinue && !state.isScanning
         binding.saveInterfaceButton.isEnabled = state.interfaces.isNotEmpty()
+        binding.runPortScanButton.isEnabled = state.canContinue &&
+            state.selectedHostAddress.isNotBlank() &&
+            !state.isScanning &&
+            !state.isPortScanning
         binding.continueHint.text = if (state.canContinue) {
             getString(R.string.home_ready)
         } else {
@@ -145,6 +160,28 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.no_scan_results)
         } else {
             state.scanResults.joinToString(separator = "\n")
+        }
+
+        binding.targetHostInput.setAdapter(
+            ArrayAdapter(
+                this,
+                android.R.layout.simple_dropdown_item_1line,
+                state.responsiveHosts
+            )
+        )
+        if (binding.targetHostInput.text?.toString() != state.selectedHostAddress) {
+            binding.targetHostInput.setText(state.selectedHostAddress, false)
+        }
+
+        binding.portScanSummaryValue.text = state.portScanSummary
+        binding.portScanResultsValue.text = if (state.portScanResults.isEmpty()) {
+            if (state.responsiveHosts.isEmpty()) {
+                getString(R.string.no_target_hosts)
+            } else {
+                getString(R.string.no_port_scan_results)
+            }
+        } else {
+            state.portScanResults.joinToString(separator = "\n")
         }
     }
 

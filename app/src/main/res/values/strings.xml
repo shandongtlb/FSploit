@@ -13,10 +13,16 @@
     <string name="run_host_sweep">Run Host Sweep</string>
     <string name="scan_summary">Host sweep summary</string>
     <string name="scan_results">Responsive hosts</string>
+    <string name="target_host">Target host</string>
+    <string name="run_port_scan">Run Port Scan</string>
+    <string name="port_scan_summary">Port scan summary</string>
+    <string name="port_scan_results">Common TCP ports</string>
     <string name="permissions_granted">All required permissions are granted.</string>
     <string name="permissions_missing">Missing: %1$s</string>
     <string name="no_interfaces_found">No usable local IPv4 interface detected.</string>
     <string name="no_scan_results">No responsive hosts have been found yet.</string>
+    <string name="no_target_hosts">Run a host sweep to populate responsive targets.</string>
+    <string name="no_port_scan_results">No port scan results are available yet.</string>
     <string name="home_ready">The app has enough context to start building scanners and modules.</string>
     <string name="home_not_ready">The foundation is running, but networking is not yet ready for active tooling.</string>
 </resources>

@@ -13,5 +13,10 @@ data class HomeUiState(
     val preferredInterfaceName: String = "",
     val scanSummary: String = "No sweep has been run yet.",
     val scanResults: List<String> = emptyList(),
-    val isScanning: Boolean = false
+    val responsiveHosts: List<String> = emptyList(),
+    val selectedHostAddress: String = "",
+    val isScanning: Boolean = false,
+    val portScanSummary: String = "No port scan has been run yet.",
+    val portScanResults: List<String> = emptyList(),
+    val isPortScanning: Boolean = false
 )
