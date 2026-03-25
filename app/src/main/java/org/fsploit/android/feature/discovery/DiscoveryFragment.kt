@@ -65,8 +65,8 @@ class DiscoveryFragment : Fragment() {
     private fun render(state: HomeUiState) {
         binding.discoveryHint.text = getString(R.string.discovery_hint)
         binding.saveInterfaceButton.isEnabled = state.interfaces.isNotEmpty()
-        binding.runSweepButton.isEnabled = state.canContinue && !state.isScanning
-        binding.openTargetButton.isEnabled = state.selectedHostAddress.isNotBlank()
+        binding.runSweepButton.isEnabled = state.canContinue && state.rootGranted && !state.isScanning
+        binding.openTargetButton.isEnabled = state.rootGranted && state.selectedHostAddress.isNotBlank()
         binding.selectedTargetValue.text = if (state.selectedHostAddress.isBlank()) {
             getString(R.string.discovery_no_target_selected)
         } else {
@@ -80,6 +80,7 @@ class DiscoveryFragment : Fragment() {
                 state.interfaces.map { it.name }
             )
         )
+        binding.preferredInterfaceInput.isEnabled = state.rootGranted && state.interfaces.isNotEmpty()
         if (binding.preferredInterfaceInput.text?.toString() != state.preferredInterfaceName) {
             binding.preferredInterfaceInput.setText(state.preferredInterfaceName, false)
         }
@@ -107,6 +108,7 @@ class DiscoveryFragment : Fragment() {
         if (binding.targetHostInput.text?.toString() != state.selectedHostAddress) {
             binding.targetHostInput.setText(state.selectedHostAddress, false)
         }
+        binding.targetHostInput.isEnabled = state.rootGranted && state.responsiveHosts.isNotEmpty()
     }
 
     private fun renderResponsiveTargets(state: HomeUiState) {

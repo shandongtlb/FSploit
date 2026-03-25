@@ -18,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider
 import org.fsploit.android.databinding.ActivityMainBinding
 import org.fsploit.android.feature.discovery.DiscoveryFragment
 import org.fsploit.android.feature.home.HomeViewModel
+import org.fsploit.android.feature.mitm.MitmFragment
 import org.fsploit.android.feature.overview.OverviewFragment
 import org.fsploit.android.feature.settings.SettingsFragment
 import org.fsploit.android.feature.target.TargetDetailFragment
@@ -116,6 +117,7 @@ class MainActivity : AppCompatActivity() {
         updateScreenUi(screen)
         val fragment = when (screen) {
             MainScreen.OVERVIEW -> OverviewFragment()
+            MainScreen.MITM -> MitmFragment()
             MainScreen.DISCOVERY -> DiscoveryFragment()
             MainScreen.TARGET_DETAIL -> TargetDetailFragment()
             MainScreen.TOOLS -> ToolsFragment()

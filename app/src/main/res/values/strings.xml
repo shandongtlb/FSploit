@@ -4,6 +4,7 @@
     <string name="nav_header_subtitle">Drawer-based workspace for discovery, targets, and shell tooling.</string>
 
     <string name="nav_overview">Overview</string>
+    <string name="nav_mitm">MITM</string>
     <string name="nav_discovery">Discovery</string>
     <string name="nav_target_detail">Target Detail</string>
     <string name="nav_tools">Tools</string>
@@ -15,6 +16,7 @@
     <string name="section_discovery_title">Host Discovery</string>
     <string name="section_target_detail_title">Target Detail</string>
     <string name="section_tools_title">Shell Tooling</string>
+    <string name="root_gate_title">Root gate</string>
 
     <string name="permission_summary">Permissions</string>
     <string name="active_transport">Active transport</string>
@@ -37,6 +39,17 @@
     <string name="port_scan_results">Port results</string>
     <string name="open_target_detail">Open Target Detail</string>
     <string name="target_detail_summary">Inspecting target %1$s.</string>
+    <string name="mitm_readiness_title">MITM readiness</string>
+    <string name="mitm_iptables_label">iptables available</string>
+    <string name="mitm_tcpdump_label">tcpdump available</string>
+    <string name="mitm_ca_store_label">CA store accessible</string>
+    <string name="mitm_available">Available</string>
+    <string name="mitm_unavailable">Unavailable</string>
+    <string name="block_connection">Block Connection</string>
+    <string name="unblock_connection">Unblock Connection</string>
+    <string name="block_current_label">Current connection block</string>
+    <string name="block_current_target">Blocked target: %1$s</string>
+    <string name="block_none">No target is currently blocked by FSploit.</string>
 
     <string name="port_spec_label">Port set</string>
     <string name="port_timeout_label">Timeout ms</string>
@@ -99,6 +112,9 @@
     <string name="shell_root_available">Root shell is available.</string>
     <string name="shell_su_present">su is present, but root was not granted.</string>
     <string name="shell_no_root_tooling">Root tooling is not available on this device.</string>
+    <string name="root_gate_pending">Checking root readiness...</string>
+    <string name="root_gate_ready">Root access is available. Root-gated modules can run.</string>
+    <string name="root_gate_blocked">Root access is required. FSploit modules stay blocked until root is granted.</string>
     <string name="shell_mode_standard">standard shell</string>
     <string name="shell_mode_root">root shell</string>
     <string name="shell_command_idle">No command has been run yet.</string>
@@ -146,6 +162,21 @@
     <string name="port_spec_range_too_large">Port range is too large: %1$s.</string>
     <string name="port_spec_port_out_of_range">Port is out of range: %1$d.</string>
     <string name="port_spec_too_many">Too many ports were requested. Limit each run to 256 ports.</string>
+    <string name="mitm_pending">Checking MITM readiness...</string>
+    <string name="mitm_root_required">MITM mode requires root before any redirect or interception can start.</string>
+    <string name="mitm_missing_iptables">MITM root mode is blocked because iptables is unavailable.</string>
+    <string name="mitm_missing_tcpdump">MITM diagnostics passed partially, but tcpdump is unavailable.</string>
+    <string name="mitm_missing_ca_store">Traffic redirection looks possible, but the CA store path is not accessible.</string>
+    <string name="mitm_ready">Root, firewall tooling, and the certificate store are accessible. MITM groundwork is ready.</string>
+    <string name="block_idle">No connection block action has been run yet.</string>
+    <string name="block_select_target_first">Select a target host before changing firewall rules.</string>
+    <string name="block_running">Applying DROP rules for %1$s...</string>
+    <string name="unblock_running">Removing DROP rules for %1$s...</string>
+    <string name="block_applied">Connection blocking rules were applied for %1$s.</string>
+    <string name="block_failed">Failed to block %1$s. %2$s</string>
+    <string name="block_removed">Connection blocking rules were removed for %1$s.</string>
+    <string name="block_remove_failed">Failed to remove blocking rules for %1$s. %2$s</string>
+    <string name="block_invalid_host">The selected host address is invalid.</string>
 
     <string name="category_wifi">Wi-Fi</string>
     <string name="category_ethernet">Ethernet</string>

@@ -78,7 +78,12 @@ class ToolsFragment : Fragment() {
         if (binding.runAsRootSwitch.isChecked != state.shellRunAsRoot) {
             binding.runAsRootSwitch.isChecked = state.shellRunAsRoot
         }
-        binding.runCommandButton.isEnabled = !state.isExecutingShell
+        binding.runCommandButton.isEnabled = state.rootGranted && !state.isExecutingShell
+        binding.runAsRootSwitch.isEnabled = state.rootGranted
+        binding.presetInterfacesButton.isEnabled = state.rootGranted
+        binding.presetArpButton.isEnabled = state.rootGranted
+        binding.presetIptablesButton.isEnabled = state.rootGranted
+        binding.presetTcpdumpButton.isEnabled = state.rootGranted
         binding.commandStatusValue.text = state.shellExecutionSummary
         binding.commandOutputValue.text = state.shellExecutionOutput
     }

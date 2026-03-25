@@ -23,15 +23,8 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/section_overview_title"
+                android:text="@string/nav_mitm"
                 android:textAppearance="@style/TextAppearance.Material3.TitleLarge" />
-
-            <TextView
-                android:id="@+id/statusMessage"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -51,11 +44,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:text="@string/permission_summary"
+                android:text="@string/mitm_readiness_title"
                 android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
 
             <TextView
-                android:id="@+id/permissionSummaryValue"
+                android:id="@+id/mitmSummaryValue"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
@@ -65,11 +58,39 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:text="@string/active_transport"
+                android:text="@string/mitm_iptables_label"
                 android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
 
             <TextView
-                android:id="@+id/activeTransportValue"
+                android:id="@+id/iptablesValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/mitm_tcpdump_label"
+                android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+
+            <TextView
+                android:id="@+id/tcpdumpValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/mitm_ca_store_label"
+                android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+
+            <TextView
+                android:id="@+id/caStoreValue"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
@@ -79,59 +100,72 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:text="@string/interface_list"
+                android:text="@string/target_host"
                 android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
 
             <TextView
-                android:id="@+id/interfaceListValue"
+                android:id="@+id/selectedTargetValue"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-
-            <TextView
-                android:id="@+id/continueHint"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
                 android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:text="@string/shell_status"
-                android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
-
-            <TextView
-                android:id="@+id/shellSummaryValue"
+            <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+                android:layout_marginTop="12dp"
+                android:hint="@string/target_host">
+
+                <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                    android:id="@+id/targetHostInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="12dp"
                 android:orientation="horizontal">
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/requestPermissionsButton"
+                    android:id="@+id/blockConnectionButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="@string/request_permissions" />
+                    android:text="@string/block_connection" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/refreshButton"
+                    android:id="@+id/unblockConnectionButton"
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="12dp"
                     android:layout_weight="1"
-                    android:text="@string/refresh" />
+                    android:text="@string/unblock_connection" />
             </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="@string/block_current_label"
+                android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+
+            <TextView
+                android:id="@+id/currentBlockValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+            <TextView
+                android:id="@+id/connectionBlockSummaryValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 </androidx.core.widget.NestedScrollView>

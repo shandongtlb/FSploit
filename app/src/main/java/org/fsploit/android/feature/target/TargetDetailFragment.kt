@@ -114,7 +114,8 @@ class TargetDetailFragment : Fragment() {
         if (binding.portFilterGroup.checkedButtonId != checkedFilterButton) {
             binding.portFilterGroup.check(checkedFilterButton)
         }
-        binding.runPortScanButton.isEnabled = state.selectedHostAddress.isNotBlank() && !state.isPortScanning
+        binding.runPortScanButton.isEnabled =
+            state.rootGranted && state.selectedHostAddress.isNotBlank() && !state.isPortScanning
         binding.portScanSummaryValue.text = state.portScanSummary
         val filteredResults = state.scannedPortResults.filter { result ->
             when (state.selectedPortResultFilter) {

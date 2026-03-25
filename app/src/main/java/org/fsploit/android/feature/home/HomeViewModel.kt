@@ -13,7 +13,9 @@ import org.fsploit.android.core.ResourceProvider
 import org.fsploit.android.core.ShellTaskPreset
 import org.fsploit.android.domain.model.PortScanConfig
 import org.fsploit.android.domain.model.PortState
+import org.fsploit.android.domain.usecase.BlockHostUseCase
 import org.fsploit.android.domain.usecase.GetPreferredInterfaceUseCase
+import org.fsploit.android.domain.usecase.LoadMitmReadinessUseCase
 import org.fsploit.android.domain.usecase.LoadNetworkOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadPortScanConfigUseCase
 import org.fsploit.android.domain.usecase.ProbeShellUseCase
@@ -22,6 +24,7 @@ import org.fsploit.android.domain.usecase.RunPortScanUseCase
 import org.fsploit.android.domain.usecase.RunShellCommandUseCase
 import org.fsploit.android.domain.usecase.SavePortScanConfigUseCase
 import org.fsploit.android.domain.usecase.SavePreferredInterfaceUseCase
+import org.fsploit.android.domain.usecase.UnblockHostUseCase
 import org.fsploit.android.feature.target.PortResultFilter
 
 class HomeViewModel(
@@ -32,9 +35,12 @@ class HomeViewModel(
     private val loadPortScanConfig: LoadPortScanConfigUseCase,
     private val savePortScanConfig: SavePortScanConfigUseCase,
     private val probeShell: ProbeShellUseCase,
+    private val loadMitmReadinessUseCase: LoadMitmReadinessUseCase,
     private val runHostSweep: RunHostSweepUseCase,
     private val runPortScanUseCase: RunPortScanUseCase,
-    private val runShellCommandUseCase: RunShellCommandUseCase
+    private val runShellCommandUseCase: RunShellCommandUseCase,
+    private val blockHostUseCase: BlockHostUseCase,
+    private val unblockHostUseCase: UnblockHostUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -46,7 +52,10 @@ class HomeViewModel(
             portSpec = loadPortScanConfig().portSpec,
             connectTimeoutMs = loadPortScanConfig().connectTimeoutMs.toString(),
             parallelism = loadPortScanConfig().parallelism.toString(),
+            rootGateSummary = resourceProvider.getString(R.string.root_gate_pending),
+            mitmSummary = resourceProvider.getString(R.string.mitm_pending),
             portScanSummary = resourceProvider.getString(R.string.port_scan_not_run),
+            connectionBlockSummary = resourceProvider.getString(R.string.block_idle),
             selectedShellTaskLabel = resourceProvider.getString(R.string.shell_task_custom),
             selectedShellTaskDescription = resourceProvider.getString(R.string.shell_task_custom_desc),
             shellExecutionSummary = resourceProvider.getString(R.string.shell_command_idle)
@@ -58,6 +67,7 @@ class HomeViewModel(
         viewModelScope.launch(Dispatchers.Default) {
             val overview = loadNetworkOverview()
             val shellStatus = probeShell()
+            val mitmReadiness = loadMitmReadinessUseCase(shellStatus)
             val currentState = _uiState.value
             val preferredInterfaceName = getPreferredInterface()
                 .takeIf { it.isNotBlank() }
@@ -73,8 +83,16 @@ class HomeViewModel(
                 activeTransportLabel = overview.activeTransportLabel,
                 interfaces = overview.interfaces,
                 statusMessage = overview.statusMessage,
-                canContinue = permissionsGranted && overview.interfaces.isNotEmpty(),
+                canContinue = permissionsGranted && overview.interfaces.isNotEmpty() && shellStatus.rootGranted,
+                shellAvailable = shellStatus.shellAvailable,
+                suAvailable = shellStatus.suAvailable,
+                rootGranted = shellStatus.rootGranted,
                 shellSummary = shellStatus.summary,
+                rootGateSummary = if (shellStatus.rootGranted) {
+                    resourceProvider.getString(R.string.root_gate_ready)
+                } else {
+                    resourceProvider.getString(R.string.root_gate_blocked)
+                },
                 preferredInterfaceName = preferredInterfaceName,
                 responsiveTargetResults = currentState.responsiveTargetResults,
                 responsiveHosts = currentState.responsiveHosts,
@@ -87,9 +105,18 @@ class HomeViewModel(
                 parallelism = currentState.parallelism.ifBlank {
                     storedPortScanConfig.parallelism.toString()
                 },
+                mitmSummary = mitmReadiness.summary,
+                iptablesAvailable = mitmReadiness.iptablesAvailable,
+                tcpdumpAvailable = mitmReadiness.tcpdumpAvailable,
+                certificateStoreAccessible = mitmReadiness.certificateStoreAccessible,
                 scannedPortResults = currentState.scannedPortResults,
                 selectedPortResultFilter = currentState.selectedPortResultFilter,
                 isPortScanning = false,
+                blockedHostAddress = currentState.blockedHostAddress,
+                connectionBlockSummary = currentState.connectionBlockSummary.ifBlank {
+                    resourceProvider.getString(R.string.block_idle)
+                },
+                isBlockingConnection = false,
                 selectedShellTaskLabel = currentState.selectedShellTaskLabel,
                 selectedShellTaskDescription = currentState.selectedShellTaskDescription,
                 isExecutingShell = false
@@ -157,6 +184,9 @@ class HomeViewModel(
     }
 
     fun runSweep() {
+        if (!ensureRootReady()) {
+            return
+        }
         val interfaceName = _uiState.value.preferredInterfaceName
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
@@ -198,6 +228,9 @@ class HomeViewModel(
     }
 
     fun runPortScan() {
+        if (!ensureRootReady()) {
+            return
+        }
         val hostAddress = _uiState.value.selectedHostAddress.trim()
         if (hostAddress.isBlank()) {
             _uiState.value = _uiState.value.copy(
@@ -255,6 +288,13 @@ class HomeViewModel(
 
     fun runShellCommand() {
         val state = _uiState.value
+        if (!state.rootGranted && state.shellRunAsRoot) {
+            _uiState.value = state.copy(
+                shellExecutionSummary = resourceProvider.getString(R.string.root_gate_blocked),
+                shellExecutionOutput = ""
+            )
+            return
+        }
         val command = state.shellCommandInput.trim()
         if (command.isEmpty()) {
             _uiState.value = state.copy(
@@ -286,6 +326,14 @@ class HomeViewModel(
                 }
             )
         }
+    }
+
+    fun blockSelectedHost() {
+        performConnectionBlock(block = true)
+    }
+
+    fun unblockSelectedHost() {
+        performConnectionBlock(block = false)
     }
 
     private fun validatePortScanConfig(): PortScanConfig? {
@@ -322,6 +370,60 @@ class HomeViewModel(
             connectTimeoutMs = timeoutMs,
             parallelism = parallelism
         )
+    }
+
+    private fun ensureRootReady(): Boolean {
+        if (_uiState.value.rootGranted) {
+            return true
+        }
+
+        _uiState.value = _uiState.value.copy(
+            connectionBlockSummary = resourceProvider.getString(R.string.root_gate_blocked),
+            portScanSummary = resourceProvider.getString(R.string.root_gate_blocked),
+            shellExecutionSummary = resourceProvider.getString(R.string.root_gate_blocked)
+        )
+        return false
+    }
+
+    private fun performConnectionBlock(block: Boolean) {
+        if (!ensureRootReady()) {
+            return
+        }
+
+        val hostAddress = _uiState.value.selectedHostAddress.trim()
+        if (hostAddress.isBlank()) {
+            _uiState.value = _uiState.value.copy(
+                connectionBlockSummary = resourceProvider.getString(R.string.block_select_target_first)
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isBlockingConnection = true,
+                connectionBlockSummary = if (block) {
+                    resourceProvider.getString(R.string.block_running, hostAddress)
+                } else {
+                    resourceProvider.getString(R.string.unblock_running, hostAddress)
+                }
+            )
+
+            val result = withContext(Dispatchers.Default) {
+                if (block) blockHostUseCase(hostAddress) else unblockHostUseCase(hostAddress)
+            }
+
+            _uiState.value = _uiState.value.copy(
+                isBlockingConnection = false,
+                blockedHostAddress = if (block && result.success) {
+                    result.targetHost
+                } else if (!block && result.success && _uiState.value.blockedHostAddress == result.targetHost) {
+                    ""
+                } else {
+                    _uiState.value.blockedHostAddress
+                },
+                connectionBlockSummary = result.summary
+            )
+        }
     }
 
     private fun portStateLabel(state: PortState): String {

@@ -53,6 +53,7 @@ class OverviewFragment : Fragment() {
 
     private fun render(state: HomeUiState) {
         binding.statusMessage.text = state.statusMessage
+        binding.rootGateValue.text = state.rootGateSummary
         binding.permissionSummaryValue.text = state.permissionSummary
         binding.activeTransportValue.text = state.activeTransportLabel
         binding.shellSummaryValue.text = state.shellSummary

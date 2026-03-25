@@ -4,6 +4,7 @@
     <string name="nav_header_subtitle">基于抽屉导航的工作区，承载发现、目标和 shell 工具能力。</string>
 
     <string name="nav_overview">概览</string>
+    <string name="nav_mitm">MITM</string>
     <string name="nav_discovery">发现</string>
     <string name="nav_target_detail">目标详情</string>
     <string name="nav_tools">工具</string>
@@ -15,6 +16,7 @@
     <string name="section_discovery_title">主机发现</string>
     <string name="section_target_detail_title">目标详情</string>
     <string name="section_tools_title">Shell 工具</string>
+    <string name="root_gate_title">Root 门禁</string>
 
     <string name="permission_summary">权限</string>
     <string name="active_transport">当前传输</string>
@@ -37,6 +39,17 @@
     <string name="port_scan_results">端口结果</string>
     <string name="open_target_detail">打开目标详情</string>
     <string name="target_detail_summary">正在检查目标 %1$s。</string>
+    <string name="mitm_readiness_title">MITM 就绪状态</string>
+    <string name="mitm_iptables_label">iptables 可用性</string>
+    <string name="mitm_tcpdump_label">tcpdump 可用性</string>
+    <string name="mitm_ca_store_label">CA 存储可访问性</string>
+    <string name="mitm_available">可用</string>
+    <string name="mitm_unavailable">不可用</string>
+    <string name="block_connection">阻断连接</string>
+    <string name="unblock_connection">解除阻断</string>
+    <string name="block_current_label">当前连接阻断</string>
+    <string name="block_current_target">已阻断目标：%1$s</string>
+    <string name="block_none">当前没有由 FSploit 管理的阻断目标。</string>
 
     <string name="port_spec_label">端口集</string>
     <string name="port_timeout_label">超时毫秒</string>
@@ -99,6 +112,9 @@
     <string name="shell_root_available">Root shell 可用。</string>
     <string name="shell_su_present">检测到 su，但尚未获得 root 授权。</string>
     <string name="shell_no_root_tooling">当前设备不可用 root 工具链。</string>
+    <string name="root_gate_pending">正在检查 root 就绪状态...</string>
+    <string name="root_gate_ready">Root 已可用，可以运行受 root 保护的模块。</string>
+    <string name="root_gate_blocked">FSploit 功能依赖 root。获得 root 之前各模块保持阻断状态。</string>
     <string name="shell_mode_standard">标准 shell</string>
     <string name="shell_mode_root">Root shell</string>
     <string name="shell_command_idle">尚未执行任何命令。</string>
@@ -146,6 +162,21 @@
     <string name="port_spec_range_too_large">端口范围过大：%1$s。</string>
     <string name="port_spec_port_out_of_range">端口超出范围：%1$d。</string>
     <string name="port_spec_too_many">请求端口过多。单次扫描最多 256 个端口。</string>
+    <string name="mitm_pending">正在检查 MITM 就绪状态...</string>
+    <string name="mitm_root_required">MITM 模式依赖 root，未获得 root 前无法启动重定向或拦截。</string>
+    <string name="mitm_missing_iptables">MITM root 模式被阻断，因为系统中没有可用的 iptables。</string>
+    <string name="mitm_missing_tcpdump">MITM 诊断部分通过，但系统中没有可用的 tcpdump。</string>
+    <string name="mitm_missing_ca_store">流量重定向看起来可行，但当前无法访问 CA 存储路径。</string>
+    <string name="mitm_ready">Root、防火墙工具和证书存储均可访问，MITM 基础条件已具备。</string>
+    <string name="block_idle">当前还没有执行任何连接阻断动作。</string>
+    <string name="block_select_target_first">修改防火墙规则前请先选择目标主机。</string>
+    <string name="block_running">正在为 %1$s 应用 DROP 规则...</string>
+    <string name="unblock_running">正在为 %1$s 移除 DROP 规则...</string>
+    <string name="block_applied">已为 %1$s 应用连接阻断规则。</string>
+    <string name="block_failed">阻断 %1$s 失败。%2$s</string>
+    <string name="block_removed">已移除针对 %1$s 的连接阻断规则。</string>
+    <string name="block_remove_failed">移除 %1$s 的阻断规则失败。%2$s</string>
+    <string name="block_invalid_host">所选主机地址无效。</string>
 
     <string name="category_wifi">Wi-Fi</string>
     <string name="category_ethernet">以太网</string>
