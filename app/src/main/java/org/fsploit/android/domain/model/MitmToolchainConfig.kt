@@ -1,9 +1,8 @@
 package org.fsploit.android.domain.model
 
 data class MitmToolchainConfig(
-    val arpspoofPath: String = "arpspoof",
+    val bettercapPath: String = "bettercap",
     val tcpdumpPath: String = "tcpdump",
-    val ettercapPath: String = "ettercap",
     val mitmdumpPath: String = "mitmdump",
     val httpRedirectPort: Int = 18080
 )

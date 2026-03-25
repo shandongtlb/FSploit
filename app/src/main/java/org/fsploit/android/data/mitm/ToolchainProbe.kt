@@ -18,8 +18,7 @@ class ToolchainProbe(
             return MitmReadiness(
                 iptablesAvailable = false,
                 tcpdumpAvailable = false,
-                arpspoofAvailable = false,
-                ettercapAvailable = false,
+                bettercapAvailable = false,
                 mitmdumpAvailable = false,
                 certificateStoreAccessible = false,
                 summary = resourceProvider.getString(R.string.mitm_root_required)
@@ -31,17 +30,15 @@ class ToolchainProbe(
             executableExists("iptables-legacy") ||
             executableExists("iptables-nft")
         val tcpdumpAvailable = executableExists(config.tcpdumpPath)
-        val arpspoofAvailable = executableExists(config.arpspoofPath)
-        val ettercapAvailable = executableExists(config.ettercapPath)
+        val bettercapAvailable = executableExists(config.bettercapPath)
         val mitmdumpAvailable = executableExists(config.mitmdumpPath)
         val certificateStoreAccessible = directoryAccessible("/system/etc/security/cacerts") ||
             directoryAccessible("/apex/com.android.conscrypt/cacerts")
 
         val summary = when {
             !iptablesAvailable -> resourceProvider.getString(R.string.mitm_missing_iptables)
-            !arpspoofAvailable -> resourceProvider.getString(R.string.mitm_missing_arpspoof)
+            !bettercapAvailable -> resourceProvider.getString(R.string.mitm_missing_bettercap)
             !tcpdumpAvailable -> resourceProvider.getString(R.string.mitm_missing_tcpdump)
-            !ettercapAvailable -> resourceProvider.getString(R.string.mitm_missing_ettercap)
             !mitmdumpAvailable -> resourceProvider.getString(R.string.mitm_missing_mitmdump)
             !certificateStoreAccessible -> resourceProvider.getString(R.string.mitm_missing_ca_store)
             else -> resourceProvider.getString(R.string.mitm_ready)
@@ -50,8 +47,7 @@ class ToolchainProbe(
         return MitmReadiness(
             iptablesAvailable = iptablesAvailable,
             tcpdumpAvailable = tcpdumpAvailable,
-            arpspoofAvailable = arpspoofAvailable,
-            ettercapAvailable = ettercapAvailable,
+            bettercapAvailable = bettercapAvailable,
             mitmdumpAvailable = mitmdumpAvailable,
             certificateStoreAccessible = certificateStoreAccessible,
             summary = summary

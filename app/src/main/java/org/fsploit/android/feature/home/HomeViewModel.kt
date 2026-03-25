@@ -125,8 +125,7 @@ class HomeViewModel(
                 mitmSummary = mitmReadiness.summary,
                 iptablesAvailable = mitmReadiness.iptablesAvailable,
                 tcpdumpAvailable = mitmReadiness.tcpdumpAvailable,
-                arpspoofAvailable = mitmReadiness.arpspoofAvailable,
-                ettercapAvailable = mitmReadiness.ettercapAvailable,
+                bettercapAvailable = mitmReadiness.bettercapAvailable,
                 mitmdumpAvailable = mitmReadiness.mitmdumpAvailable,
                 certificateStoreAccessible = mitmReadiness.certificateStoreAccessible,
                 mitmSession = mitmSession,
@@ -188,21 +187,15 @@ class HomeViewModel(
         _uiState.value = _uiState.value.copy(mitmPayloadInput = value)
     }
 
-    fun updateMitmArpspoofPath(value: String) {
+    fun updateMitmBettercapPath(value: String) {
         _uiState.value = _uiState.value.copy(
-            mitmToolchainConfig = _uiState.value.mitmToolchainConfig.copy(arpspoofPath = value)
+            mitmToolchainConfig = _uiState.value.mitmToolchainConfig.copy(bettercapPath = value)
         )
     }
 
     fun updateMitmTcpdumpPath(value: String) {
         _uiState.value = _uiState.value.copy(
             mitmToolchainConfig = _uiState.value.mitmToolchainConfig.copy(tcpdumpPath = value)
-        )
-    }
-
-    fun updateMitmEttercapPath(value: String) {
-        _uiState.value = _uiState.value.copy(
-            mitmToolchainConfig = _uiState.value.mitmToolchainConfig.copy(ettercapPath = value)
         )
     }
 
@@ -229,9 +222,8 @@ class HomeViewModel(
             return
         }
         if (
-            config.arpspoofPath.trim().isEmpty() ||
+            config.bettercapPath.trim().isEmpty() ||
             config.tcpdumpPath.trim().isEmpty() ||
-            config.ettercapPath.trim().isEmpty() ||
             config.mitmdumpPath.trim().isEmpty()
         ) {
             _uiState.value = _uiState.value.copy(
@@ -249,9 +241,8 @@ class HomeViewModel(
             withContext(Dispatchers.Default) {
                 saveMitmToolchainConfigUseCase(
                     MitmToolchainConfig(
-                        arpspoofPath = config.arpspoofPath.trim(),
+                        bettercapPath = config.bettercapPath.trim(),
                         tcpdumpPath = config.tcpdumpPath.trim(),
-                        ettercapPath = config.ettercapPath.trim(),
                         mitmdumpPath = config.mitmdumpPath.trim(),
                         httpRedirectPort = config.httpRedirectPort
                     )

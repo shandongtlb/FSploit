@@ -37,14 +37,11 @@ class SettingsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.arpspoofPathInput.doAfterTextChanged {
-            viewModel.updateMitmArpspoofPath(it?.toString().orEmpty())
+        binding.bettercapPathInput.doAfterTextChanged {
+            viewModel.updateMitmBettercapPath(it?.toString().orEmpty())
         }
         binding.tcpdumpPathInput.doAfterTextChanged {
             viewModel.updateMitmTcpdumpPath(it?.toString().orEmpty())
-        }
-        binding.ettercapPathInput.doAfterTextChanged {
-            viewModel.updateMitmEttercapPath(it?.toString().orEmpty())
         }
         binding.mitmdumpPathInput.doAfterTextChanged {
             viewModel.updateMitmMitmdumpPath(it?.toString().orEmpty())
@@ -76,15 +73,13 @@ class SettingsFragment : Fragment() {
         )
         binding.mitmToolchainValue.text = getString(
             R.string.settings_mitm_toolchain_value,
-            state.mitmToolchainConfig.arpspoofPath.ifBlank { getString(R.string.settings_not_configured) },
+            state.mitmToolchainConfig.bettercapPath.ifBlank { getString(R.string.settings_not_configured) },
             state.mitmToolchainConfig.tcpdumpPath.ifBlank { getString(R.string.settings_not_configured) },
-            state.mitmToolchainConfig.ettercapPath.ifBlank { getString(R.string.settings_not_configured) },
             state.mitmToolchainConfig.mitmdumpPath.ifBlank { getString(R.string.settings_not_configured) },
             state.mitmToolchainConfig.httpRedirectPort
         )
-        syncInput(binding.arpspoofPathInput, state.mitmToolchainConfig.arpspoofPath)
+        syncInput(binding.bettercapPathInput, state.mitmToolchainConfig.bettercapPath)
         syncInput(binding.tcpdumpPathInput, state.mitmToolchainConfig.tcpdumpPath)
-        syncInput(binding.ettercapPathInput, state.mitmToolchainConfig.ettercapPath)
         syncInput(binding.mitmdumpPathInput, state.mitmToolchainConfig.mitmdumpPath)
         syncInput(binding.httpRedirectPortInput, state.mitmToolchainConfig.httpRedirectPort.toString())
         binding.mitmSettingsSummaryValue.text = state.mitmSettingsSummary

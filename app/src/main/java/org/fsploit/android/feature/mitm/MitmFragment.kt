@@ -93,8 +93,7 @@ class MitmFragment : Fragment() {
         binding.mitmSummaryValue.text = state.mitmSummary
         binding.iptablesValue.text = yesNo(state.iptablesAvailable)
         binding.tcpdumpValue.text = yesNo(state.tcpdumpAvailable)
-        binding.arpspoofValue.text = yesNo(state.arpspoofAvailable)
-        binding.ettercapValue.text = yesNo(state.ettercapAvailable)
+        binding.bettercapValue.text = yesNo(state.bettercapAvailable)
         binding.mitmdumpValue.text = yesNo(state.mitmdumpAvailable)
         binding.caStoreValue.text = yesNo(state.certificateStoreAccessible)
         binding.selectedTargetValue.text = if (state.selectedHostAddress.isBlank()) {
