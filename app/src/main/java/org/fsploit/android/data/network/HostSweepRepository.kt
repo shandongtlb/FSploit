@@ -1,11 +1,20 @@
 package org.fsploit.android.data.network
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import org.fsploit.android.R
 import org.fsploit.android.core.ResourceProvider
 import org.fsploit.android.data.shell.ShellRepository
 import org.fsploit.android.domain.model.HostScanResult
 import org.fsploit.android.domain.model.HostSweepReport
+import java.net.ConnectException
+import java.net.InetSocketAddress
+import java.net.Socket
+import java.net.SocketTimeoutException
 
 class HostSweepRepository(
     private val networkInterfaceRepository: NetworkInterfaceRepository,
@@ -44,14 +53,29 @@ class HostSweepRepository(
         )
     }
 
-    private fun probeHosts(
+    private suspend fun probeHosts(
         interfaceName: String,
         hosts: List<String>
-    ): List<HostScanResult> {
+    ): List<HostScanResult> = coroutineScope {
         if (hosts.isEmpty()) {
-            return emptyList()
+            return@coroutineScope emptyList()
         }
 
+        val neighborResults = runNeighborSweep(interfaceName, hosts)
+        val unresolvedHosts = hosts.filterNot { neighborResults.containsKey(it) }
+        if (unresolvedHosts.isEmpty()) {
+            return@coroutineScope neighborResults.values.sortedBy { it.hostAddress }
+        }
+
+        val tcpResults = runTcpSupplement(unresolvedHosts)
+        return@coroutineScope (neighborResults.values + tcpResults)
+            .sortedBy { it.hostAddress }
+    }
+
+    private fun runNeighborSweep(
+        interfaceName: String,
+        hosts: List<String>
+    ): Map<String, HostScanResult> {
         val shellResult = shellRepository.execute(
             command = buildProbeCommand(interfaceName, hosts),
             asRoot = true,
@@ -63,6 +87,19 @@ class HostSweepRepository(
             output = shellResult.output,
             knownHosts = hosts.toSet()
         )
+    }
+
+    private suspend fun runTcpSupplement(hosts: List<String>): List<HostScanResult> {
+        return coroutineScope {
+            val semaphore = Semaphore(TCP_PROBE_PARALLELISM)
+            hosts.map { host ->
+                async(Dispatchers.IO) {
+                    semaphore.withPermit {
+                        probeTcpReachability(host)
+                    }
+                }
+            }.awaitAll().filterNotNull()
+        }
     }
 
     private fun buildProbeCommand(interfaceName: String, hosts: List<String>): String {
@@ -89,7 +126,7 @@ class HostSweepRepository(
         interfaceName: String,
         output: String,
         knownHosts: Set<String>
-    ): List<HostScanResult> {
+    ): Map<String, HostScanResult> {
         val resultsByHost = linkedMapOf<String, HostScanResult>()
         var section = ""
 
@@ -111,7 +148,7 @@ class HostSweepRepository(
                 }
             }
 
-        return resultsByHost.values.sortedBy { it.hostAddress }
+        return resultsByHost
     }
 
     private fun parseNeighborLine(line: String, knownHosts: Set<String>): HostScanResult? {
@@ -160,6 +197,28 @@ class HostSweepRepository(
         )
     }
 
+    private fun probeTcpReachability(host: String): HostScanResult? {
+        for (port in TCP_SUPPLEMENT_PORTS) {
+            try {
+                Socket().use { socket ->
+                    socket.connect(InetSocketAddress(host, port), TCP_CONNECT_TIMEOUT_MS)
+                    return HostScanResult(
+                        hostAddress = host,
+                        finding = resourceProvider.getString(R.string.host_result_open_tcp, port)
+                    )
+                }
+            } catch (_: ConnectException) {
+                return HostScanResult(
+                    hostAddress = host,
+                    finding = resourceProvider.getString(R.string.host_result_refused_tcp, port)
+                )
+            } catch (_: SocketTimeoutException) {
+            } catch (_: Exception) {
+            }
+        }
+        return null
+    }
+
     private fun shellQuote(value: String): String {
         return "'" + value.replace("'", "'\"'\"'") + "'"
     }
@@ -167,6 +226,9 @@ class HostSweepRepository(
     companion object {
         private const val HOST_SWEEP_TIMEOUT_MS = 45_000L
         private const val PING_BATCH_SIZE = 24
+        private const val TCP_CONNECT_TIMEOUT_MS = 160
+        private const val TCP_PROBE_PARALLELISM = 24
+        private val TCP_SUPPLEMENT_PORTS = intArrayOf(445, 139, 80, 443, 22, 53, 8080, 5555)
         private val IPV4_AT_START = Regex("""^\d{1,3}(?:\.\d{1,3}){3}""")
         private val WHITESPACE_REGEX = Regex("""\s+""")
     }
