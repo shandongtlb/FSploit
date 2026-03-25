@@ -2,6 +2,7 @@ package org.fsploit.android.data.shell
 
 import org.fsploit.android.R
 import org.fsploit.android.core.ResourceProvider
+import org.fsploit.android.domain.model.ShellCommandResult
 import org.fsploit.android.domain.model.ShellStatus
 import java.util.concurrent.TimeUnit
 
@@ -28,6 +29,84 @@ class ShellRepository(
             rootGranted = rootGranted,
             summary = summary
         )
+    }
+
+    fun execute(
+        command: String,
+        asRoot: Boolean,
+        timeoutMs: Long
+    ): ShellCommandResult {
+        val sanitizedCommand = command.trim()
+        if (sanitizedCommand.isEmpty()) {
+            return ShellCommandResult(
+                command = "",
+                output = "",
+                exitCode = null,
+                timedOut = false,
+                executedAsRoot = asRoot,
+                summary = resourceProvider.getString(R.string.shell_command_empty)
+            )
+        }
+
+        return try {
+            val shellBinary = if (asRoot) "su" else "sh"
+            val process = ProcessBuilder(shellBinary, "-c", sanitizedCommand)
+                .redirectErrorStream(true)
+                .start()
+
+            val completed = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)
+            if (!completed) {
+                process.destroyForcibly()
+                ShellCommandResult(
+                    command = sanitizedCommand,
+                    output = "",
+                    exitCode = null,
+                    timedOut = true,
+                    executedAsRoot = asRoot,
+                    summary = resourceProvider.getString(
+                        R.string.shell_command_timed_out,
+                        timeoutMs
+                    )
+                )
+            } else {
+                val output = process.inputStream.bufferedReader().use { it.readText().trim() }
+                val exitCode = process.exitValue()
+                ShellCommandResult(
+                    command = sanitizedCommand,
+                    output = output,
+                    exitCode = exitCode,
+                    timedOut = false,
+                    executedAsRoot = asRoot,
+                    summary = if (exitCode == 0) {
+                        resourceProvider.getString(
+                            R.string.shell_command_success,
+                            if (asRoot) {
+                                resourceProvider.getString(R.string.shell_mode_root)
+                            } else {
+                                resourceProvider.getString(R.string.shell_mode_standard)
+                            }
+                        )
+                    } else {
+                        resourceProvider.getString(
+                            R.string.shell_command_exit_code,
+                            exitCode
+                        )
+                    }
+                )
+            }
+        } catch (exception: Exception) {
+            ShellCommandResult(
+                command = sanitizedCommand,
+                output = exception.stackTraceToString(),
+                exitCode = null,
+                timedOut = false,
+                executedAsRoot = asRoot,
+                summary = resourceProvider.getString(
+                    R.string.shell_command_failed,
+                    exception.javaClass.simpleName
+                )
+            )
+        }
     }
 
     private fun runCommand(vararg command: String): String {

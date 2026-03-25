@@ -5,4 +5,6 @@
     <color name="fsploit_primary">#8FE3C8</color>
     <color name="fsploit_on_primary">#072319</color>
     <color name="fsploit_on_background">#EAF1FF</color>
+    <color name="fsploit_text_primary">#EAF1FF</color>
+    <color name="fsploit_text_secondary">#B8C6E3</color>
 </resources>

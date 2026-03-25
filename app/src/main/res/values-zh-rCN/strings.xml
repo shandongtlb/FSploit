@@ -1,17 +1,20 @@
-<resources>
+﻿<resources>
     <string name="app_name" translatable="false">FSploit</string>
     <string name="app_subtitle">面向现代 Android 的网络操作基础框架</string>
+    <string name="nav_header_subtitle">基于抽屉导航的工作区，承载发现、目标和 shell 工具能力。</string>
 
-    <string name="breadcrumb_separator">/</string>
-    <string name="breadcrumb_root">工作区</string>
-    <string name="breadcrumb_overview">概览</string>
-    <string name="breadcrumb_discovery">发现</string>
-    <string name="breadcrumb_ports">端口</string>
-    <string name="breadcrumb_path">%1$s / %2$s</string>
+    <string name="nav_overview">概览</string>
+    <string name="nav_discovery">发现</string>
+    <string name="nav_target_detail">目标详情</string>
+    <string name="nav_tools">工具</string>
+    <string name="nav_settings">设置</string>
+    <string name="drawer_open">打开导航抽屉</string>
+    <string name="drawer_close">关闭导航抽屉</string>
 
     <string name="section_overview_title">系统概览</string>
     <string name="section_discovery_title">主机发现</string>
-    <string name="section_ports_title">端口侦察</string>
+    <string name="section_target_detail_title">目标详情</string>
+    <string name="section_tools_title">Shell 工具</string>
 
     <string name="permission_summary">权限</string>
     <string name="active_transport">当前传输</string>
@@ -27,9 +30,29 @@
     <string name="target_host">目标主机</string>
     <string name="run_port_scan">执行端口扫描</string>
     <string name="port_scan_summary">端口扫描摘要</string>
-    <string name="port_scan_results">常见 TCP 端口</string>
+    <string name="port_scan_results">端口结果</string>
+    <string name="open_target_detail">打开目标详情</string>
+    <string name="target_detail_summary">正在检查目标 %1$s。</string>
 
-    <string name="permission_summary_pending">正在检查权限…</string>
+    <string name="port_spec_label">端口集</string>
+    <string name="port_timeout_label">超时毫秒</string>
+    <string name="port_parallelism_label">并发度</string>
+    <string name="port_spec_hint">示例：22,80,443 或 20-25,53,8080。单次扫描最多 256 个端口。</string>
+
+    <string name="shell_command_label">Shell 命令</string>
+    <string name="shell_run_as_root">通过 su -c 执行</string>
+    <string name="shell_run_command">执行命令</string>
+    <string name="shell_command_status">命令状态</string>
+    <string name="shell_command_output">命令输出</string>
+
+    <string name="settings_language">语言</string>
+    <string name="settings_preferred_interface">首选网卡</string>
+    <string name="settings_port_profile">端口扫描配置</string>
+    <string name="settings_not_configured">未配置</string>
+    <string name="settings_port_profile_value">端口：%1$s\n超时：%2$s ms\n并发：%3$s</string>
+    <string name="language_follow_system">跟随系统语言。当前支持：英语、简体中文。</string>
+
+    <string name="permission_summary_pending">正在检查权限...</string>
     <string name="permissions_granted">所有必需权限均已授予。</string>
     <string name="permissions_missing">缺少：%1$s</string>
     <string name="permission_location">位置信息</string>
@@ -48,15 +71,25 @@
     <string name="home_not_ready">基础框架已启动，但网络环境尚未准备好执行主动操作。</string>
     <string name="no_interfaces_found">未检测到可用的本地 IPv4 网卡。</string>
 
-    <string name="shell_status_pending">正在探测 shell…</string>
+    <string name="shell_status_pending">正在探测 shell...</string>
     <string name="shell_standard_unavailable">标准 shell 不可用。</string>
     <string name="shell_root_available">Root shell 可用。</string>
     <string name="shell_su_present">检测到 su，但尚未获得 root 授权。</string>
     <string name="shell_no_root_tooling">当前设备不可用 root 工具链。</string>
+    <string name="shell_mode_standard">标准 shell</string>
+    <string name="shell_mode_root">Root shell</string>
+    <string name="shell_command_idle">尚未执行任何命令。</string>
+    <string name="shell_command_running">正在执行 shell 命令...</string>
+    <string name="shell_command_empty">请先输入 shell 命令。</string>
+    <string name="shell_command_no_output">命令执行完成，但没有输出。</string>
+    <string name="shell_command_timed_out">命令在 %1$d ms 后超时。</string>
+    <string name="shell_command_success">已通过 %1$s 成功执行命令。</string>
+    <string name="shell_command_exit_code">命令退出码为 %1$d。</string>
+    <string name="shell_command_failed">命令执行失败：%1$s。</string>
 
     <string name="host_sweep_not_run">尚未执行主机探测。</string>
     <string name="host_sweep_unavailable">当前没有可用于主机探测的 IPv4 网卡。</string>
-    <string name="host_sweep_running">正在执行主机探测…</string>
+    <string name="host_sweep_running">正在执行主机探测...</string>
     <string name="host_sweep_none">已在 %1$s 上完成探测，采样范围内未发现响应主机。</string>
     <string name="host_sweep_found">已在 %1$s 上完成探测，发现 %2$d 台响应主机。</string>
     <string name="host_result_open_tcp">开放 tcp/%1$d</string>
@@ -67,10 +100,13 @@
     <string name="port_scan_not_run">尚未执行端口扫描。</string>
     <string name="port_scan_no_selected_host">当前没有选中的响应主机可供端口扫描。</string>
     <string name="port_scan_select_target">请先选择一个响应主机，再执行端口扫描。</string>
-    <string name="port_scan_ready">已准备扫描 %1$s 的常见端口。</string>
-    <string name="port_scan_running">正在扫描 %1$s 的常见 TCP 端口…</string>
-    <string name="port_scan_no_open">在 %1$s 上未发现常见开放 TCP 端口。</string>
-    <string name="port_scan_found_open">在 %2$s 上发现 %1$d 个开放 TCP 端口。</string>
+    <string name="port_scan_ready">已准备在 %1$s 上扫描当前配置的端口集。</string>
+    <string name="port_scan_running">正在扫描 %1$s 的配置 TCP 端口...</string>
+    <string name="port_scan_no_open">在 %1$s 上的 %2$d 个请求端口中未发现开放 TCP 端口。</string>
+    <string name="port_scan_found_open">在 %2$s 上的 %3$d 个请求端口中发现 %1$d 个开放 TCP 端口。</string>
+    <string name="port_scan_config_invalid">端口扫描配置无效。</string>
+    <string name="port_scan_timeout_invalid">超时必须在 100 到 5000 ms 之间。</string>
+    <string name="port_scan_parallelism_invalid">并发度必须在 1 到 64 之间。</string>
     <string name="no_target_hosts">请先执行主机探测以填充响应目标。</string>
     <string name="no_port_scan_results">当前还没有端口扫描结果。</string>
     <string name="port_note_accepted_connection">接受连接</string>
@@ -80,12 +116,17 @@
     <string name="port_state_open">开放</string>
     <string name="port_state_closed">关闭</string>
     <string name="port_state_filtered">过滤</string>
+    <string name="port_spec_empty">端口集不能为空。</string>
+    <string name="port_spec_token_invalid">无效的端口项：%1$s。</string>
+    <string name="port_spec_range_invalid">无效的端口范围：%1$s。</string>
+    <string name="port_spec_range_too_large">端口范围过大：%1$s。</string>
+    <string name="port_spec_port_out_of_range">端口超出范围：%1$d。</string>
+    <string name="port_spec_too_many">请求端口过多。单次扫描最多 256 个端口。</string>
 
     <string name="category_wifi">Wi-Fi</string>
     <string name="category_ethernet">以太网</string>
     <string name="category_usb">USB</string>
     <string name="category_other">其他</string>
 
-    <string name="discovery_hint">选择采集网卡并保存，然后对本地子网执行主机探测。</string>
-    <string name="ports_hint">从主机发现结果中选择目标，再扫描一组常见 TCP 端口。</string>
+    <string name="discovery_hint">选择采集网卡并保存，扫描本地子网，然后打开某个目标进入更深入的检查。</string>
 </resources>

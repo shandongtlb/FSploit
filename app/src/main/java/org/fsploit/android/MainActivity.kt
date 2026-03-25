@@ -4,231 +4,151 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.widget.ArrayAdapter
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.activity.OnBackPressedCallback
+import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.core.view.isVisible
+import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
-import kotlinx.coroutines.launch
-import org.fsploit.android.core.AndroidResourceProvider
-import org.fsploit.android.data.network.HostSweepRepository
-import org.fsploit.android.data.network.NetworkInterfaceRepository
-import org.fsploit.android.data.network.PortScanRepository
-import org.fsploit.android.data.settings.AppPreferencesRepository
-import org.fsploit.android.data.shell.ShellRepository
 import org.fsploit.android.databinding.ActivityMainBinding
-import org.fsploit.android.domain.model.InterfaceCategory
-import org.fsploit.android.domain.usecase.GetPreferredInterfaceUseCase
-import org.fsploit.android.domain.usecase.LoadNetworkOverviewUseCase
-import org.fsploit.android.domain.usecase.ProbeShellUseCase
-import org.fsploit.android.domain.usecase.RunHostSweepUseCase
-import org.fsploit.android.domain.usecase.RunPortScanUseCase
-import org.fsploit.android.domain.usecase.SavePreferredInterfaceUseCase
-import org.fsploit.android.feature.home.HomeSection
-import org.fsploit.android.feature.home.HomeUiState
+import org.fsploit.android.feature.discovery.DiscoveryFragment
 import org.fsploit.android.feature.home.HomeViewModel
+import org.fsploit.android.feature.overview.OverviewFragment
+import org.fsploit.android.feature.settings.SettingsFragment
+import org.fsploit.android.feature.target.TargetDetailFragment
+import org.fsploit.android.feature.tools.ToolsFragment
 
 class MainActivity : AppCompatActivity() {
 
+    lateinit var viewModelFactory: ViewModelProvider.Factory
+        private set
+
     private lateinit var binding: ActivityMainBinding
+    private lateinit var drawerToggle: ActionBarDrawerToggle
+    private var currentScreen: MainScreen = MainScreen.OVERVIEW
 
-    private val viewModel: HomeViewModel by viewModels {
-        object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                val resourceProvider = AndroidResourceProvider(applicationContext)
-                val networkRepository = NetworkInterfaceRepository(applicationContext, resourceProvider)
-                val shellRepository = ShellRepository(resourceProvider)
-                val preferencesRepository = AppPreferencesRepository(applicationContext)
-
-                return HomeViewModel(
-                    resourceProvider = resourceProvider,
-                    loadNetworkOverview = LoadNetworkOverviewUseCase(networkRepository),
-                    getPreferredInterface = GetPreferredInterfaceUseCase(preferencesRepository),
-                    savePreferredInterfaceUseCase = SavePreferredInterfaceUseCase(preferencesRepository),
-                    probeShell = ProbeShellUseCase(shellRepository),
-                    runHostSweep = RunHostSweepUseCase(
-                        HostSweepRepository(networkRepository, resourceProvider)
-                    ),
-                    runPortScanUseCase = RunPortScanUseCase(PortScanRepository(resourceProvider))
-                ) as T
-            }
-        }
-    }
+    private val viewModel: HomeViewModel by viewModels { viewModelFactory }
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) {
-        refresh()
+        refreshFromUi()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val appContainer = (application as FSploitApp).appContainer
+        viewModelFactory = appContainer.homeViewModelFactory
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        setSupportActionBar(binding.toolbar)
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+        drawerToggle = ActionBarDrawerToggle(
+            this,
+            binding.drawerLayout,
+            binding.toolbar,
+            R.string.drawer_open,
+            R.string.drawer_close
+        )
+        binding.drawerLayout.addDrawerListener(drawerToggle)
+        drawerToggle.syncState()
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.drawerLayout) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            binding.contentContainer.setPadding(0, bars.top, 0, bars.bottom)
+            binding.navigationView.setPadding(0, bars.top, 0, bars.bottom)
             insets
         }
 
-        binding.requestPermissionsButton.setOnClickListener {
-            requestRequiredPermissions()
+        binding.navigationView.setNavigationItemSelectedListener { item ->
+            MainScreen.fromMenuItemId(item.itemId)?.let { openScreen(it) }
+            binding.drawerLayout.closeDrawer(GravityCompat.START)
+            true
         }
-        binding.saveInterfaceButton.setOnClickListener {
-            viewModel.savePreferredInterface(binding.preferredInterfaceInput.text?.toString().orEmpty())
-        }
-        binding.runSweepButton.setOnClickListener {
-            viewModel.savePreferredInterface(binding.preferredInterfaceInput.text?.toString().orEmpty())
-            viewModel.runSweep()
-        }
-        binding.runPortScanButton.setOnClickListener {
-            viewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
-            viewModel.runPortScan()
-        }
-        binding.refreshButton.setOnClickListener {
-            refresh()
-        }
-        binding.breadcrumbOverviewButton.setOnClickListener {
-            viewModel.selectSection(HomeSection.OVERVIEW)
-        }
-        binding.breadcrumbDiscoveryButton.setOnClickListener {
-            viewModel.selectSection(HomeSection.DISCOVERY)
-        }
-        binding.breadcrumbPortsButton.setOnClickListener {
-            viewModel.selectSection(HomeSection.PORTS)
-        }
-        binding.targetHostInput.setOnItemClickListener { _, _, position, _ ->
-            val selected = binding.targetHostInput.adapter.getItem(position)?.toString().orEmpty()
-            viewModel.selectHost(selected)
-        }
-
-        lifecycleScope.launch {
-            repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
-                viewModel.uiState.collect(::render)
-            }
-        }
-
-        if (!hasAllRequiredPermissions()) {
-            requestRequiredPermissions()
-        } else {
-            refresh()
-        }
-    }
-
-    private fun render(state: HomeUiState) {
-        val sectionTitle = when (state.selectedSection) {
-            HomeSection.OVERVIEW -> getString(R.string.section_overview_title)
-            HomeSection.DISCOVERY -> getString(R.string.section_discovery_title)
-            HomeSection.PORTS -> getString(R.string.section_ports_title)
-        }
-
-        binding.breadcrumbValue.text = getString(
-            R.string.breadcrumb_path,
-            getString(R.string.breadcrumb_root),
-            sectionTitle
-        )
-        binding.sectionTitleValue.text = sectionTitle
-        binding.overviewSection.isVisible = state.selectedSection == HomeSection.OVERVIEW
-        binding.discoverySection.isVisible = state.selectedSection == HomeSection.DISCOVERY
-        binding.portsSection.isVisible = state.selectedSection == HomeSection.PORTS
-        binding.breadcrumbOverviewButton.isEnabled = state.selectedSection != HomeSection.OVERVIEW
-        binding.breadcrumbDiscoveryButton.isEnabled = state.selectedSection != HomeSection.DISCOVERY
-        binding.breadcrumbPortsButton.isEnabled = state.selectedSection != HomeSection.PORTS
-
-        binding.permissionSummaryValue.text = state.permissionSummary
-        binding.activeTransportValue.text = state.activeTransportLabel
-        binding.statusMessage.text = state.statusMessage
-        binding.discoveryHint.text = getString(R.string.discovery_hint)
-        binding.portsHint.text = getString(R.string.ports_hint)
-        binding.shellSummaryValue.text = state.shellSummary
-        binding.requestPermissionsButton.isEnabled = !hasAllRequiredPermissions()
-        binding.runSweepButton.isEnabled = state.canContinue && !state.isScanning
-        binding.saveInterfaceButton.isEnabled = state.interfaces.isNotEmpty()
-        binding.runPortScanButton.isEnabled = state.canContinue &&
-            state.selectedHostAddress.isNotBlank() &&
-            !state.isScanning &&
-            !state.isPortScanning
-        binding.continueHint.text = if (state.canContinue) {
-            getString(R.string.home_ready)
-        } else {
-            getString(R.string.home_not_ready)
-        }
-
-        binding.interfaceListValue.text = if (state.interfaces.isEmpty()) {
-            getString(R.string.no_interfaces_found)
-        } else {
-            state.interfaces.joinToString(separator = "\n\n") { info ->
-                val label = when (info.category) {
-                    InterfaceCategory.WIFI -> getString(R.string.category_wifi)
-                    InterfaceCategory.ETHERNET -> getString(R.string.category_ethernet)
-                    InterfaceCategory.USB -> getString(R.string.category_usb)
-                    InterfaceCategory.OTHER -> getString(R.string.category_other)
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    binding.drawerLayout.closeDrawer(GravityCompat.START)
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                    isEnabled = true
                 }
-                "$label: ${info.name}\n${info.addresses.joinToString()}"
             }
-        }
+        })
 
-        val interfaceNames = state.interfaces.map { it.name }
-        binding.preferredInterfaceInput.setAdapter(
-            ArrayAdapter(
-                this,
-                android.R.layout.simple_dropdown_item_1line,
-                interfaceNames
-            )
-        )
-        if (binding.preferredInterfaceInput.text?.toString() != state.preferredInterfaceName) {
-            binding.preferredInterfaceInput.setText(state.preferredInterfaceName, false)
-        }
-        binding.preferredInterfaceInput.isEnabled = state.interfaces.isNotEmpty()
+        currentScreen = savedInstanceState?.getString(KEY_SCREEN)
+            ?.let(MainScreen::valueOf)
+            ?: MainScreen.OVERVIEW
 
-        binding.scanSummaryValue.text = state.scanSummary
-        binding.scanResultsValue.text = if (state.scanResults.isEmpty()) {
-            getString(R.string.no_scan_results)
+        if (savedInstanceState == null) {
+            openScreen(currentScreen, commitNow = true)
         } else {
-            state.scanResults.joinToString(separator = "\n")
+            updateScreenUi(currentScreen)
         }
 
-        binding.targetHostInput.setAdapter(
-            ArrayAdapter(
-                this,
-                android.R.layout.simple_dropdown_item_1line,
-                state.responsiveHosts
-            )
-        )
-        if (binding.targetHostInput.text?.toString() != state.selectedHostAddress) {
-            binding.targetHostInput.setText(state.selectedHostAddress, false)
-        }
-        binding.targetHostInput.isEnabled = state.responsiveHosts.isNotEmpty()
-
-        binding.portScanSummaryValue.text = state.portScanSummary
-        binding.portScanResultsValue.text = if (state.portScanResults.isEmpty()) {
-            if (state.responsiveHosts.isEmpty()) {
-                getString(R.string.no_target_hosts)
-            } else {
-                getString(R.string.no_port_scan_results)
-            }
+        if (!hasAllRequiredPermissionsForUi()) {
+            requestPermissionsFromUi()
         } else {
-            state.portScanResults.joinToString(separator = "\n")
+            refreshFromUi()
         }
     }
 
-    private fun refresh() {
+    override fun onResume() {
+        super.onResume()
+        refreshFromUi()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(KEY_SCREEN, currentScreen.name)
+    }
+
+    fun openScreen(screen: MainScreen, commitNow: Boolean = false) {
+        currentScreen = screen
+        updateScreenUi(screen)
+        val fragment = when (screen) {
+            MainScreen.OVERVIEW -> OverviewFragment()
+            MainScreen.DISCOVERY -> DiscoveryFragment()
+            MainScreen.TARGET_DETAIL -> TargetDetailFragment()
+            MainScreen.TOOLS -> ToolsFragment()
+            MainScreen.SETTINGS -> SettingsFragment()
+        }
+
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.contentFrame, fragment, screen.name)
+            .run {
+                if (commitNow) commitNow() else commit()
+            }
+    }
+
+    fun requestPermissionsFromUi() {
+        val missing = missingPermissions()
+        if (missing.isNotEmpty()) {
+            permissionLauncher.launch(missing.toTypedArray())
+        }
+    }
+
+    fun refreshFromUi() {
         viewModel.refresh(
             permissionSummary = buildPermissionSummary(),
-            permissionsGranted = hasAllRequiredPermissions()
+            permissionsGranted = hasAllRequiredPermissionsForUi()
         )
+    }
+
+    fun hasAllRequiredPermissionsForUi(): Boolean = missingPermissions().isEmpty()
+
+    private fun updateScreenUi(screen: MainScreen) {
+        binding.navigationView.setCheckedItem(screen.menuItemId)
+        supportActionBar?.title = getString(screen.titleRes)
+        supportActionBar?.subtitle = getString(R.string.app_subtitle)
     }
 
     private fun buildPermissionSummary(): String {
@@ -237,15 +157,6 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.permissions_granted)
         } else {
             getString(R.string.permissions_missing, missing.joinToString())
-        }
-    }
-
-    private fun hasAllRequiredPermissions(): Boolean = missingPermissions().isEmpty()
-
-    private fun requestRequiredPermissions() {
-        val missing = missingPermissions()
-        if (missing.isNotEmpty()) {
-            permissionLauncher.launch(missing.toTypedArray())
         }
     }
 
@@ -269,9 +180,15 @@ class MainActivity : AppCompatActivity() {
         return when (permission) {
             Manifest.permission.ACCESS_FINE_LOCATION ->
                 getString(R.string.permission_location)
+
             Manifest.permission.NEARBY_WIFI_DEVICES ->
                 getString(R.string.permission_nearby_wifi)
+
             else -> permission
         }
+    }
+
+    companion object {
+        private const val KEY_SCREEN = "screen"
     }
 }
