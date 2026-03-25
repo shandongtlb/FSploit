@@ -13,12 +13,14 @@ import org.fsploit.android.core.ResourceProvider
 import org.fsploit.android.core.ShellTaskPreset
 import org.fsploit.android.domain.model.MitmLaunchRequest
 import org.fsploit.android.domain.model.MitmMode
+import org.fsploit.android.domain.model.MitmToolchainConfig
 import org.fsploit.android.domain.model.PortScanConfig
 import org.fsploit.android.domain.model.PortState
 import org.fsploit.android.domain.usecase.BlockHostUseCase
 import org.fsploit.android.domain.usecase.GetPreferredInterfaceUseCase
 import org.fsploit.android.domain.usecase.LoadMitmReadinessUseCase
 import org.fsploit.android.domain.usecase.LoadMitmSessionUseCase
+import org.fsploit.android.domain.usecase.LoadMitmToolchainConfigUseCase
 import org.fsploit.android.domain.usecase.LoadNetworkOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadPortScanConfigUseCase
 import org.fsploit.android.domain.usecase.ProbeShellUseCase
@@ -27,6 +29,7 @@ import org.fsploit.android.domain.usecase.RunPortScanUseCase
 import org.fsploit.android.domain.usecase.RunShellCommandUseCase
 import org.fsploit.android.domain.usecase.SavePortScanConfigUseCase
 import org.fsploit.android.domain.usecase.SavePreferredInterfaceUseCase
+import org.fsploit.android.domain.usecase.SaveMitmToolchainConfigUseCase
 import org.fsploit.android.domain.usecase.StartMitmSessionUseCase
 import org.fsploit.android.domain.usecase.StopMitmSessionUseCase
 import org.fsploit.android.domain.usecase.UnblockHostUseCase
@@ -42,11 +45,13 @@ class HomeViewModel(
     private val probeShell: ProbeShellUseCase,
     private val loadMitmReadinessUseCase: LoadMitmReadinessUseCase,
     private val loadMitmSessionUseCase: LoadMitmSessionUseCase,
+    private val loadMitmToolchainConfigUseCase: LoadMitmToolchainConfigUseCase,
     private val runHostSweep: RunHostSweepUseCase,
     private val runPortScanUseCase: RunPortScanUseCase,
     private val runShellCommandUseCase: RunShellCommandUseCase,
     private val blockHostUseCase: BlockHostUseCase,
     private val unblockHostUseCase: UnblockHostUseCase,
+    private val saveMitmToolchainConfigUseCase: SaveMitmToolchainConfigUseCase,
     private val startMitmSessionUseCase: StartMitmSessionUseCase,
     private val stopMitmSessionUseCase: StopMitmSessionUseCase
 ) : ViewModel() {
@@ -63,6 +68,7 @@ class HomeViewModel(
             rootGateSummary = resourceProvider.getString(R.string.root_gate_pending),
             mitmSummary = resourceProvider.getString(R.string.mitm_pending),
             mitmSessionSummary = resourceProvider.getString(R.string.mitm_session_idle),
+            mitmSettingsSummary = resourceProvider.getString(R.string.mitm_settings_idle),
             portScanSummary = resourceProvider.getString(R.string.port_scan_not_run),
             connectionBlockSummary = resourceProvider.getString(R.string.block_idle),
             selectedShellTaskLabel = resourceProvider.getString(R.string.shell_task_custom),
@@ -78,6 +84,7 @@ class HomeViewModel(
             val shellStatus = probeShell()
             val mitmReadiness = loadMitmReadinessUseCase(shellStatus)
             val mitmSession = loadMitmSessionUseCase()
+            val mitmToolchainConfig = loadMitmToolchainConfigUseCase()
             val currentState = _uiState.value
             val preferredInterfaceName = getPreferredInterface()
                 .takeIf { it.isNotBlank() }
@@ -126,6 +133,10 @@ class HomeViewModel(
                 mitmSessionSummary = mitmSession.summary.ifBlank {
                     resourceProvider.getString(R.string.mitm_session_idle)
                 },
+                mitmToolchainConfig = mitmToolchainConfig,
+                mitmSettingsSummary = currentState.mitmSettingsSummary.ifBlank {
+                    resourceProvider.getString(R.string.mitm_settings_idle)
+                },
                 scannedPortResults = currentState.scannedPortResults,
                 selectedPortResultFilter = currentState.selectedPortResultFilter,
                 isPortScanning = false,
@@ -135,6 +146,7 @@ class HomeViewModel(
                 },
                 isBlockingConnection = false,
                 isStartingMitmSession = false,
+                isSavingMitmToolchainConfig = false,
                 selectedShellTaskLabel = currentState.selectedShellTaskLabel,
                 selectedShellTaskDescription = currentState.selectedShellTaskDescription,
                 isExecutingShell = false
@@ -174,6 +186,83 @@ class HomeViewModel(
 
     fun updateMitmPayloadInput(value: String) {
         _uiState.value = _uiState.value.copy(mitmPayloadInput = value)
+    }
+
+    fun updateMitmArpspoofPath(value: String) {
+        _uiState.value = _uiState.value.copy(
+            mitmToolchainConfig = _uiState.value.mitmToolchainConfig.copy(arpspoofPath = value)
+        )
+    }
+
+    fun updateMitmTcpdumpPath(value: String) {
+        _uiState.value = _uiState.value.copy(
+            mitmToolchainConfig = _uiState.value.mitmToolchainConfig.copy(tcpdumpPath = value)
+        )
+    }
+
+    fun updateMitmEttercapPath(value: String) {
+        _uiState.value = _uiState.value.copy(
+            mitmToolchainConfig = _uiState.value.mitmToolchainConfig.copy(ettercapPath = value)
+        )
+    }
+
+    fun updateMitmMitmdumpPath(value: String) {
+        _uiState.value = _uiState.value.copy(
+            mitmToolchainConfig = _uiState.value.mitmToolchainConfig.copy(mitmdumpPath = value)
+        )
+    }
+
+    fun updateMitmHttpRedirectPort(value: String) {
+        val parsed = value.trim().toIntOrNull() ?: 0
+        _uiState.value = _uiState.value.copy(
+            mitmToolchainConfig = _uiState.value.mitmToolchainConfig.copy(httpRedirectPort = parsed)
+        )
+    }
+
+    fun saveMitmToolchainConfig() {
+        val config = _uiState.value.mitmToolchainConfig
+        val port = config.httpRedirectPort
+        if (port !in 1..65535) {
+            _uiState.value = _uiState.value.copy(
+                mitmSettingsSummary = resourceProvider.getString(R.string.mitm_redirect_port_invalid)
+            )
+            return
+        }
+        if (
+            config.arpspoofPath.trim().isEmpty() ||
+            config.tcpdumpPath.trim().isEmpty() ||
+            config.ettercapPath.trim().isEmpty() ||
+            config.mitmdumpPath.trim().isEmpty()
+        ) {
+            _uiState.value = _uiState.value.copy(
+                mitmSettingsSummary = resourceProvider.getString(R.string.mitm_settings_paths_required)
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isSavingMitmToolchainConfig = true,
+                mitmSettingsSummary = resourceProvider.getString(R.string.mitm_settings_saving)
+            )
+
+            withContext(Dispatchers.Default) {
+                saveMitmToolchainConfigUseCase(
+                    MitmToolchainConfig(
+                        arpspoofPath = config.arpspoofPath.trim(),
+                        tcpdumpPath = config.tcpdumpPath.trim(),
+                        ettercapPath = config.ettercapPath.trim(),
+                        mitmdumpPath = config.mitmdumpPath.trim(),
+                        httpRedirectPort = config.httpRedirectPort
+                    )
+                )
+            }
+
+            _uiState.value = _uiState.value.copy(
+                isSavingMitmToolchainConfig = false,
+                mitmSettingsSummary = resourceProvider.getString(R.string.mitm_settings_saved)
+            )
+        }
     }
 
     fun startMitmSession() {

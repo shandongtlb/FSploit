@@ -5,6 +5,7 @@ import org.fsploit.android.domain.model.HostScanResult
 import org.fsploit.android.domain.model.MitmReadiness
 import org.fsploit.android.domain.model.MitmMode
 import org.fsploit.android.domain.model.MitmSession
+import org.fsploit.android.domain.model.MitmToolchainConfig
 import org.fsploit.android.domain.model.PortScanResult
 import org.fsploit.android.feature.target.PortResultFilter
 
@@ -44,6 +45,9 @@ data class HomeUiState(
     val mitmSession: MitmSession = MitmSession(),
     val mitmSessionSummary: String = "",
     val isStartingMitmSession: Boolean = false,
+    val mitmToolchainConfig: MitmToolchainConfig = MitmToolchainConfig(),
+    val mitmSettingsSummary: String = "",
+    val isSavingMitmToolchainConfig: Boolean = false,
     val portScanSummary: String = "",
     val scannedPortResults: List<PortScanResult> = emptyList(),
     val portScanResults: List<String> = emptyList(),

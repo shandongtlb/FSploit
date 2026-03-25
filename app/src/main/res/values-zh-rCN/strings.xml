@@ -133,6 +133,14 @@
     <string name="settings_language">语言</string>
     <string name="settings_preferred_interface">首选网卡</string>
     <string name="settings_port_profile">端口扫描配置</string>
+    <string name="settings_mitm_toolchain">MITM 工具链</string>
+    <string name="settings_mitm_arpspoof">arpspoof 路径</string>
+    <string name="settings_mitm_tcpdump">tcpdump 路径</string>
+    <string name="settings_mitm_ettercap">ettercap 路径</string>
+    <string name="settings_mitm_mitmdump">mitmdump 路径</string>
+    <string name="settings_mitm_redirect_port">HTTP 重定向端口</string>
+    <string name="settings_mitm_save">保存 MITM 设置</string>
+    <string name="settings_mitm_toolchain_value">arpspoof：%1$s\ntcpdump：%2$s\nettercap：%3$s\nmitmdump：%4$s\nHTTP 重定向端口：%5$d</string>
     <string name="settings_not_configured">未配置</string>
     <string name="settings_port_profile_value">端口：%1$s\n超时：%2$s ms\n并发：%3$s</string>
     <string name="language_follow_system">跟随系统语言。当前支持：英语、简体中文。</string>
@@ -237,6 +245,10 @@
     <string name="mitm_filter_rules_required">请至少输入一条自定义过滤规则。</string>
     <string name="mitm_filter_rule_invalid">无效的自定义过滤规则：%1$s</string>
     <string name="mitm_mode_not_supported">当前后端不支持这个 MITM 模式。</string>
+    <string name="mitm_settings_idle">当前没有待保存的 MITM 设置改动。</string>
+    <string name="mitm_settings_saving">正在保存 MITM 工具链设置...</string>
+    <string name="mitm_settings_saved">MITM 工具链设置已保存。</string>
+    <string name="mitm_settings_paths_required">所有 MITM 工具路径字段都必须填写。</string>
     <string name="block_idle">当前还没有执行任何连接阻断动作。</string>
     <string name="block_select_target_first">修改防火墙规则前请先选择目标主机。</string>
     <string name="block_running">正在为 %1$s 应用 DROP 规则...</string>

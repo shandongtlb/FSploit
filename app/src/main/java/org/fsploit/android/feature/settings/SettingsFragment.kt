@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
@@ -36,6 +37,25 @@ class SettingsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        binding.arpspoofPathInput.doAfterTextChanged {
+            viewModel.updateMitmArpspoofPath(it?.toString().orEmpty())
+        }
+        binding.tcpdumpPathInput.doAfterTextChanged {
+            viewModel.updateMitmTcpdumpPath(it?.toString().orEmpty())
+        }
+        binding.ettercapPathInput.doAfterTextChanged {
+            viewModel.updateMitmEttercapPath(it?.toString().orEmpty())
+        }
+        binding.mitmdumpPathInput.doAfterTextChanged {
+            viewModel.updateMitmMitmdumpPath(it?.toString().orEmpty())
+        }
+        binding.httpRedirectPortInput.doAfterTextChanged {
+            viewModel.updateMitmHttpRedirectPort(it?.toString().orEmpty())
+        }
+        binding.saveMitmSettingsButton.setOnClickListener {
+            viewModel.saveMitmToolchainConfig()
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                 viewModel.uiState.collect(::render)
@@ -54,6 +74,28 @@ class SettingsFragment : Fragment() {
             state.connectTimeoutMs.ifBlank { "-" },
             state.parallelism.ifBlank { "-" }
         )
+        binding.mitmToolchainValue.text = getString(
+            R.string.settings_mitm_toolchain_value,
+            state.mitmToolchainConfig.arpspoofPath.ifBlank { getString(R.string.settings_not_configured) },
+            state.mitmToolchainConfig.tcpdumpPath.ifBlank { getString(R.string.settings_not_configured) },
+            state.mitmToolchainConfig.ettercapPath.ifBlank { getString(R.string.settings_not_configured) },
+            state.mitmToolchainConfig.mitmdumpPath.ifBlank { getString(R.string.settings_not_configured) },
+            state.mitmToolchainConfig.httpRedirectPort
+        )
+        syncInput(binding.arpspoofPathInput, state.mitmToolchainConfig.arpspoofPath)
+        syncInput(binding.tcpdumpPathInput, state.mitmToolchainConfig.tcpdumpPath)
+        syncInput(binding.ettercapPathInput, state.mitmToolchainConfig.ettercapPath)
+        syncInput(binding.mitmdumpPathInput, state.mitmToolchainConfig.mitmdumpPath)
+        syncInput(binding.httpRedirectPortInput, state.mitmToolchainConfig.httpRedirectPort.toString())
+        binding.mitmSettingsSummaryValue.text = state.mitmSettingsSummary
+        binding.saveMitmSettingsButton.isEnabled = !state.isSavingMitmToolchainConfig
+    }
+
+    private fun syncInput(input: com.google.android.material.textfield.TextInputEditText, value: String) {
+        if (input.text?.toString() != value) {
+            input.setText(value)
+            input.setSelection(input.text?.length ?: 0)
+        }
     }
 
     override fun onDestroyView() {
