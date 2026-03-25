@@ -4,6 +4,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import org.fsploit.android.R
+import org.fsploit.android.core.ResourceProvider
 import org.fsploit.android.domain.model.PortScanReport
 import org.fsploit.android.domain.model.PortScanResult
 import org.fsploit.android.domain.model.PortState
@@ -12,7 +14,9 @@ import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.SocketTimeoutException
 
-class PortScanRepository {
+class PortScanRepository(
+    private val resourceProvider: ResourceProvider
+) {
     suspend fun scanCommonPorts(hostAddress: String): PortScanReport = coroutineScope {
         val targets = listOf(
             21 to "ftp",
@@ -41,9 +45,9 @@ class PortScanRepository {
 
         val openPorts = results.filter { it.state == PortState.OPEN }
         val summary = if (openPorts.isEmpty()) {
-            "No common open TCP ports were found on $hostAddress."
+            resourceProvider.getString(R.string.port_scan_no_open, hostAddress)
         } else {
-            "Found ${openPorts.size} open TCP port(s) on $hostAddress."
+            resourceProvider.getString(R.string.port_scan_found_open, openPorts.size, hostAddress)
         }
 
         PortScanReport(
@@ -61,7 +65,7 @@ class PortScanRepository {
                     port = port,
                     protocol = protocol,
                     state = PortState.OPEN,
-                    note = "accepted connection"
+                    note = resourceProvider.getString(R.string.port_note_accepted_connection)
                 )
             }
         } catch (_: ConnectException) {
@@ -69,21 +73,24 @@ class PortScanRepository {
                 port = port,
                 protocol = protocol,
                 state = PortState.CLOSED,
-                note = "actively refused"
+                note = resourceProvider.getString(R.string.port_note_actively_refused)
             )
         } catch (_: SocketTimeoutException) {
             PortScanResult(
                 port = port,
                 protocol = protocol,
                 state = PortState.FILTERED,
-                note = "timed out"
+                note = resourceProvider.getString(R.string.port_note_timed_out)
             )
         } catch (exception: Exception) {
             PortScanResult(
                 port = port,
                 protocol = protocol,
                 state = PortState.FILTERED,
-                note = exception.javaClass.simpleName
+                note = resourceProvider.getString(
+                    R.string.port_note_exception,
+                    exception.javaClass.simpleName
+                )
             )
         }
     }

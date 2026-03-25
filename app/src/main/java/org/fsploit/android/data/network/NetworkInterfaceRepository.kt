@@ -3,6 +3,8 @@ package org.fsploit.android.data.network
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import org.fsploit.android.R
+import org.fsploit.android.core.ResourceProvider
 import org.fsploit.android.domain.model.InterfaceCategory
 import org.fsploit.android.domain.model.NetworkInterfaceInfo
 import org.fsploit.android.domain.model.NetworkOverview
@@ -13,7 +15,8 @@ import java.net.NetworkInterface
 import kotlin.math.max
 
 class NetworkInterfaceRepository(
-    context: Context
+    context: Context,
+    private val resourceProvider: ResourceProvider
 ) {
     private val appContext = context.applicationContext
     private val connectivityManager =
@@ -36,9 +39,9 @@ class NetworkInterfaceRepository(
 
         val activeTransportLabel = buildActiveTransportLabel()
         val statusMessage = if (interfaces.isEmpty()) {
-            "No usable local IPv4 interface was found. Wi-Fi, Ethernet, or USB tethering must be active."
+            resourceProvider.getString(R.string.status_no_interface)
         } else {
-            "Ready to build scanners and tooling on top of ${interfaces.first().name}."
+            resourceProvider.getString(R.string.status_ready_on_interface, interfaces.first().name)
         }
 
         return NetworkOverview(
@@ -50,14 +53,18 @@ class NetworkInterfaceRepository(
 
     private fun buildActiveTransportLabel(): String {
         val capabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
-            ?: return "Offline"
+            ?: return resourceProvider.getString(R.string.transport_offline)
 
         return when {
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "Wi-Fi"
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "Ethernet / USB"
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "Cellular"
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN) -> "VPN"
-            else -> "Connected"
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ->
+                resourceProvider.getString(R.string.transport_wifi)
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) ->
+                resourceProvider.getString(R.string.transport_ethernet_usb)
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ->
+                resourceProvider.getString(R.string.transport_cellular)
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN) ->
+                resourceProvider.getString(R.string.transport_vpn)
+            else -> resourceProvider.getString(R.string.transport_connected)
         }
     }
 

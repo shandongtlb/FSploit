@@ -10,6 +10,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModel
@@ -17,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
+import org.fsploit.android.core.AndroidResourceProvider
 import org.fsploit.android.data.network.HostSweepRepository
 import org.fsploit.android.data.network.NetworkInterfaceRepository
 import org.fsploit.android.data.network.PortScanRepository
@@ -30,6 +32,7 @@ import org.fsploit.android.domain.usecase.ProbeShellUseCase
 import org.fsploit.android.domain.usecase.RunHostSweepUseCase
 import org.fsploit.android.domain.usecase.RunPortScanUseCase
 import org.fsploit.android.domain.usecase.SavePreferredInterfaceUseCase
+import org.fsploit.android.feature.home.HomeSection
 import org.fsploit.android.feature.home.HomeUiState
 import org.fsploit.android.feature.home.HomeViewModel
 
@@ -41,17 +44,21 @@ class MainActivity : AppCompatActivity() {
         object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                val networkRepository = NetworkInterfaceRepository(applicationContext)
-                val shellRepository = ShellRepository()
+                val resourceProvider = AndroidResourceProvider(applicationContext)
+                val networkRepository = NetworkInterfaceRepository(applicationContext, resourceProvider)
+                val shellRepository = ShellRepository(resourceProvider)
                 val preferencesRepository = AppPreferencesRepository(applicationContext)
 
                 return HomeViewModel(
+                    resourceProvider = resourceProvider,
                     loadNetworkOverview = LoadNetworkOverviewUseCase(networkRepository),
                     getPreferredInterface = GetPreferredInterfaceUseCase(preferencesRepository),
                     savePreferredInterfaceUseCase = SavePreferredInterfaceUseCase(preferencesRepository),
                     probeShell = ProbeShellUseCase(shellRepository),
-                    runHostSweep = RunHostSweepUseCase(HostSweepRepository(networkRepository)),
-                    runPortScanUseCase = RunPortScanUseCase(PortScanRepository())
+                    runHostSweep = RunHostSweepUseCase(
+                        HostSweepRepository(networkRepository, resourceProvider)
+                    ),
+                    runPortScanUseCase = RunPortScanUseCase(PortScanRepository(resourceProvider))
                 ) as T
             }
         }
@@ -93,6 +100,15 @@ class MainActivity : AppCompatActivity() {
         binding.refreshButton.setOnClickListener {
             refresh()
         }
+        binding.breadcrumbOverviewButton.setOnClickListener {
+            viewModel.selectSection(HomeSection.OVERVIEW)
+        }
+        binding.breadcrumbDiscoveryButton.setOnClickListener {
+            viewModel.selectSection(HomeSection.DISCOVERY)
+        }
+        binding.breadcrumbPortsButton.setOnClickListener {
+            viewModel.selectSection(HomeSection.PORTS)
+        }
         binding.targetHostInput.setOnItemClickListener { _, _, position, _ ->
             val selected = binding.targetHostInput.adapter.getItem(position)?.toString().orEmpty()
             viewModel.selectHost(selected)
@@ -112,9 +128,30 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun render(state: HomeUiState) {
+        val sectionTitle = when (state.selectedSection) {
+            HomeSection.OVERVIEW -> getString(R.string.section_overview_title)
+            HomeSection.DISCOVERY -> getString(R.string.section_discovery_title)
+            HomeSection.PORTS -> getString(R.string.section_ports_title)
+        }
+
+        binding.breadcrumbValue.text = getString(
+            R.string.breadcrumb_path,
+            getString(R.string.breadcrumb_root),
+            sectionTitle
+        )
+        binding.sectionTitleValue.text = sectionTitle
+        binding.overviewSection.isVisible = state.selectedSection == HomeSection.OVERVIEW
+        binding.discoverySection.isVisible = state.selectedSection == HomeSection.DISCOVERY
+        binding.portsSection.isVisible = state.selectedSection == HomeSection.PORTS
+        binding.breadcrumbOverviewButton.isEnabled = state.selectedSection != HomeSection.OVERVIEW
+        binding.breadcrumbDiscoveryButton.isEnabled = state.selectedSection != HomeSection.DISCOVERY
+        binding.breadcrumbPortsButton.isEnabled = state.selectedSection != HomeSection.PORTS
+
         binding.permissionSummaryValue.text = state.permissionSummary
         binding.activeTransportValue.text = state.activeTransportLabel
         binding.statusMessage.text = state.statusMessage
+        binding.discoveryHint.text = getString(R.string.discovery_hint)
+        binding.portsHint.text = getString(R.string.ports_hint)
         binding.shellSummaryValue.text = state.shellSummary
         binding.requestPermissionsButton.isEnabled = !hasAllRequiredPermissions()
         binding.runSweepButton.isEnabled = state.canContinue && !state.isScanning
@@ -134,10 +171,10 @@ class MainActivity : AppCompatActivity() {
         } else {
             state.interfaces.joinToString(separator = "\n\n") { info ->
                 val label = when (info.category) {
-                    InterfaceCategory.WIFI -> "Wi-Fi"
-                    InterfaceCategory.ETHERNET -> "Ethernet"
-                    InterfaceCategory.USB -> "USB"
-                    InterfaceCategory.OTHER -> "Other"
+                    InterfaceCategory.WIFI -> getString(R.string.category_wifi)
+                    InterfaceCategory.ETHERNET -> getString(R.string.category_ethernet)
+                    InterfaceCategory.USB -> getString(R.string.category_usb)
+                    InterfaceCategory.OTHER -> getString(R.string.category_other)
                 }
                 "$label: ${info.name}\n${info.addresses.joinToString()}"
             }
@@ -154,6 +191,7 @@ class MainActivity : AppCompatActivity() {
         if (binding.preferredInterfaceInput.text?.toString() != state.preferredInterfaceName) {
             binding.preferredInterfaceInput.setText(state.preferredInterfaceName, false)
         }
+        binding.preferredInterfaceInput.isEnabled = state.interfaces.isNotEmpty()
 
         binding.scanSummaryValue.text = state.scanSummary
         binding.scanResultsValue.text = if (state.scanResults.isEmpty()) {
@@ -172,6 +210,7 @@ class MainActivity : AppCompatActivity() {
         if (binding.targetHostInput.text?.toString() != state.selectedHostAddress) {
             binding.targetHostInput.setText(state.selectedHostAddress, false)
         }
+        binding.targetHostInput.isEnabled = state.responsiveHosts.isNotEmpty()
 
         binding.portScanSummaryValue.text = state.portScanSummary
         binding.portScanResultsValue.text = if (state.portScanResults.isEmpty()) {
@@ -193,7 +232,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun buildPermissionSummary(): String {
-        val missing = missingPermissions()
+        val missing = missingPermissions().map(::permissionDisplayName)
         return if (missing.isEmpty()) {
             getString(R.string.permissions_granted)
         } else {
@@ -224,5 +263,15 @@ class MainActivity : AppCompatActivity() {
             result += Manifest.permission.NEARBY_WIFI_DEVICES
         }
         return result
+    }
+
+    private fun permissionDisplayName(permission: String): String {
+        return when (permission) {
+            Manifest.permission.ACCESS_FINE_LOCATION ->
+                getString(R.string.permission_location)
+            Manifest.permission.NEARBY_WIFI_DEVICES ->
+                getString(R.string.permission_nearby_wifi)
+            else -> permission
+        }
     }
 }

@@ -1,9 +1,13 @@
 package org.fsploit.android.data.shell
 
+import org.fsploit.android.R
+import org.fsploit.android.core.ResourceProvider
 import org.fsploit.android.domain.model.ShellStatus
 import java.util.concurrent.TimeUnit
 
-class ShellRepository {
+class ShellRepository(
+    private val resourceProvider: ResourceProvider
+) {
     fun probe(): ShellStatus {
         val shellOk = runCommand("sh", "-c", "echo shell").contains("shell")
         val suPath = runCommand("sh", "-c", "command -v su")
@@ -12,10 +16,10 @@ class ShellRepository {
         val rootGranted = rootCheck.contains("uid=0")
 
         val summary = when {
-            !shellOk -> "The standard shell is unavailable."
-            rootGranted -> "Root shell is available."
-            suAvailable -> "su is present, but root was not granted."
-            else -> "Root tooling is not available on this device."
+            !shellOk -> resourceProvider.getString(R.string.shell_standard_unavailable)
+            rootGranted -> resourceProvider.getString(R.string.shell_root_available)
+            suAvailable -> resourceProvider.getString(R.string.shell_su_present)
+            else -> resourceProvider.getString(R.string.shell_no_root_tooling)
         }
 
         return ShellStatus(

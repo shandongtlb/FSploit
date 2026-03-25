@@ -20,6 +20,59 @@
             android:subtitle="@string/app_subtitle"
             app:titleCentered="false" />
 
+        <TextView
+            android:id="@+id/breadcrumbValue"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/breadcrumbOverviewButton"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:text="@string/breadcrumb_overview" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="4dp"
+                android:text="@string/breadcrumb_separator"
+                android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/breadcrumbDiscoveryButton"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:text="@string/breadcrumb_discovery" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="4dp"
+                android:text="@string/breadcrumb_separator"
+                android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/breadcrumbPortsButton"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:text="@string/breadcrumb_ports" />
+        </LinearLayout>
+
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -36,220 +89,257 @@
                 android:padding="20dp">
 
                 <TextView
+                    android:id="@+id/sectionTitleValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/home_title"
                     android:textAppearance="@style/TextAppearance.Material3.TitleLarge" />
 
-                <TextView
-                    android:id="@+id/statusMessage"
+                <LinearLayout
+                    android:id="@+id/overviewSection"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+                    android:orientation="vertical">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:text="@string/permission_summary"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
-
-                <TextView
-                    android:id="@+id/permissionSummaryValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:text="@string/active_transport"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
-
-                <TextView
-                    android:id="@+id/activeTransportValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:text="@string/interface_list"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
-
-                <TextView
-                    android:id="@+id/interfaceListValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-
-                <TextView
-                    android:id="@+id/continueHint"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:text="@string/shell_status"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
-
-                <TextView
-                    android:id="@+id/shellSummaryValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:hint="@string/preferred_interface">
-
-                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                        android:id="@+id/preferredInterfaceInput"
+                    <TextView
+                        android:id="@+id/statusMessage"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="none" />
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:layout_marginTop="8dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/requestPermissionsButton"
-                        style="@style/Widget.Material3.Button"
-                        android:layout_width="0dp"
+                    <TextView
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/request_permissions" />
+                        android:layout_marginTop="20dp"
+                        android:text="@string/permission_summary"
+                        android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/refreshButton"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="0dp"
+                    <TextView
+                        android:id="@+id/permissionSummaryValue"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:text="@string/refresh" />
+                        android:layout_marginTop="4dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:text="@string/active_transport"
+                        android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+
+                    <TextView
+                        android:id="@+id/activeTransportValue"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:text="@string/interface_list"
+                        android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+
+                    <TextView
+                        android:id="@+id/interfaceListValue"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                    <TextView
+                        android:id="@+id/continueHint"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:text="@string/shell_status"
+                        android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+
+                    <TextView
+                        android:id="@+id/shellSummaryValue"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/requestPermissionsButton"
+                            style="@style/Widget.Material3.Button"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/request_permissions" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/refreshButton"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:text="@string/refresh" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/discoverySection"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:orientation="horizontal">
+                    android:orientation="vertical"
+                    android:visibility="gone">
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/saveInterfaceButton"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/save_interface" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/runSweepButton"
-                        style="@style/Widget.Material3.Button"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:text="@string/run_host_sweep" />
-                </LinearLayout>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:text="@string/scan_summary"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
-
-                <TextView
-                    android:id="@+id/scanSummaryValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:text="@string/scan_results"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
-
-                <TextView
-                    android:id="@+id/scanResultsValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:fontFamily="monospace"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:hint="@string/target_host">
-
-                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                        android:id="@+id/targetHostInput"
+                    <TextView
+                        android:id="@+id/discoveryHint"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="none" />
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:layout_marginTop="8dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/runPortScanButton"
-                    style="@style/Widget.Material3.Button"
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:hint="@string/preferred_interface">
+
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/preferredInterfaceInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/saveInterfaceButton"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/save_interface" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/runSweepButton"
+                            style="@style/Widget.Material3.Button"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:text="@string/run_host_sweep" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:text="@string/scan_summary"
+                        android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+
+                    <TextView
+                        android:id="@+id/scanSummaryValue"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:text="@string/scan_results"
+                        android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+
+                    <TextView
+                        android:id="@+id/scanResultsValue"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:fontFamily="monospace"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/portsSection"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="@string/run_port_scan" />
+                    android:orientation="vertical"
+                    android:visibility="gone">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:text="@string/port_scan_summary"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+                    <TextView
+                        android:id="@+id/portsHint"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
 
-                <TextView
-                    android:id="@+id/portScanSummaryValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:hint="@string/target_host">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:text="@string/port_scan_results"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/targetHostInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-                <TextView
-                    android:id="@+id/portScanResultsValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:fontFamily="monospace"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/runPortScanButton"
+                        style="@style/Widget.Material3.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/run_port_scan" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:text="@string/port_scan_summary"
+                        android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+
+                    <TextView
+                        android:id="@+id/portScanSummaryValue"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:text="@string/port_scan_results"
+                        android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+
+                    <TextView
+                        android:id="@+id/portScanResultsValue"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:fontFamily="monospace"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>

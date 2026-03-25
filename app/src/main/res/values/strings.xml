@@ -1,7 +1,18 @@
 <resources>
     <string name="app_name" translatable="false">FSploit</string>
-    <string name="app_subtitle">Modern Android network tooling foundation</string>
-    <string name="home_title">System Readiness</string>
+    <string name="app_subtitle">Modern Android network operations foundation</string>
+
+    <string name="breadcrumb_separator">/</string>
+    <string name="breadcrumb_root">Workspace</string>
+    <string name="breadcrumb_overview">Overview</string>
+    <string name="breadcrumb_discovery">Discovery</string>
+    <string name="breadcrumb_ports">Ports</string>
+    <string name="breadcrumb_path">%1$s / %2$s</string>
+
+    <string name="section_overview_title">System Overview</string>
+    <string name="section_discovery_title">Host Discovery</string>
+    <string name="section_ports_title">Port Recon</string>
+
     <string name="permission_summary">Permissions</string>
     <string name="active_transport">Active transport</string>
     <string name="interface_list">Usable interfaces</string>
@@ -17,12 +28,64 @@
     <string name="run_port_scan">Run Port Scan</string>
     <string name="port_scan_summary">Port scan summary</string>
     <string name="port_scan_results">Common TCP ports</string>
+
+    <string name="permission_summary_pending">Checking permissions…</string>
     <string name="permissions_granted">All required permissions are granted.</string>
     <string name="permissions_missing">Missing: %1$s</string>
-    <string name="no_interfaces_found">No usable local IPv4 interface detected.</string>
-    <string name="no_scan_results">No responsive hosts have been found yet.</string>
-    <string name="no_target_hosts">Run a host sweep to populate responsive targets.</string>
-    <string name="no_port_scan_results">No port scan results are available yet.</string>
+    <string name="permission_location">Location</string>
+    <string name="permission_nearby_wifi">Nearby Wi-Fi devices</string>
+    <string name="transport_unknown">Unknown</string>
+    <string name="transport_offline">Offline</string>
+    <string name="transport_wifi">Wi-Fi</string>
+    <string name="transport_ethernet_usb">Ethernet / USB</string>
+    <string name="transport_cellular">Cellular</string>
+    <string name="transport_vpn">VPN</string>
+    <string name="transport_connected">Connected</string>
+
+    <string name="status_no_interface">No usable local IPv4 interface was found. Wi-Fi, Ethernet, or USB tethering must be active.</string>
+    <string name="status_ready_on_interface">Ready to build scanners and tooling on top of %1$s.</string>
     <string name="home_ready">The app has enough context to start building scanners and modules.</string>
     <string name="home_not_ready">The foundation is running, but networking is not yet ready for active tooling.</string>
+    <string name="no_interfaces_found">No usable local IPv4 interface detected.</string>
+
+    <string name="shell_status_pending">Probing shell…</string>
+    <string name="shell_standard_unavailable">The standard shell is unavailable.</string>
+    <string name="shell_root_available">Root shell is available.</string>
+    <string name="shell_su_present">su is present, but root was not granted.</string>
+    <string name="shell_no_root_tooling">Root tooling is not available on this device.</string>
+
+    <string name="host_sweep_not_run">No host sweep has been run yet.</string>
+    <string name="host_sweep_unavailable">No usable IPv4 interface is available for host sweep.</string>
+    <string name="host_sweep_running">Running host sweep…</string>
+    <string name="host_sweep_none">Sweep completed on %1$s. No responsive hosts were identified in the sampled range.</string>
+    <string name="host_sweep_found">Sweep completed on %1$s. %2$d responsive host(s) found.</string>
+    <string name="host_result_open_tcp">open tcp/%1$d</string>
+    <string name="host_result_refused_tcp">reachable, refused tcp/%1$d</string>
+    <string name="host_result_icmp">reachable via ICMP/echo</string>
+    <string name="no_scan_results">No responsive hosts have been found yet.</string>
+
+    <string name="port_scan_not_run">No port scan has been run yet.</string>
+    <string name="port_scan_no_selected_host">No responsive host is selected for port scanning.</string>
+    <string name="port_scan_select_target">Select a responsive host before running a port scan.</string>
+    <string name="port_scan_ready">Ready to scan common ports on %1$s.</string>
+    <string name="port_scan_running">Scanning common TCP ports on %1$s…</string>
+    <string name="port_scan_no_open">No common open TCP ports were found on %1$s.</string>
+    <string name="port_scan_found_open">Found %1$d open TCP port(s) on %2$s.</string>
+    <string name="no_target_hosts">Run a host sweep to populate responsive targets.</string>
+    <string name="no_port_scan_results">No port scan results are available yet.</string>
+    <string name="port_note_accepted_connection">accepted connection</string>
+    <string name="port_note_actively_refused">actively refused</string>
+    <string name="port_note_timed_out">timed out</string>
+    <string name="port_note_exception">%1$s</string>
+    <string name="port_state_open">open</string>
+    <string name="port_state_closed">closed</string>
+    <string name="port_state_filtered">filtered</string>
+
+    <string name="category_wifi">Wi-Fi</string>
+    <string name="category_ethernet">Ethernet</string>
+    <string name="category_usb">USB</string>
+    <string name="category_other">Other</string>
+
+    <string name="discovery_hint">Choose a capture interface, save it, then sweep the local subnet for responsive hosts.</string>
+    <string name="ports_hint">Pick a responsive target from discovery, then scan a focused set of common TCP ports.</string>
 </resources>

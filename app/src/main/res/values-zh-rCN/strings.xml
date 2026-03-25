@@ -1,0 +1,91 @@
+<resources>
+    <string name="app_name" translatable="false">FSploit</string>
+    <string name="app_subtitle">面向现代 Android 的网络操作基础框架</string>
+
+    <string name="breadcrumb_separator">/</string>
+    <string name="breadcrumb_root">工作区</string>
+    <string name="breadcrumb_overview">概览</string>
+    <string name="breadcrumb_discovery">发现</string>
+    <string name="breadcrumb_ports">端口</string>
+    <string name="breadcrumb_path">%1$s / %2$s</string>
+
+    <string name="section_overview_title">系统概览</string>
+    <string name="section_discovery_title">主机发现</string>
+    <string name="section_ports_title">端口侦察</string>
+
+    <string name="permission_summary">权限</string>
+    <string name="active_transport">当前传输</string>
+    <string name="interface_list">可用网卡</string>
+    <string name="request_permissions">授予权限</string>
+    <string name="refresh">刷新</string>
+    <string name="shell_status">Shell 与 Root 状态</string>
+    <string name="preferred_interface">首选网卡</string>
+    <string name="save_interface">保存网卡</string>
+    <string name="run_host_sweep">执行主机探测</string>
+    <string name="scan_summary">主机探测摘要</string>
+    <string name="scan_results">响应主机</string>
+    <string name="target_host">目标主机</string>
+    <string name="run_port_scan">执行端口扫描</string>
+    <string name="port_scan_summary">端口扫描摘要</string>
+    <string name="port_scan_results">常见 TCP 端口</string>
+
+    <string name="permission_summary_pending">正在检查权限…</string>
+    <string name="permissions_granted">所有必需权限均已授予。</string>
+    <string name="permissions_missing">缺少：%1$s</string>
+    <string name="permission_location">位置信息</string>
+    <string name="permission_nearby_wifi">附近的 Wi-Fi 设备</string>
+    <string name="transport_unknown">未知</string>
+    <string name="transport_offline">离线</string>
+    <string name="transport_wifi">Wi-Fi</string>
+    <string name="transport_ethernet_usb">以太网 / USB</string>
+    <string name="transport_cellular">蜂窝网络</string>
+    <string name="transport_vpn">VPN</string>
+    <string name="transport_connected">已连接</string>
+
+    <string name="status_no_interface">未发现可用的本地 IPv4 网卡。请启用 Wi-Fi、以太网或 USB 网络共享。</string>
+    <string name="status_ready_on_interface">已准备在 %1$s 上构建扫描与工具能力。</string>
+    <string name="home_ready">当前上下文已足够，可以继续构建扫描器和模块。</string>
+    <string name="home_not_ready">基础框架已启动，但网络环境尚未准备好执行主动操作。</string>
+    <string name="no_interfaces_found">未检测到可用的本地 IPv4 网卡。</string>
+
+    <string name="shell_status_pending">正在探测 shell…</string>
+    <string name="shell_standard_unavailable">标准 shell 不可用。</string>
+    <string name="shell_root_available">Root shell 可用。</string>
+    <string name="shell_su_present">检测到 su，但尚未获得 root 授权。</string>
+    <string name="shell_no_root_tooling">当前设备不可用 root 工具链。</string>
+
+    <string name="host_sweep_not_run">尚未执行主机探测。</string>
+    <string name="host_sweep_unavailable">当前没有可用于主机探测的 IPv4 网卡。</string>
+    <string name="host_sweep_running">正在执行主机探测…</string>
+    <string name="host_sweep_none">已在 %1$s 上完成探测，采样范围内未发现响应主机。</string>
+    <string name="host_sweep_found">已在 %1$s 上完成探测，发现 %2$d 台响应主机。</string>
+    <string name="host_result_open_tcp">开放 tcp/%1$d</string>
+    <string name="host_result_refused_tcp">可达，拒绝 tcp/%1$d</string>
+    <string name="host_result_icmp">可通过 ICMP/echo 响应</string>
+    <string name="no_scan_results">尚未发现响应主机。</string>
+
+    <string name="port_scan_not_run">尚未执行端口扫描。</string>
+    <string name="port_scan_no_selected_host">当前没有选中的响应主机可供端口扫描。</string>
+    <string name="port_scan_select_target">请先选择一个响应主机，再执行端口扫描。</string>
+    <string name="port_scan_ready">已准备扫描 %1$s 的常见端口。</string>
+    <string name="port_scan_running">正在扫描 %1$s 的常见 TCP 端口…</string>
+    <string name="port_scan_no_open">在 %1$s 上未发现常见开放 TCP 端口。</string>
+    <string name="port_scan_found_open">在 %2$s 上发现 %1$d 个开放 TCP 端口。</string>
+    <string name="no_target_hosts">请先执行主机探测以填充响应目标。</string>
+    <string name="no_port_scan_results">当前还没有端口扫描结果。</string>
+    <string name="port_note_accepted_connection">接受连接</string>
+    <string name="port_note_actively_refused">主动拒绝</string>
+    <string name="port_note_timed_out">超时</string>
+    <string name="port_note_exception">%1$s</string>
+    <string name="port_state_open">开放</string>
+    <string name="port_state_closed">关闭</string>
+    <string name="port_state_filtered">过滤</string>
+
+    <string name="category_wifi">Wi-Fi</string>
+    <string name="category_ethernet">以太网</string>
+    <string name="category_usb">USB</string>
+    <string name="category_other">其他</string>
+
+    <string name="discovery_hint">选择采集网卡并保存，然后对本地子网执行主机探测。</string>
+    <string name="ports_hint">从主机发现结果中选择目标，再扫描一组常见 TCP 端口。</string>
+</resources>

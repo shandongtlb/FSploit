@@ -6,9 +6,10 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import org.fsploit.android.R
+import org.fsploit.android.core.ResourceProvider
 import org.fsploit.android.domain.model.HostScanResult
 import org.fsploit.android.domain.model.HostSweepReport
-import org.fsploit.android.domain.model.SweepTarget
 import java.net.ConnectException
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -16,7 +17,8 @@ import java.net.Socket
 import java.net.SocketTimeoutException
 
 class HostSweepRepository(
-    private val networkInterfaceRepository: NetworkInterfaceRepository
+    private val networkInterfaceRepository: NetworkInterfaceRepository,
+    private val resourceProvider: ResourceProvider
 ) {
     suspend fun runSweep(preferredInterfaceName: String): HostSweepReport = coroutineScope {
         val target = networkInterfaceRepository.resolveSweepTarget(preferredInterfaceName)
@@ -25,7 +27,7 @@ class HostSweepRepository(
                 subnetLabel = "",
                 scannedHosts = 0,
                 responsiveHosts = emptyList(),
-                summary = "No usable IPv4 interface is available for host sweep."
+                summary = resourceProvider.getString(R.string.host_sweep_unavailable)
             )
 
         val semaphore = Semaphore(24)
@@ -39,9 +41,13 @@ class HostSweepRepository(
 
         val subnetLabel = "${target.networkAddress}/${target.prefixLength}"
         val summary = if (responsiveHosts.isEmpty()) {
-            "Sweep completed on ${target.interfaceName}. No responsive hosts were identified in the sampled range."
+            resourceProvider.getString(R.string.host_sweep_none, target.interfaceName)
         } else {
-            "Sweep completed on ${target.interfaceName}. ${responsiveHosts.size} responsive host(s) found."
+            resourceProvider.getString(
+                R.string.host_sweep_found,
+                target.interfaceName,
+                responsiveHosts.size
+            )
         }
 
         HostSweepReport(
@@ -59,10 +65,16 @@ class HostSweepRepository(
             try {
                 Socket().use { socket ->
                     socket.connect(InetSocketAddress(host, port), 180)
-                    return HostScanResult(host, "open tcp/$port")
+                    return HostScanResult(
+                        host,
+                        resourceProvider.getString(R.string.host_result_open_tcp, port)
+                    )
                 }
             } catch (exception: ConnectException) {
-                return HostScanResult(host, "reachable, refused tcp/$port")
+                return HostScanResult(
+                    host,
+                    resourceProvider.getString(R.string.host_result_refused_tcp, port)
+                )
             } catch (_: SocketTimeoutException) {
             } catch (_: Exception) {
             }
@@ -71,7 +83,7 @@ class HostSweepRepository(
         return try {
             val address = InetAddress.getByName(host)
             if (address.isReachable(250)) {
-                HostScanResult(host, "reachable via ICMP/echo")
+                HostScanResult(host, resourceProvider.getString(R.string.host_result_icmp))
             } else {
                 null
             }
