@@ -1,0 +1,10 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.FSploit" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/fsploit_primary</item>
+        <item name="colorOnPrimary">@color/fsploit_on_primary</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@color/fsploit_background</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="23">false</item>
+        <item name="android:windowBackground">@color/fsploit_background</item>
+    </style>
+</resources>

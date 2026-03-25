@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name" translatable="false">FSploit</string>
+    <string name="app_subtitle">Modern Android network tooling foundation</string>
+    <string name="home_title">System Readiness</string>
+    <string name="permission_summary">Permissions</string>
+    <string name="active_transport">Active transport</string>
+    <string name="interface_list">Usable interfaces</string>
+    <string name="request_permissions">Grant Permissions</string>
+    <string name="refresh">Refresh</string>
+    <string name="permissions_granted">All required permissions are granted.</string>
+    <string name="permissions_missing">Missing: %1$s</string>
+    <string name="no_interfaces_found">No usable local IPv4 interface detected.</string>
+    <string name="home_ready">The app has enough context to start building scanners and modules.</string>
+    <string name="home_not_ready">The foundation is running, but networking is not yet ready for active tooling.</string>
+</resources>

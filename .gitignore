@@ -1,0 +1,38 @@
+# Gradle
+.gradle/
+build/
+*/build/
+
+# Kotlin
+.kotlin/
+
+# Local machine config
+local.properties
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Android Studio captures
+captures/
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+
+# Keystores and signing
+*.jks
+*.keystore
+*.p12
+
+# Android generated
+app/release/
+app/debug/
+
+# Keep wrapper artifacts
+!gradle/wrapper/gradle-wrapper.jar
