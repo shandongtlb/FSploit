@@ -44,7 +44,11 @@ class AppContainer(
         preferencesRepository = preferencesRepository
     )
     private val mitmRepository = MitmRepository(resourceProvider, shellRepository, mitmBackend)
-    private val hostSweepRepository = HostSweepRepository(networkRepository, resourceProvider)
+    private val hostSweepRepository = HostSweepRepository(
+        networkRepository,
+        resourceProvider,
+        shellRepository
+    )
     private val portScanRepository = PortScanRepository(resourceProvider)
 
     val homeViewModelFactory = FSploitViewModelFactory(

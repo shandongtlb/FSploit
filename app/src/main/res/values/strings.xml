@@ -189,6 +189,8 @@
     <string name="host_result_open_tcp">open tcp/%1$d</string>
     <string name="host_result_refused_tcp">reachable, refused tcp/%1$d</string>
     <string name="host_result_icmp">reachable via ICMP/echo</string>
+    <string name="host_result_neighbor">reachable via neighbor table</string>
+    <string name="host_result_arp">present in ARP cache</string>
     <string name="no_scan_results">No responsive hosts have been found yet.</string>
 
     <string name="port_scan_not_run">No port scan has been run yet.</string>

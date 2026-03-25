@@ -189,6 +189,8 @@
     <string name="host_result_open_tcp">开放 tcp/%1$d</string>
     <string name="host_result_refused_tcp">可达，拒绝 tcp/%1$d</string>
     <string name="host_result_icmp">可通过 ICMP/echo 响应</string>
+    <string name="host_result_neighbor">可通过邻居表识别</string>
+    <string name="host_result_arp">存在于 ARP 缓存中</string>
     <string name="no_scan_results">尚未发现响应主机。</string>
 
     <string name="port_scan_not_run">尚未执行端口扫描。</string>
