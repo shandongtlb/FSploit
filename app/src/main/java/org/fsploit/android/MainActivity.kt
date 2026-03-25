@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.widget.ArrayAdapter
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -16,10 +17,17 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
+import org.fsploit.android.data.network.HostSweepRepository
 import org.fsploit.android.data.network.NetworkInterfaceRepository
+import org.fsploit.android.data.settings.AppPreferencesRepository
+import org.fsploit.android.data.shell.ShellRepository
 import org.fsploit.android.databinding.ActivityMainBinding
 import org.fsploit.android.domain.model.InterfaceCategory
+import org.fsploit.android.domain.usecase.GetPreferredInterfaceUseCase
 import org.fsploit.android.domain.usecase.LoadNetworkOverviewUseCase
+import org.fsploit.android.domain.usecase.ProbeShellUseCase
+import org.fsploit.android.domain.usecase.RunHostSweepUseCase
+import org.fsploit.android.domain.usecase.SavePreferredInterfaceUseCase
 import org.fsploit.android.feature.home.HomeUiState
 import org.fsploit.android.feature.home.HomeViewModel
 
@@ -31,9 +39,17 @@ class MainActivity : AppCompatActivity() {
         object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                val repository = NetworkInterfaceRepository(applicationContext)
-                val useCase = LoadNetworkOverviewUseCase(repository)
-                return HomeViewModel(useCase) as T
+                val networkRepository = NetworkInterfaceRepository(applicationContext)
+                val shellRepository = ShellRepository()
+                val preferencesRepository = AppPreferencesRepository(applicationContext)
+
+                return HomeViewModel(
+                    loadNetworkOverview = LoadNetworkOverviewUseCase(networkRepository),
+                    getPreferredInterface = GetPreferredInterfaceUseCase(preferencesRepository),
+                    savePreferredInterfaceUseCase = SavePreferredInterfaceUseCase(preferencesRepository),
+                    probeShell = ProbeShellUseCase(shellRepository),
+                    runHostSweep = RunHostSweepUseCase(HostSweepRepository(networkRepository))
+                ) as T
             }
         }
     }
@@ -60,6 +76,13 @@ class MainActivity : AppCompatActivity() {
         binding.requestPermissionsButton.setOnClickListener {
             requestRequiredPermissions()
         }
+        binding.saveInterfaceButton.setOnClickListener {
+            viewModel.savePreferredInterface(binding.preferredInterfaceInput.text?.toString().orEmpty())
+        }
+        binding.runSweepButton.setOnClickListener {
+            viewModel.savePreferredInterface(binding.preferredInterfaceInput.text?.toString().orEmpty())
+            viewModel.runSweep()
+        }
         binding.refreshButton.setOnClickListener {
             refresh()
         }
@@ -81,7 +104,10 @@ class MainActivity : AppCompatActivity() {
         binding.permissionSummaryValue.text = state.permissionSummary
         binding.activeTransportValue.text = state.activeTransportLabel
         binding.statusMessage.text = state.statusMessage
+        binding.shellSummaryValue.text = state.shellSummary
         binding.requestPermissionsButton.isEnabled = !hasAllRequiredPermissions()
+        binding.runSweepButton.isEnabled = state.canContinue && !state.isScanning
+        binding.saveInterfaceButton.isEnabled = state.interfaces.isNotEmpty()
         binding.continueHint.text = if (state.canContinue) {
             getString(R.string.home_ready)
         } else {
@@ -100,6 +126,25 @@ class MainActivity : AppCompatActivity() {
                 }
                 "$label: ${info.name}\n${info.addresses.joinToString()}"
             }
+        }
+
+        val interfaceNames = state.interfaces.map { it.name }
+        binding.preferredInterfaceInput.setAdapter(
+            ArrayAdapter(
+                this,
+                android.R.layout.simple_dropdown_item_1line,
+                interfaceNames
+            )
+        )
+        if (binding.preferredInterfaceInput.text?.toString() != state.preferredInterfaceName) {
+            binding.preferredInterfaceInput.setText(state.preferredInterfaceName, false)
+        }
+
+        binding.scanSummaryValue.text = state.scanSummary
+        binding.scanResultsValue.text = if (state.scanResults.isEmpty()) {
+            getString(R.string.no_scan_results)
+        } else {
+            state.scanResults.joinToString(separator = "\n")
         }
     }
 

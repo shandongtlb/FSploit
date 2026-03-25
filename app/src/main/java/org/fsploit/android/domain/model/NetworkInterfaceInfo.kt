@@ -3,7 +3,9 @@ package org.fsploit.android.domain.model
 data class NetworkInterfaceInfo(
     val name: String,
     val addresses: List<String>,
-    val category: InterfaceCategory
+    val category: InterfaceCategory,
+    val primaryAddress: String? = addresses.firstOrNull(),
+    val prefixLength: Int? = null
 )
 
 enum class InterfaceCategory {

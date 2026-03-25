@@ -7,9 +7,16 @@
     <string name="interface_list">Usable interfaces</string>
     <string name="request_permissions">Grant Permissions</string>
     <string name="refresh">Refresh</string>
+    <string name="shell_status">Shell and root status</string>
+    <string name="preferred_interface">Preferred interface</string>
+    <string name="save_interface">Save Interface</string>
+    <string name="run_host_sweep">Run Host Sweep</string>
+    <string name="scan_summary">Host sweep summary</string>
+    <string name="scan_results">Responsive hosts</string>
     <string name="permissions_granted">All required permissions are granted.</string>
     <string name="permissions_missing">Missing: %1$s</string>
     <string name="no_interfaces_found">No usable local IPv4 interface detected.</string>
+    <string name="no_scan_results">No responsive hosts have been found yet.</string>
     <string name="home_ready">The app has enough context to start building scanners and modules.</string>
     <string name="home_not_ready">The foundation is running, but networking is not yet ready for active tooling.</string>
 </resources>
