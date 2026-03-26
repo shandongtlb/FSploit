@@ -363,6 +363,7 @@ class HomeViewModel(
                 startMitmSessionUseCase(
                     MitmLaunchRequest(
                         mode = state.selectedMitmMode,
+                        networkMode = state.selectedConnectionBlockMode,
                         targetHost = hostAddress,
                         interfaceName = state.preferredInterfaceName,
                         gatewayAddress = state.mitmGatewayInput,

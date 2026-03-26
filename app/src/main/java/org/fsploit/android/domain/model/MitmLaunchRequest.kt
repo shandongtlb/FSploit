@@ -2,6 +2,7 @@ package org.fsploit.android.domain.model
 
 data class MitmLaunchRequest(
     val mode: MitmMode,
+    val networkMode: ConnectionBlockMode = ConnectionBlockMode.NORMAL,
     val targetHost: String,
     val interfaceName: String,
     val gatewayAddress: String = "",

@@ -103,6 +103,7 @@ class MitmFragment : Fragment() {
 
     private fun render(state: HomeUiState) {
         val mode = state.selectedMitmMode
+        val useHotspotMode = state.selectedConnectionBlockMode == ConnectionBlockMode.HOTSPOT
         binding.rootGateValue.text = state.rootGateSummary
         binding.mitmSummaryValue.text = state.mitmSummary
         binding.iptablesValue.text = yesNo(state.iptablesAvailable)
@@ -119,11 +120,14 @@ class MitmFragment : Fragment() {
             binding.mitmGatewayInput,
             state.mitmGatewayInput
         )
-        binding.mitmGatewayResolvedValue.text = if (state.resolvedGatewayAddress.isBlank()) {
+        binding.mitmGatewayResolvedValue.text = if (useHotspotMode) {
+            getString(R.string.mitm_gateway_hotspot_mode)
+        } else if (state.resolvedGatewayAddress.isBlank()) {
             getString(R.string.mitm_gateway_unresolved)
         } else {
             getString(R.string.mitm_gateway_detected, state.resolvedGatewayAddress)
         }
+        binding.mitmGatewayInputLayout.visibility = if (useHotspotMode) View.GONE else View.VISIBLE
         binding.mitmModeDescriptionValue.text = getString(mode.descriptionRes)
         binding.currentBlockValue.text = if (state.blockedHostAddress.isBlank()) {
             getString(R.string.block_none)

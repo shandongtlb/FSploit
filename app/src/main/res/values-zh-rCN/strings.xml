@@ -53,6 +53,7 @@
     <string name="mitm_gateway_input_label">网关 IPv4 地址</string>
     <string name="mitm_gateway_detected">Android 网络栈识别到的网关：%1$s</string>
     <string name="mitm_gateway_unresolved">Android 未为当前接口提供网关信息，如有需要请手动填写。</string>
+    <string name="mitm_gateway_hotspot_mode">热点模式下默认把本机视为网关，MITM 中继流程会忽略手动网关输入。</string>
     <string name="mitm_primary_input_label">主输入</string>
     <string name="mitm_secondary_input_label">次输入</string>
     <string name="mitm_payload_input_label">载荷</string>
@@ -100,16 +101,16 @@
     <string name="block_connection">阻断连接</string>
     <string name="unblock_connection">解除阻断</string>
     <string name="block_current_label">当前连接阻断</string>
-    <string name="block_mode_label">连接阻断模式</string>
+    <string name="block_mode_label">MITM 网络模式</string>
     <string name="block_mode_normal">普通模式</string>
     <string name="block_mode_hotspot">热点模式</string>
-    <string name="block_mode_normal_desc">使用 bettercap 的 ARP ban。适合手机不是实际网关的场景。</string>
-    <string name="block_mode_hotspot_desc">使用手机本机的 iptables FORWARD 丢包。适合手机本身就是热点或网关的场景。</string>
-    <string name="block_mode_pending">正在判断当前接口应使用哪种连接阻断方式...</string>
-    <string name="block_mode_unknown">暂时无法自动判断连接阻断模式，默认保留普通模式，你也可以手动切换。</string>
+    <string name="block_mode_normal_desc">MITM 流量按 ARP 欺骗中继路径处理。适合手机不是实际网关的场景。</string>
+    <string name="block_mode_hotspot_desc">MITM 流量按“本机就是网关”处理。适合手机本身就是热点或下游路由节点的场景。</string>
+    <string name="block_mode_pending">正在判断当前接口应使用哪种 MITM 网络拓扑...</string>
+    <string name="block_mode_unknown">暂时无法自动判断 MITM 网络模式，默认保留普通模式，你也可以手动切换。</string>
     <string name="block_mode_detected_hotspot">已为 %1$s 自动选中“热点模式”，因为它看起来像没有上游网关的热点或下游接口；如判断不准，你可以手动改成另一种模式。</string>
     <string name="block_mode_detected_normal_gateway">已为 %1$s 自动选中“普通模式”，因为 Android 在这个接口上提供了上游网关信息；如判断不准，你可以手动改成另一种模式。</string>
-    <string name="block_mode_detected_normal_fallback">已为 %1$s 自动选中“普通模式”，因为当前没有明确识别到热点或网关场景；如判断不准，你可以手动改成另一种模式。</string>
+    <string name="block_mode_detected_normal_fallback">已为 %1$s 自动选中“普通模式”，因为当前没有明确识别到热点路由场景；如判断不准，你可以手动改成另一种模式。</string>
     <string name="block_current_target">已阻断目标：%1$s</string>
     <string name="block_none">当前没有由 FSploit 管理的阻断目标。</string>
 

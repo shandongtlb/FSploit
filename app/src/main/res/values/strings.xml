@@ -53,6 +53,7 @@
     <string name="mitm_gateway_input_label">Gateway IPv4 address</string>
     <string name="mitm_gateway_detected">Detected from Android network stack: %1$s</string>
     <string name="mitm_gateway_unresolved">Android did not expose a gateway for the selected interface. Enter one manually if needed.</string>
+    <string name="mitm_gateway_hotspot_mode">Hotspot mode treats this device as the gateway. Manual gateway entry is ignored for MITM relay flows.</string>
     <string name="mitm_primary_input_label">Primary input</string>
     <string name="mitm_secondary_input_label">Secondary input</string>
     <string name="mitm_payload_input_label">Payload</string>
@@ -100,16 +101,16 @@
     <string name="block_connection">Block Connection</string>
     <string name="unblock_connection">Unblock Connection</string>
     <string name="block_current_label">Current connection block</string>
-    <string name="block_mode_label">Connection block mode</string>
+    <string name="block_mode_label">MITM network mode</string>
     <string name="block_mode_normal">Normal mode</string>
     <string name="block_mode_hotspot">Hotspot mode</string>
-    <string name="block_mode_normal_desc">Use bettercap ARP ban. Best when this phone is not the real gateway.</string>
-    <string name="block_mode_hotspot_desc">Use iptables FORWARD drops on this phone. Best when this phone is the hotspot or gateway.</string>
-    <string name="block_mode_pending">Checking how this interface should handle connection blocking...</string>
-    <string name="block_mode_unknown">Connection-block mode could not be inferred yet. Normal mode stays selected until you choose otherwise.</string>
-    <string name="block_mode_detected_hotspot">Auto-selected Hotspot mode for %1$s because the interface looks like a tethering/downstream link without an upstream gateway. You can switch modes manually if needed.</string>
+    <string name="block_mode_normal_desc">Use ARP-spoof relay behavior for MITM flows. Best when this phone is not the real gateway.</string>
+    <string name="block_mode_hotspot_desc">Treat this phone as the gateway for MITM flows. Best when this phone is the hotspot or downstream router.</string>
+    <string name="block_mode_pending">Checking how this interface should handle MITM traffic topology...</string>
+    <string name="block_mode_unknown">MITM network mode could not be inferred yet. Normal mode stays selected until you choose otherwise.</string>
+    <string name="block_mode_detected_hotspot">Auto-selected Hotspot mode for %1$s because the interface looks like a tethering or downstream link without an upstream gateway. You can switch modes manually if needed.</string>
     <string name="block_mode_detected_normal_gateway">Auto-selected Normal mode for %1$s because Android exposed an upstream gateway on that interface. You can switch modes manually if needed.</string>
-    <string name="block_mode_detected_normal_fallback">Auto-selected Normal mode for %1$s because hotspot/gateway handling was not clearly detected. You can switch modes manually if needed.</string>
+    <string name="block_mode_detected_normal_fallback">Auto-selected Normal mode for %1$s because hotspot routing was not clearly detected. You can switch modes manually if needed.</string>
     <string name="block_current_target">Blocked target: %1$s</string>
     <string name="block_none">No target is currently blocked by FSploit.</string>
 
