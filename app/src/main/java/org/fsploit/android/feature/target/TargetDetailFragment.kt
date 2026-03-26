@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -17,6 +16,8 @@ import org.fsploit.android.databinding.FragmentTargetDetailBinding
 import org.fsploit.android.feature.home.HomeUiState
 import org.fsploit.android.feature.home.HomeViewModel
 import org.fsploit.android.feature.target.PortResultFilter
+import org.fsploit.android.ui.NonFilteringStringAdapter
+import org.fsploit.android.ui.enableFullDropdown
 
 class TargetDetailFragment : Fragment() {
 
@@ -39,9 +40,13 @@ class TargetDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        binding.targetHostInput.enableFullDropdown()
         binding.targetHostInput.setOnItemClickListener { _, _, position, _ ->
             val selected = binding.targetHostInput.adapter.getItem(position)?.toString().orEmpty()
             viewModel.selectHost(selected)
+        }
+        binding.targetHostInput.doAfterTextChanged {
+            viewModel.selectHost(it?.toString().orEmpty())
         }
         binding.portSpecInput.doAfterTextChanged {
             viewModel.updatePortSpec(it?.toString().orEmpty())
@@ -78,9 +83,8 @@ class TargetDetailFragment : Fragment() {
 
     private fun render(state: HomeUiState) {
         binding.targetHostInput.setAdapter(
-            ArrayAdapter(
+            NonFilteringStringAdapter(
                 requireContext(),
-                android.R.layout.simple_dropdown_item_1line,
                 state.responsiveHosts
             )
         )

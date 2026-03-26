@@ -250,6 +250,7 @@
     <string name="mitm_session_start_failed">Failed to start the requested MITM session.</string>
     <string name="mitm_interface_required">Select or save a capture interface before starting MITM modes.</string>
     <string name="mitm_gateway_required">No gateway was resolved for %1$s. MITM relay cannot start.</string>
+    <string name="mitm_target_outside_interface_subnet">Target %1$s is outside the selected interface %2$s subnet. Normal mode ARP relay cannot reach it. Switch interface or use a target on the same local segment.</string>
     <string name="mitm_dns_rules_required">Enter at least one DNS spoof rule.</string>
     <string name="mitm_redirect_port_invalid">Enter a valid redirect port between 1 and 65535.</string>
     <string name="mitm_url_invalid">Enter a valid URL.</string>

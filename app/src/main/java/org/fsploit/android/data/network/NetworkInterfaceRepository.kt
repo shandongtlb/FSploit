@@ -13,7 +13,6 @@ import org.fsploit.android.domain.model.SweepTarget
 import java.net.Inet4Address
 import java.net.InterfaceAddress
 import java.net.NetworkInterface
-import kotlin.math.max
 
 class NetworkInterfaceRepository(
     context: Context,
@@ -147,7 +146,7 @@ class NetworkInterfaceRepository(
         val interfaceAddress = usableIpv4InterfaceAddresses(chosenInterface).firstOrNull() ?: return null
         val localAddress = interfaceAddress.address.hostAddress ?: return null
         val rawPrefix = interfaceAddress.networkPrefixLength.toInt()
-        val effectivePrefix = max(rawPrefix, 24)
+        val effectivePrefix = selectSweepPrefix(rawPrefix)
         val hostCandidates = buildHostCandidates(localAddress, effectivePrefix)
             .filterNot { it == localAddress }
 
@@ -158,6 +157,16 @@ class NetworkInterfaceRepository(
             networkAddress = calculateNetworkAddress(localAddress, effectivePrefix),
             hostCandidates = hostCandidates
         )
+    }
+
+    private fun selectSweepPrefix(rawPrefix: Int): Int {
+        val normalizedPrefix = rawPrefix.coerceIn(1, 30)
+        val candidateHosts = hostCountForPrefix(normalizedPrefix)
+        return if (candidateHosts in 1..MAX_SWEEP_HOSTS) {
+            normalizedPrefix
+        } else {
+            24
+        }
     }
 
     private fun resolveDefaultGatewayAddress(
@@ -236,6 +245,14 @@ class NetworkInterfaceRepository(
         }
     }
 
+    private fun hostCountForPrefix(prefixLength: Int): Int {
+        val usableBits = 32 - prefixLength
+        if (usableBits <= 1) {
+            return 0
+        }
+        return (1 shl usableBits) - 2
+    }
+
     private fun ipv4ToInt(address: String): Int {
         val octets = address.split('.').map { it.toInt() }
         return (octets[0] shl 24) or
@@ -252,5 +269,9 @@ class NetworkInterfaceRepository(
             (unsigned shr 8) and 0xff,
             unsigned and 0xff
         ).joinToString(".")
+    }
+
+    companion object {
+        private const val MAX_SWEEP_HOSTS = 1024
     }
 }

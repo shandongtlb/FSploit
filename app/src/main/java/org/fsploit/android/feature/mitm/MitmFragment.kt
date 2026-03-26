@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -18,6 +17,8 @@ import org.fsploit.android.domain.model.ConnectionBlockMode
 import org.fsploit.android.domain.model.MitmMode
 import org.fsploit.android.feature.home.HomeUiState
 import org.fsploit.android.feature.home.HomeViewModel
+import org.fsploit.android.ui.NonFilteringStringAdapter
+import org.fsploit.android.ui.enableFullDropdown
 
 class MitmFragment : Fragment() {
 
@@ -40,9 +41,14 @@ class MitmFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        binding.targetHostInput.enableFullDropdown()
+        binding.mitmModeInput.enableFullDropdown()
         binding.targetHostInput.setOnItemClickListener { _, _, position, _ ->
             val selected = binding.targetHostInput.adapter.getItem(position)?.toString().orEmpty()
             viewModel.selectHost(selected)
+        }
+        binding.targetHostInput.doAfterTextChanged {
+            viewModel.selectHost(it?.toString().orEmpty())
         }
         binding.startMitmSessionButton.setOnClickListener {
             viewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
@@ -83,13 +89,7 @@ class MitmFragment : Fragment() {
         }
 
         val modeLabels = MitmMode.entries.map { getString(it.titleRes) }
-        binding.mitmModeInput.setAdapter(
-            ArrayAdapter(
-                requireContext(),
-                android.R.layout.simple_dropdown_item_1line,
-                modeLabels
-            )
-        )
+        binding.mitmModeInput.setAdapter(NonFilteringStringAdapter(requireContext(), modeLabels))
         binding.mitmModeInput.setOnItemClickListener { _, _, position, _ ->
             viewModel.selectMitmMode(MitmMode.entries[position])
         }
@@ -166,11 +166,7 @@ class MitmFragment : Fragment() {
             binding.connectionBlockModeGroup.check(expectedBlockModeButtonId)
         }
 
-        val targetAdapter = ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_dropdown_item_1line,
-            state.responsiveHosts
-        )
+        val targetAdapter = NonFilteringStringAdapter(requireContext(), state.responsiveHosts)
         binding.targetHostInput.setAdapter(targetAdapter)
         if (binding.targetHostInput.text?.toString() != state.selectedHostAddress) {
             binding.targetHostInput.setText(state.selectedHostAddress, false)

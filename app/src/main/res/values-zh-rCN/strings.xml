@@ -250,6 +250,7 @@
     <string name="mitm_session_start_failed">启动所请求的 MITM 会话失败。</string>
     <string name="mitm_interface_required">启动 MITM 模式前请先选择并保存采集网卡。</string>
     <string name="mitm_gateway_required">%1$s 未解析到网关，无法启动 MITM 中继。</string>
+    <string name="mitm_target_outside_interface_subnet">目标 %1$s 不在当前所选接口 %2$s 的本地子网内，普通模式的 ARP 中继无法到达它。请切换接口，或改用同一二层网段内的目标。</string>
     <string name="mitm_dns_rules_required">请至少输入一条 DNS 欺骗规则。</string>
     <string name="mitm_redirect_port_invalid">请输入 1 到 65535 之间的有效重定向端口。</string>
     <string name="mitm_url_invalid">请输入有效 URL。</string>

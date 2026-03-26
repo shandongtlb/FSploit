@@ -98,7 +98,7 @@ class HomeViewModel(
                 ?.defaultGatewayAddress
                 .orEmpty()
             val selectedHostAddress = currentState.selectedHostAddress
-                .takeIf { currentState.responsiveHosts.contains(it) }
+                .takeIf { isValidManualHost(it) || currentState.responsiveHosts.contains(it) }
                 ?: currentState.responsiveHosts.firstOrNull().orEmpty()
             val storedPortScanConfig = loadPortScanConfig()
             val mitmGatewayInput = when {
@@ -349,6 +349,19 @@ class HomeViewModel(
             )
             return
         }
+        if (
+            state.selectedConnectionBlockMode == ConnectionBlockMode.NORMAL &&
+            !isHostOnPreferredInterfaceSubnet(hostAddress)
+        ) {
+            _uiState.value = state.copy(
+                mitmSessionSummary = resourceProvider.getString(
+                    R.string.mitm_target_outside_interface_subnet,
+                    hostAddress,
+                    state.preferredInterfaceName
+                )
+            )
+            return
+        }
 
         viewModelScope.launch {
             _uiState.value = state.copy(
@@ -450,14 +463,15 @@ class HomeViewModel(
         if (!ensureRootReady()) {
             return
         }
-        val interfaceName = _uiState.value.preferredInterfaceName
+        val currentState = _uiState.value
+        val interfaceName = currentState.preferredInterfaceName
+        val previousSelectedHostAddress = currentState.selectedHostAddress.trim()
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
                 isScanning = true,
                 scanSummary = resourceProvider.getString(R.string.host_sweep_running),
                 responsiveTargetResults = emptyList(),
                 responsiveHosts = emptyList(),
-                selectedHostAddress = "",
                 portScanSummary = resourceProvider.getString(R.string.port_scan_not_run),
                 scannedPortResults = emptyList(),
                 portScanResults = emptyList(),
@@ -470,8 +484,8 @@ class HomeViewModel(
             }
 
             val responsiveHosts = report.responsiveHosts.map { it.hostAddress }
-            val selectedHostAddress = _uiState.value.selectedHostAddress
-                .takeIf { responsiveHosts.contains(it) }
+            val selectedHostAddress = previousSelectedHostAddress
+                .takeIf { isValidManualHost(it) || responsiveHosts.contains(it) }
                 ?: responsiveHosts.firstOrNull().orEmpty()
             val currentState = _uiState.value
             val connectionBlockModeState = resolveConnectionBlockModeState(
@@ -673,6 +687,20 @@ class HomeViewModel(
             )
             return
         }
+        if (
+            block &&
+            _uiState.value.selectedConnectionBlockMode == ConnectionBlockMode.NORMAL &&
+            !isHostOnPreferredInterfaceSubnet(hostAddress)
+        ) {
+            _uiState.value = _uiState.value.copy(
+                connectionBlockSummary = resourceProvider.getString(
+                    R.string.mitm_target_outside_interface_subnet,
+                    hostAddress,
+                    _uiState.value.preferredInterfaceName
+                )
+            )
+            return
+        }
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
@@ -824,6 +852,17 @@ class HomeViewModel(
             parsed[index] = value
         }
         return parsed
+    }
+
+    private fun isValidManualHost(address: String): Boolean {
+        return parseIpv4(address.trim()) != null
+    }
+
+    private fun isHostOnPreferredInterfaceSubnet(hostAddress: String): Boolean {
+        val preferredInterface = _uiState.value.interfaces
+            .firstOrNull { it.name == _uiState.value.preferredInterfaceName }
+            ?: return false
+        return isHostOnInterfaceSubnet(hostAddress, preferredInterface)
     }
 
     private data class ConnectionBlockModeRecommendation(

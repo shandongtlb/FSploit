@@ -4,7 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
@@ -17,6 +17,8 @@ import org.fsploit.android.databinding.FragmentDiscoveryBinding
 import org.fsploit.android.databinding.ItemResponsiveTargetBinding
 import org.fsploit.android.feature.home.HomeUiState
 import org.fsploit.android.feature.home.HomeViewModel
+import org.fsploit.android.ui.NonFilteringStringAdapter
+import org.fsploit.android.ui.enableFullDropdown
 
 class DiscoveryFragment : Fragment() {
 
@@ -39,6 +41,8 @@ class DiscoveryFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        binding.preferredInterfaceInput.enableFullDropdown()
+        binding.targetHostInput.enableFullDropdown()
         binding.saveInterfaceButton.setOnClickListener {
             viewModel.savePreferredInterface(binding.preferredInterfaceInput.text?.toString().orEmpty())
         }
@@ -53,6 +57,9 @@ class DiscoveryFragment : Fragment() {
         binding.targetHostInput.setOnItemClickListener { _, _, position, _ ->
             val selected = binding.targetHostInput.adapter.getItem(position)?.toString().orEmpty()
             viewModel.selectHost(selected)
+        }
+        binding.targetHostInput.doAfterTextChanged {
+            viewModel.selectHost(it?.toString().orEmpty())
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -79,9 +86,8 @@ class DiscoveryFragment : Fragment() {
         }
 
         binding.preferredInterfaceInput.setAdapter(
-            ArrayAdapter(
+            NonFilteringStringAdapter(
                 requireContext(),
-                android.R.layout.simple_dropdown_item_1line,
                 state.interfaces.map { it.name }
             )
         )
@@ -104,16 +110,15 @@ class DiscoveryFragment : Fragment() {
         renderResponsiveTargets(state)
 
         binding.targetHostInput.setAdapter(
-            ArrayAdapter(
+            NonFilteringStringAdapter(
                 requireContext(),
-                android.R.layout.simple_dropdown_item_1line,
                 state.responsiveHosts
             )
         )
         if (binding.targetHostInput.text?.toString() != state.selectedHostAddress) {
             binding.targetHostInput.setText(state.selectedHostAddress, false)
         }
-        binding.targetHostInput.isEnabled = state.rootGranted && state.responsiveHosts.isNotEmpty()
+        binding.targetHostInput.isEnabled = state.rootGranted
     }
 
     private fun renderResponsiveTargets(state: HomeUiState) {
