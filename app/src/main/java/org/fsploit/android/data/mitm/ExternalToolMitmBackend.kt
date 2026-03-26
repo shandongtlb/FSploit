@@ -5,6 +5,7 @@ import org.fsploit.android.R
 import org.fsploit.android.core.ResourceProvider
 import org.fsploit.android.data.settings.AppPreferencesRepository
 import org.fsploit.android.data.shell.ShellRepository
+import org.fsploit.android.domain.model.ConnectionBlockResult
 import org.fsploit.android.domain.model.MitmActionResult
 import org.fsploit.android.domain.model.MitmLaunchRequest
 import org.fsploit.android.domain.model.MitmMode
@@ -24,6 +25,7 @@ class ExternalToolMitmBackend(
     private val preferencesRepository: AppPreferencesRepository
 ) : MitmBackend {
     private val sessionStore = MitmSessionStore(context)
+    private val blockStore = ConnectionBlockStore(context)
     private val toolchainProbe = ToolchainProbe(resourceProvider, shellRepository, preferencesRepository)
 
     override fun loadReadiness(shellStatus: ShellStatus): MitmReadiness {
@@ -224,6 +226,83 @@ class ExternalToolMitmBackend(
         )
     }
 
+    override fun blockHost(targetHost: String, interfaceName: String): ConnectionBlockResult {
+        if (interfaceName.isBlank()) {
+            return ConnectionBlockResult(
+                targetHost = targetHost,
+                success = false,
+                summary = resourceProvider.getString(R.string.mitm_interface_required)
+            )
+        }
+
+        val readiness = loadReadiness(
+            ShellStatus(
+                shellAvailable = true,
+                suAvailable = true,
+                rootGranted = true,
+                summary = ""
+            )
+        )
+        if (!readiness.bettercapAvailable) {
+            return ConnectionBlockResult(
+                targetHost = targetHost,
+                success = false,
+                summary = resourceProvider.getString(R.string.mitm_missing_bettercap)
+            )
+        }
+
+        stopConnectionBlockInternal()
+
+        val config = toolchainProbe.loadConfig()
+        val startedAt = System.currentTimeMillis()
+        val blockDirectory = blockStore.createBlockDirectory(startedAt)
+        val logFile = File(blockDirectory, "connection_block.log")
+        val pid = startBettercapCaplet(
+            config = config,
+            name = "connection_block",
+            interfaceName = interfaceName,
+            sessionDirectory = blockDirectory,
+            logFile = logFile,
+            capletContent = buildArpBanCaplet(targetHost)
+        ) ?: return ConnectionBlockResult(
+            targetHost = targetHost,
+            success = false,
+            summary = resourceProvider.getString(R.string.mitm_session_start_failed)
+        )
+
+        blockStore.saveRecord(
+            ActiveConnectionBlockRecord(
+                targetHost = targetHost,
+                interfaceName = interfaceName,
+                pid = pid,
+                logPath = logFile.absolutePath,
+                startedAtEpochMs = startedAt
+            )
+        )
+
+        return ConnectionBlockResult(
+            targetHost = targetHost,
+            success = true,
+            summary = resourceProvider.getString(R.string.block_applied, targetHost)
+        )
+    }
+
+    override fun unblockHost(hostAddress: String): ConnectionBlockResult {
+        val record = loadConnectionBlockRecord()
+            ?: return ConnectionBlockResult(
+                targetHost = hostAddress,
+                success = true,
+                summary = resourceProvider.getString(R.string.block_removed, hostAddress)
+            )
+
+        stopConnectionBlockInternal()
+        return ConnectionBlockResult(
+            targetHost = record.targetHost,
+            success = true,
+            summary = resourceProvider.getString(R.string.block_removed, record.targetHost)
+        )
+    }
+
     private fun startConnectionKill(
         config: MitmToolchainConfig,
         interfaceName: String,
@@ -388,6 +467,25 @@ class ExternalToolMitmBackend(
         if (forwardingEnabled) {
             setForwarding(false)
         }
+    }
+
+    private fun loadConnectionBlockRecord(): ActiveConnectionBlockRecord? {
+        val record = blockStore.loadRecord() ?: return null
+        if (!isProcessAlive(record.pid)) {
+            blockStore.clear()
+            return null
+        }
+        return record
+    }
+
+    private fun stopConnectionBlockInternal() {
+        val record = blockStore.loadRecord() ?: return
+        shellRepository.execute(
+            command = "kill -2 ${record.pid} 2>/dev/null || kill -9 ${record.pid} 2>/dev/null || true",
+            asRoot = true,
+            timeoutMs = PROBE_TIMEOUT_MS
+        )
+        blockStore.clear()
     }
 
     private fun missingToolSummary(mode: MitmMode, readiness: MitmReadiness): String? {

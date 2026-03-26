@@ -43,7 +43,7 @@ class AppContainer(
         shellRepository = shellRepository,
         preferencesRepository = preferencesRepository
     )
-    private val mitmRepository = MitmRepository(resourceProvider, shellRepository, mitmBackend)
+    private val mitmRepository = MitmRepository(resourceProvider, mitmBackend)
     private val hostSweepRepository = HostSweepRepository(
         networkRepository,
         resourceProvider,

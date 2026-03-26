@@ -622,7 +622,11 @@ class HomeViewModel(
             )
 
             val result = withContext(Dispatchers.Default) {
-                if (block) blockHostUseCase(hostAddress) else unblockHostUseCase(hostAddress)
+                if (block) {
+                    blockHostUseCase(hostAddress, _uiState.value.preferredInterfaceName)
+                } else {
+                    unblockHostUseCase(hostAddress)
+                }
             }
 
             _uiState.value = _uiState.value.copy(

@@ -6,7 +6,7 @@ import org.fsploit.android.domain.model.ConnectionBlockResult
 class BlockHostUseCase(
     private val mitmRepository: MitmRepository
 ) {
-    operator fun invoke(hostAddress: String): ConnectionBlockResult {
-        return mitmRepository.blockHost(hostAddress)
+    operator fun invoke(hostAddress: String, interfaceName: String): ConnectionBlockResult {
+        return mitmRepository.blockHost(hostAddress, interfaceName)
     }
 }
