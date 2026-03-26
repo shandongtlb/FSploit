@@ -57,6 +57,10 @@ class MitmFragment : Fragment() {
         binding.stopMitmSessionButton.setOnClickListener {
             viewModel.stopMitmSession()
         }
+        binding.runMitmDiagnosticsButton.setOnClickListener {
+            viewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
+            viewModel.runMitmDiagnostics()
+        }
         binding.blockConnectionButton.setOnClickListener {
             viewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
             viewModel.blockSelectedHost()
@@ -150,10 +154,16 @@ class MitmFragment : Fragment() {
         binding.activeMitmLogValue.text = state.mitmSession.logPath.ifBlank {
             getString(R.string.mitm_none)
         }
+        binding.mitmDiagnosticsSummaryValue.text = state.mitmDiagnosticsSummary
+        binding.mitmDiagnosticsOutputValue.text = state.mitmDiagnosticsOutput.ifBlank {
+            getString(R.string.mitm_diagnostics_output_empty)
+        }
         binding.startMitmSessionButton.isEnabled =
             state.rootGranted && state.selectedHostAddress.isNotBlank() && !state.isStartingMitmSession
         binding.stopMitmSessionButton.isEnabled =
             state.rootGranted && state.mitmSession.active && !state.isStartingMitmSession
+        binding.runMitmDiagnosticsButton.isEnabled =
+            state.rootGranted && state.preferredInterfaceName.isNotBlank() && !state.isRunningMitmDiagnostics
         binding.blockConnectionButton.isEnabled =
             state.rootGranted && state.selectedHostAddress.isNotBlank() && !state.isBlockingConnection
         binding.unblockConnectionButton.isEnabled =

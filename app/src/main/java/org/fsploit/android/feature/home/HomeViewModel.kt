@@ -70,6 +70,7 @@ class HomeViewModel(
             rootGateSummary = resourceProvider.getString(R.string.root_gate_pending),
             mitmSummary = resourceProvider.getString(R.string.mitm_pending),
             mitmSessionSummary = resourceProvider.getString(R.string.mitm_session_idle),
+            mitmDiagnosticsSummary = resourceProvider.getString(R.string.mitm_diagnostics_idle),
             mitmSettingsSummary = resourceProvider.getString(R.string.mitm_settings_idle),
             portScanSummary = resourceProvider.getString(R.string.port_scan_not_run),
             connectionBlockModeSummary = resourceProvider.getString(R.string.block_mode_pending),
@@ -159,6 +160,10 @@ class HomeViewModel(
                 mitmSessionSummary = mitmSession.summary.ifBlank {
                     resourceProvider.getString(R.string.mitm_session_idle)
                 },
+                mitmDiagnosticsSummary = currentState.mitmDiagnosticsSummary.ifBlank {
+                    resourceProvider.getString(R.string.mitm_diagnostics_idle)
+                },
+                mitmDiagnosticsOutput = currentState.mitmDiagnosticsOutput,
                 mitmToolchainConfig = mitmToolchainConfig,
                 mitmSettingsSummary = currentState.mitmSettingsSummary.ifBlank {
                     resourceProvider.getString(R.string.mitm_settings_idle)
@@ -418,6 +423,50 @@ class HomeViewModel(
         }
     }
 
+    fun runMitmDiagnostics() {
+        if (!ensureRootReady()) {
+            return
+        }
+
+        val state = _uiState.value
+        if (state.preferredInterfaceName.isBlank()) {
+            _uiState.value = state.copy(
+                mitmDiagnosticsSummary = resourceProvider.getString(R.string.mitm_interface_required)
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = state.copy(
+                isRunningMitmDiagnostics = true,
+                mitmDiagnosticsSummary = resourceProvider.getString(R.string.mitm_diagnostics_running)
+            )
+
+            val command = buildMitmDiagnosticsCommand(state)
+            val result = withContext(Dispatchers.Default) {
+                runShellCommandUseCase(
+                    command = command,
+                    asRoot = true,
+                    timeoutMs = MITM_DIAGNOSTICS_TIMEOUT_MS
+                )
+            }
+            val diagnosticsOutput = result.output.ifBlank {
+                resourceProvider.getString(R.string.shell_command_no_output)
+            }
+
+            _uiState.value = _uiState.value.copy(
+                isRunningMitmDiagnostics = false,
+                mitmDiagnosticsSummary = buildMitmDiagnosticsSummary(
+                    state = state,
+                    shellSummary = result.summary,
+                    diagnosticsOutput = diagnosticsOutput,
+                    timedOut = result.timedOut
+                ),
+                mitmDiagnosticsOutput = diagnosticsOutput
+            )
+        }
+    }
+
     fun updatePortSpec(portSpec: String) {
         _uiState.value = _uiState.value.copy(portSpec = portSpec)
     }
@@ -670,9 +719,147 @@ class HomeViewModel(
             connectionBlockSummary = resourceProvider.getString(R.string.root_gate_blocked),
             portScanSummary = resourceProvider.getString(R.string.root_gate_blocked),
             shellExecutionSummary = resourceProvider.getString(R.string.root_gate_blocked),
-            mitmSessionSummary = resourceProvider.getString(R.string.root_gate_blocked)
+            mitmSessionSummary = resourceProvider.getString(R.string.root_gate_blocked),
+            mitmDiagnosticsSummary = resourceProvider.getString(R.string.root_gate_blocked)
         )
         return false
+    }
+
+    private fun buildMitmDiagnosticsCommand(state: HomeUiState): String {
+        val interfaceName = shellSingleQuote(state.preferredInterfaceName)
+        val targetHost = state.selectedHostAddress.trim()
+        val gatewayAddress = state.mitmGatewayInput.trim().ifBlank { state.resolvedGatewayAddress.trim() }
+        val targetLiteral = if (targetHost.isBlank()) "" else shellSingleQuote(targetHost)
+        val gatewayLiteral = if (gatewayAddress.isBlank()) "" else shellSingleQuote(gatewayAddress)
+        val logPath = state.mitmSession.logPath.trim()
+        val logPathLiteral = if (logPath.isBlank()) "" else shellSingleQuote(logPath)
+
+        return buildString {
+            appendLine("iface=$interfaceName")
+            appendLine("target=$targetLiteral")
+            appendLine("gateway=$gatewayLiteral")
+            appendLine("log_path=$logPathLiteral")
+            appendLine("print_section() {")
+            appendLine("  printf '\\n== %s ==\\n' \"${'$'}1\"")
+            appendLine("}")
+            appendLine("safe_run() {")
+            appendLine("  label=\"${'$'}1\"")
+            appendLine("  shift")
+            appendLine("  print_section \"${'$'}label\"")
+            appendLine("  if \"${'$'}@\" 2>/dev/null; then")
+            appendLine("    :")
+            appendLine("  else")
+            appendLine("    echo unavailable")
+            appendLine("  fi")
+            appendLine("}")
+            appendLine("print_section metadata")
+            appendLine("echo timestamp=${'$'}(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date)")
+            appendLine("echo interface=${'$'}iface")
+            appendLine("echo selected_mode=${state.selectedConnectionBlockMode.name}")
+            appendLine("echo selected_target=${if (targetHost.isBlank()) "<none>" else targetHost}")
+            appendLine("echo effective_gateway=${if (gatewayAddress.isBlank()) "<none>" else gatewayAddress}")
+            appendLine("echo active_session=${state.mitmSession.active}")
+            appendLine("echo session_mode=${state.mitmSession.mode?.name ?: "NONE"}")
+            appendLine("echo session_log=${if (logPath.isBlank()) "<none>" else logPath}")
+            appendLine("safe_run 'ip addr' sh -c \"ip addr show dev \\\"${'$'}iface\\\"\"")
+            appendLine("safe_run 'ip route' sh -c 'ip route show'")
+            appendLine("safe_run 'ip neigh' sh -c \"ip neigh show dev \\\"${'$'}iface\\\"\"")
+            appendLine("print_section /proc/net/arp")
+            appendLine("if [ -r /proc/net/arp ]; then")
+            appendLine("  cat /proc/net/arp")
+            appendLine("else")
+            appendLine("  echo unavailable")
+            appendLine("fi")
+            appendLine("print_section target_arp")
+            appendLine("if [ -n \"${'$'}target\" ]; then")
+            appendLine("  grep -F \"${'$'}target\" /proc/net/arp 2>/dev/null || echo missing")
+            appendLine("else")
+            appendLine("  echo no_target_selected")
+            appendLine("fi")
+            appendLine("print_section gateway_arp")
+            appendLine("if [ -n \"${'$'}gateway\" ]; then")
+            appendLine("  grep -F \"${'$'}gateway\" /proc/net/arp 2>/dev/null || echo missing")
+            appendLine("else")
+            appendLine("  echo no_gateway_selected")
+            appendLine("fi")
+            appendLine("safe_run 'iptables filter' sh -c 'iptables -S FORWARD'")
+            appendLine("safe_run 'iptables nat' sh -c 'iptables -t nat -S'")
+            appendLine("print_section bettercap_processes")
+            appendLine("ps 2>/dev/null | grep -E 'bettercap|mitmdump|tcpdump' | grep -v grep || echo none")
+            appendLine("print_section recent_log")
+            appendLine("if [ -n \"${'$'}log_path\" ] && [ -r \"${'$'}log_path\" ]; then")
+            appendLine("  tail -n 40 \"${'$'}log_path\"")
+            appendLine("else")
+            appendLine("  echo unavailable")
+            appendLine("fi")
+        }
+    }
+
+    private fun buildMitmDiagnosticsSummary(
+        state: HomeUiState,
+        shellSummary: String,
+        diagnosticsOutput: String,
+        timedOut: Boolean
+    ): String {
+        if (timedOut) {
+            return resourceProvider.getString(R.string.mitm_diagnostics_timed_out)
+        }
+
+        val findings = mutableListOf<String>()
+        val gatewayAddress = state.mitmGatewayInput.trim().ifBlank { state.resolvedGatewayAddress.trim() }
+
+        if (
+            state.selectedConnectionBlockMode == ConnectionBlockMode.NORMAL &&
+            gatewayAddress.isBlank()
+        ) {
+            findings += resourceProvider.getString(R.string.mitm_diagnostics_hint_gateway_missing)
+        }
+        if (diagnosticsOutput.contains("Could not detect gateway", ignoreCase = true)) {
+            findings += resourceProvider.getString(R.string.mitm_diagnostics_hint_bettercap_gateway)
+        }
+        if (diagnosticsOutput.contains("ARP spoofing mechanisms", ignoreCase = true)) {
+            findings += resourceProvider.getString(R.string.mitm_diagnostics_hint_router_protection)
+        }
+        if (sectionContainsLine(diagnosticsOutput, "target_arp", "missing")) {
+            findings += resourceProvider.getString(R.string.mitm_diagnostics_hint_target_arp_missing)
+        }
+        if (gatewayAddress.isNotBlank() && sectionContainsLine(diagnosticsOutput, "gateway_arp", "missing")) {
+            findings += resourceProvider.getString(R.string.mitm_diagnostics_hint_gateway_arp_missing)
+        }
+        if (sectionContainsLine(diagnosticsOutput, "bettercap_processes", "none")) {
+            findings += resourceProvider.getString(R.string.mitm_diagnostics_hint_process_missing)
+        }
+
+        val conclusion = when {
+            findings.isNotEmpty() -> findings.joinToString(" ")
+            state.selectedConnectionBlockMode == ConnectionBlockMode.HOTSPOT ->
+                resourceProvider.getString(R.string.mitm_diagnostics_hint_hotspot_baseline)
+            else -> resourceProvider.getString(R.string.mitm_diagnostics_hint_no_obvious_failure)
+        }
+
+        return "$shellSummary $conclusion".trim()
+    }
+
+    private fun shellSingleQuote(value: String): String {
+        return "'" + value.replace("'", "'\"'\"'") + "'"
+    }
+
+    private fun sectionContainsLine(output: String, sectionName: String, expectedLine: String): Boolean {
+        val marker = "== $sectionName =="
+        val startIndex = output.indexOf(marker, ignoreCase = true)
+        if (startIndex < 0) {
+            return false
+        }
+        val sectionBodyStart = output.indexOf('\n', startIndex).let { index ->
+            if (index >= 0) index + 1 else return false
+        }
+        val nextMarkerIndex = output.indexOf("\n== ", sectionBodyStart)
+        val sectionBody = if (nextMarkerIndex >= 0) {
+            output.substring(sectionBodyStart, nextMarkerIndex)
+        } else {
+            output.substring(sectionBodyStart)
+        }
+        return sectionBody.lineSequence().any { it.trim().equals(expectedLine, ignoreCase = true) }
     }
 
     private fun performConnectionBlock(block: Boolean) {
@@ -878,5 +1065,6 @@ class HomeViewModel(
 
     companion object {
         private const val SHELL_COMMAND_TIMEOUT_MS = 5000L
+        private const val MITM_DIAGNOSTICS_TIMEOUT_MS = 8000L
     }
 }
