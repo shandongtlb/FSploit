@@ -62,6 +62,11 @@ class DiscoveryFragment : Fragment() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        (requireActivity() as MainActivity).refreshFromUi()
+    }
+
     private fun render(state: HomeUiState) {
         binding.discoveryHint.text = getString(R.string.discovery_hint)
         binding.saveInterfaceButton.isEnabled = state.interfaces.isNotEmpty()

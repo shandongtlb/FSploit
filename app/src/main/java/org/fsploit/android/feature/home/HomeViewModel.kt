@@ -86,8 +86,9 @@ class HomeViewModel(
             val mitmSession = loadMitmSessionUseCase()
             val mitmToolchainConfig = loadMitmToolchainConfigUseCase()
             val currentState = _uiState.value
+            val interfaceNames = overview.interfaces.map { it.name }
             val preferredInterfaceName = getPreferredInterface()
-                .takeIf { it.isNotBlank() }
+                .takeIf { it.isNotBlank() && interfaceNames.contains(it) }
                 ?: overview.interfaces.firstOrNull()?.name.orEmpty()
             val resolvedGatewayAddress = overview.interfaces
                 .firstOrNull { it.name == preferredInterfaceName }

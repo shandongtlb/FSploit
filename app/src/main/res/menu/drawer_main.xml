@@ -5,14 +5,14 @@
             android:id="@+id/nav_overview"
             android:title="@string/nav_overview" />
         <item
-            android:id="@+id/nav_mitm"
-            android:title="@string/nav_mitm" />
-        <item
             android:id="@+id/nav_discovery"
             android:title="@string/nav_discovery" />
         <item
             android:id="@+id/nav_target_detail"
             android:title="@string/nav_target_detail" />
+        <item
+            android:id="@+id/nav_mitm"
+            android:title="@string/nav_mitm" />
         <item
             android:id="@+id/nav_tools"
             android:title="@string/nav_tools" />
