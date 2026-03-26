@@ -61,6 +61,9 @@ class MitmFragment : Fragment() {
         binding.mitmPrimaryInput.doAfterTextChanged {
             viewModel.updateMitmPrimaryInput(it?.toString().orEmpty())
         }
+        binding.mitmGatewayInput.doAfterTextChanged {
+            viewModel.updateMitmGatewayInput(it?.toString().orEmpty())
+        }
         binding.mitmSecondaryInput.doAfterTextChanged {
             viewModel.updateMitmSecondaryInput(it?.toString().orEmpty())
         }
@@ -100,6 +103,15 @@ class MitmFragment : Fragment() {
             getString(R.string.discovery_no_target_selected)
         } else {
             getString(R.string.discovery_selected_target, state.selectedHostAddress)
+        }
+        syncInput(
+            binding.mitmGatewayInput,
+            state.mitmGatewayInput
+        )
+        binding.mitmGatewayResolvedValue.text = if (state.resolvedGatewayAddress.isBlank()) {
+            getString(R.string.mitm_gateway_unresolved)
+        } else {
+            getString(R.string.mitm_gateway_detected, state.resolvedGatewayAddress)
         }
         binding.mitmModeDescriptionValue.text = getString(mode.descriptionRes)
         binding.currentBlockValue.text = if (state.blockedHostAddress.isBlank()) {

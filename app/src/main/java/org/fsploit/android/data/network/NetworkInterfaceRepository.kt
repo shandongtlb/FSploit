@@ -3,6 +3,7 @@ package org.fsploit.android.data.network
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.net.LinkProperties
 import org.fsploit.android.R
 import org.fsploit.android.core.ResourceProvider
 import org.fsploit.android.domain.model.InterfaceCategory
@@ -23,6 +24,7 @@ class NetworkInterfaceRepository(
         appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     fun loadOverview(): NetworkOverview {
+        val linkProperties = connectivityManager.getLinkProperties(connectivityManager.activeNetwork)
         val interfaces = NetworkInterface.getNetworkInterfaces()?.toList().orEmpty()
             .filter { isUsableInterface(it) }
             .sortedWith(compareBy<NetworkInterface> { interfacePriority(it.name) }.thenBy { it.name })
@@ -33,7 +35,12 @@ class NetworkInterfaceRepository(
                     addresses = usableIpv4Addresses(networkInterface),
                     category = classify(networkInterface.name),
                     primaryAddress = primaryAddress?.address?.hostAddress,
-                    prefixLength = primaryAddress?.networkPrefixLength?.toInt()
+                    prefixLength = primaryAddress?.networkPrefixLength?.toInt(),
+                    defaultGatewayAddress = resolveDefaultGatewayAddress(
+                        interfaceName = networkInterface.name,
+                        interfaceAddresses = usableIpv4InterfaceAddresses(networkInterface),
+                        linkProperties = linkProperties
+                    )
                 )
             }
 
@@ -150,6 +157,49 @@ class NetworkInterfaceRepository(
         )
     }
 
+    private fun resolveDefaultGatewayAddress(
+        interfaceName: String,
+        interfaceAddresses: List<InterfaceAddress>,
+        linkProperties: LinkProperties?
+    ): String? {
+        if (linkProperties == null) {
+            return null
+        }
+
+        val candidateGateways = linkProperties.routes.orEmpty()
+            .mapNotNull { route ->
+                if (!route.isDefaultRoute) {
+                    return@mapNotNull null
+                }
+                val gateway = route.gateway
+                when {
+                    gateway !is Inet4Address -> null
+                    gateway.isAnyLocalAddress -> null
+                    else -> gateway.hostAddress
+                }
+            }
+            .distinct()
+
+        if (candidateGateways.isEmpty()) {
+            return null
+        }
+
+        if (linkProperties.interfaceName == interfaceName) {
+            return candidateGateways.firstOrNull()
+        }
+
+        return candidateGateways.firstOrNull { gateway ->
+            interfaceAddresses.any { address ->
+                val hostAddress = address.address.hostAddress ?: return@any false
+                sameSubnet(
+                    firstAddress = hostAddress,
+                    secondAddress = gateway,
+                    prefixLength = address.networkPrefixLength.toInt()
+                )
+            }
+        }
+    }
+
     private fun buildHostCandidates(localAddress: String, prefixLength: Int): List<String> {
         val localInt = ipv4ToInt(localAddress)
         val mask = prefixToMask(prefixLength)
@@ -168,6 +218,11 @@ class NetworkInterfaceRepository(
     private fun calculateNetworkAddress(localAddress: String, prefixLength: Int): String {
         val address = ipv4ToInt(localAddress)
         return intToIpv4(address and prefixToMask(prefixLength))
+    }
+
+    private fun sameSubnet(firstAddress: String, secondAddress: String, prefixLength: Int): Boolean {
+        val mask = prefixToMask(prefixLength)
+        return (ipv4ToInt(firstAddress) and mask) == (ipv4ToInt(secondAddress) and mask)
     }
 
     private fun prefixToMask(prefixLength: Int): Int {

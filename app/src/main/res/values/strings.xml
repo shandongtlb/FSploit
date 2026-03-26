@@ -49,6 +49,10 @@
     <string name="mitm_unavailable">Unavailable</string>
     <string name="mitm_mode_label">MITM mode</string>
     <string name="mitm_mode_config">Mode configuration</string>
+    <string name="mitm_gateway_label">Gateway</string>
+    <string name="mitm_gateway_input_label">Gateway IPv4 address</string>
+    <string name="mitm_gateway_detected">Detected from Android network stack: %1$s</string>
+    <string name="mitm_gateway_unresolved">Android did not expose a gateway for the selected interface. Enter one manually if needed.</string>
     <string name="mitm_primary_input_label">Primary input</string>
     <string name="mitm_secondary_input_label">Secondary input</string>
     <string name="mitm_payload_input_label">Payload</string>

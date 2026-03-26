@@ -38,6 +38,8 @@ data class HomeUiState(
     val mitmdumpAvailable: Boolean = false,
     val certificateStoreAccessible: Boolean = false,
     val selectedMitmMode: MitmMode = MitmMode.SNIFFER,
+    val resolvedGatewayAddress: String = "",
+    val mitmGatewayInput: String = "",
     val mitmPrimaryInput: String = "",
     val mitmSecondaryInput: String = "",
     val mitmPayloadInput: String = "",

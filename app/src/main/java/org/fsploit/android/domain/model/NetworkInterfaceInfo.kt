@@ -5,7 +5,8 @@ data class NetworkInterfaceInfo(
     val addresses: List<String>,
     val category: InterfaceCategory,
     val primaryAddress: String? = addresses.firstOrNull(),
-    val prefixLength: Int? = null
+    val prefixLength: Int? = null,
+    val defaultGatewayAddress: String? = null
 )
 
 enum class InterfaceCategory {

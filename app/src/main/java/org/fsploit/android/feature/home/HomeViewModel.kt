@@ -89,10 +89,19 @@ class HomeViewModel(
             val preferredInterfaceName = getPreferredInterface()
                 .takeIf { it.isNotBlank() }
                 ?: overview.interfaces.firstOrNull()?.name.orEmpty()
+            val resolvedGatewayAddress = overview.interfaces
+                .firstOrNull { it.name == preferredInterfaceName }
+                ?.defaultGatewayAddress
+                .orEmpty()
             val selectedHostAddress = currentState.selectedHostAddress
                 .takeIf { currentState.responsiveHosts.contains(it) }
                 ?: currentState.responsiveHosts.firstOrNull().orEmpty()
             val storedPortScanConfig = loadPortScanConfig()
+            val mitmGatewayInput = when {
+                currentState.mitmGatewayInput.isBlank() -> resolvedGatewayAddress
+                currentState.mitmGatewayInput == currentState.resolvedGatewayAddress -> resolvedGatewayAddress
+                else -> currentState.mitmGatewayInput
+            }
 
             _uiState.value = currentState.copy(
                 isLoading = false,
@@ -111,6 +120,8 @@ class HomeViewModel(
                     resourceProvider.getString(R.string.root_gate_blocked)
                 },
                 preferredInterfaceName = preferredInterfaceName,
+                resolvedGatewayAddress = resolvedGatewayAddress,
+                mitmGatewayInput = mitmGatewayInput,
                 responsiveTargetResults = currentState.responsiveTargetResults,
                 responsiveHosts = currentState.responsiveHosts,
                 selectedHostAddress = selectedHostAddress,
@@ -155,8 +166,22 @@ class HomeViewModel(
 
     fun savePreferredInterface(interfaceName: String) {
         val trimmed = interfaceName.trim()
+        val currentState = _uiState.value
+        val resolvedGatewayAddress = currentState.interfaces
+            .firstOrNull { it.name == trimmed }
+            ?.defaultGatewayAddress
+            .orEmpty()
+        val mitmGatewayInput = when {
+            currentState.mitmGatewayInput.isBlank() -> resolvedGatewayAddress
+            currentState.mitmGatewayInput == currentState.resolvedGatewayAddress -> resolvedGatewayAddress
+            else -> currentState.mitmGatewayInput
+        }
         savePreferredInterfaceUseCase(trimmed)
-        _uiState.value = _uiState.value.copy(preferredInterfaceName = trimmed)
+        _uiState.value = currentState.copy(
+            preferredInterfaceName = trimmed,
+            resolvedGatewayAddress = resolvedGatewayAddress,
+            mitmGatewayInput = mitmGatewayInput
+        )
     }
 
     fun selectHost(hostAddress: String) {
@@ -177,6 +202,10 @@ class HomeViewModel(
 
     fun updateMitmPrimaryInput(value: String) {
         _uiState.value = _uiState.value.copy(mitmPrimaryInput = value)
+    }
+
+    fun updateMitmGatewayInput(value: String) {
+        _uiState.value = _uiState.value.copy(mitmGatewayInput = value.trim())
     }
 
     fun updateMitmSecondaryInput(value: String) {
@@ -285,6 +314,7 @@ class HomeViewModel(
                         mode = state.selectedMitmMode,
                         targetHost = hostAddress,
                         interfaceName = state.preferredInterfaceName,
+                        gatewayAddress = state.mitmGatewayInput,
                         primaryValue = state.mitmPrimaryInput,
                         secondaryValue = state.mitmSecondaryInput,
                         payloadValue = state.mitmPayloadInput
