@@ -6,6 +6,7 @@ import org.fsploit.android.core.ResourceProvider
 import org.fsploit.android.data.settings.AppPreferencesRepository
 import org.fsploit.android.data.shell.ShellRepository
 import org.fsploit.android.domain.model.ConnectionBlockResult
+import org.fsploit.android.domain.model.ConnectionBlockMode
 import org.fsploit.android.domain.model.MitmActionResult
 import org.fsploit.android.domain.model.MitmLaunchRequest
 import org.fsploit.android.domain.model.MitmMode
@@ -226,7 +227,11 @@ class ExternalToolMitmBackend(
         )
     }
 
-    override fun blockHost(targetHost: String, interfaceName: String): ConnectionBlockResult {
+    override fun blockHost(
+        targetHost: String,
+        interfaceName: String,
+        mode: ConnectionBlockMode
+    ): ConnectionBlockResult {
         if (interfaceName.isBlank()) {
             return ConnectionBlockResult(
                 targetHost = targetHost,
@@ -243,41 +248,71 @@ class ExternalToolMitmBackend(
                 summary = ""
             )
         )
-        if (!readiness.bettercapAvailable) {
-            return ConnectionBlockResult(
-                targetHost = targetHost,
-                success = false,
-                summary = resourceProvider.getString(R.string.mitm_missing_bettercap)
-            )
-        }
-
         stopConnectionBlockInternal()
-
-        val config = toolchainProbe.loadConfig()
         val startedAt = System.currentTimeMillis()
         val blockDirectory = blockStore.createBlockDirectory(startedAt)
         val logFile = File(blockDirectory, "connection_block.log")
-        val pid = startBettercapCaplet(
-            config = config,
-            name = "connection_block",
-            interfaceName = interfaceName,
-            sessionDirectory = blockDirectory,
-            logFile = logFile,
-            capletContent = buildArpBanCaplet(targetHost)
-        ) ?: return ConnectionBlockResult(
-            targetHost = targetHost,
-            success = false,
-            summary = resourceProvider.getString(R.string.mitm_session_start_failed)
-        )
+        val record = when (mode) {
+            ConnectionBlockMode.NORMAL -> {
+                if (!readiness.bettercapAvailable) {
+                    return ConnectionBlockResult(
+                        targetHost = targetHost,
+                        success = false,
+                        summary = resourceProvider.getString(R.string.mitm_missing_bettercap)
+                    )
+                }
+                val config = toolchainProbe.loadConfig()
+                val pid = startBettercapCaplet(
+                    config = config,
+                    name = "connection_block",
+                    interfaceName = interfaceName,
+                    sessionDirectory = blockDirectory,
+                    logFile = logFile,
+                    capletContent = buildArpBanCaplet(targetHost)
+                ) ?: return ConnectionBlockResult(
+                    targetHost = targetHost,
+                    success = false,
+                    summary = resourceProvider.getString(R.string.mitm_session_start_failed)
+                )
+                ActiveConnectionBlockRecord(
+                    targetHost = targetHost,
+                    interfaceName = interfaceName,
+                    mode = mode,
+                    pid = pid,
+                    logPath = logFile.absolutePath,
+                    startedAtEpochMs = startedAt
+                )
+            }
+
+            ConnectionBlockMode.HOTSPOT -> {
+                if (!readiness.iptablesAvailable) {
+                    return ConnectionBlockResult(
+                        targetHost = targetHost,
+                        success = false,
+                        summary = resourceProvider.getString(R.string.mitm_missing_iptables)
+                    )
+                }
+                if (!applyForwardDrop(targetHost)) {
+                    return ConnectionBlockResult(
+                        targetHost = targetHost,
+                        success = false,
+                        summary = resourceProvider.getString(R.string.block_failed, targetHost, "iptables FORWARD")
+                    )
+                }
+                logFile.writeText("FORWARD DROP active for $targetHost on $interfaceName\n")
+                ActiveConnectionBlockRecord(
+                    targetHost = targetHost,
+                    interfaceName = interfaceName,
+                    mode = mode,
+                    pid = null,
+                    logPath = logFile.absolutePath,
+                    startedAtEpochMs = startedAt
+                )
+            }
+        }
 
         blockStore.saveRecord(
-            ActiveConnectionBlockRecord(
-                targetHost = targetHost,
-                interfaceName = interfaceName,
-                pid = pid,
-                logPath = logFile.absolutePath,
-                startedAtEpochMs = startedAt
-            )
+            record
         )
 
         return ConnectionBlockResult(
@@ -452,7 +487,7 @@ class ExternalToolMitmBackend(
     private fun cleanupSession(pids: List<Long>, redirectPort: Int, forwardingEnabled: Boolean) {
         pids.forEach { pid ->
             shellRepository.execute(
-                command = "kill -2 $pid 2>/dev/null || kill -9 $pid 2>/dev/null || true",
+                command = "kill -15 $pid 2>/dev/null || true; sleep 1; kill -0 $pid 2>/dev/null && kill -9 $pid 2>/dev/null || true",
                 asRoot = true,
                 timeoutMs = PROBE_TIMEOUT_MS
             )
@@ -471,7 +506,7 @@ class ExternalToolMitmBackend(
 
     private fun loadConnectionBlockRecord(): ActiveConnectionBlockRecord? {
         val record = blockStore.loadRecord() ?: return null
-        if (!isProcessAlive(record.pid)) {
+        if (record.mode == ConnectionBlockMode.NORMAL && record.pid != null && !isProcessAlive(record.pid)) {
             blockStore.clear()
             return null
         }
@@ -480,12 +515,56 @@ class ExternalToolMitmBackend(
 
     private fun stopConnectionBlockInternal() {
         val record = blockStore.loadRecord() ?: return
-        shellRepository.execute(
-            command = "kill -2 ${record.pid} 2>/dev/null || kill -9 ${record.pid} 2>/dev/null || true",
-            asRoot = true,
-            timeoutMs = PROBE_TIMEOUT_MS
-        )
+        when (record.mode) {
+            ConnectionBlockMode.NORMAL -> {
+                val pid = record.pid
+                if (pid != null) {
+                    shellRepository.execute(
+                        command = "kill -15 $pid 2>/dev/null || true; sleep 1; kill -0 $pid 2>/dev/null && kill -9 $pid 2>/dev/null || true",
+                        asRoot = true,
+                        timeoutMs = PROBE_TIMEOUT_MS
+                    )
+                }
+            }
+
+            ConnectionBlockMode.HOTSPOT -> clearForwardDrop(record.targetHost)
+        }
         blockStore.clear()
+    }
+
+    private fun applyForwardDrop(targetHost: String): Boolean {
+        val result = shellRepository.execute(
+            command = buildString {
+                append("iptables -C FORWARD -s ")
+                append(targetHost)
+                append(" -j DROP 2>/dev/null || iptables -I FORWARD -s ")
+                append(targetHost)
+                append(" -j DROP\n")
+                append("iptables -C FORWARD -d ")
+                append(targetHost)
+                append(" -j DROP 2>/dev/null || iptables -I FORWARD -d ")
+                append(targetHost)
+                append(" -j DROP\n")
+            },
+            asRoot = true,
+            timeoutMs = FIREWALL_TIMEOUT_MS
+        )
+        return result.exitCode == 0 && !result.timedOut
+    }
+
+    private fun clearForwardDrop(targetHost: String) {
+        shellRepository.execute(
+            command = buildString {
+                append("while iptables -D FORWARD -s ")
+                append(targetHost)
+                append(" -j DROP 2>/dev/null; do :; done\n")
+                append("while iptables -D FORWARD -d ")
+                append(targetHost)
+                append(" -j DROP 2>/dev/null; do :; done\n")
+            },
+            asRoot = true,
+            timeoutMs = FIREWALL_TIMEOUT_MS
+        )
     }
 
     private fun missingToolSummary(mode: MitmMode, readiness: MitmReadiness): String? {

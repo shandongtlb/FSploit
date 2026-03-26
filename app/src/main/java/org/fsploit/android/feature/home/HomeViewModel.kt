@@ -11,9 +11,11 @@ import kotlinx.coroutines.withContext
 import org.fsploit.android.R
 import org.fsploit.android.core.ResourceProvider
 import org.fsploit.android.core.ShellTaskPreset
+import org.fsploit.android.domain.model.ConnectionBlockMode
 import org.fsploit.android.domain.model.MitmLaunchRequest
 import org.fsploit.android.domain.model.MitmMode
 import org.fsploit.android.domain.model.MitmToolchainConfig
+import org.fsploit.android.domain.model.NetworkInterfaceInfo
 import org.fsploit.android.domain.model.PortScanConfig
 import org.fsploit.android.domain.model.PortState
 import org.fsploit.android.domain.usecase.BlockHostUseCase
@@ -70,6 +72,7 @@ class HomeViewModel(
             mitmSessionSummary = resourceProvider.getString(R.string.mitm_session_idle),
             mitmSettingsSummary = resourceProvider.getString(R.string.mitm_settings_idle),
             portScanSummary = resourceProvider.getString(R.string.port_scan_not_run),
+            connectionBlockModeSummary = resourceProvider.getString(R.string.block_mode_pending),
             connectionBlockSummary = resourceProvider.getString(R.string.block_idle),
             selectedShellTaskLabel = resourceProvider.getString(R.string.shell_task_custom),
             selectedShellTaskDescription = resourceProvider.getString(R.string.shell_task_custom_desc),
@@ -103,11 +106,23 @@ class HomeViewModel(
                 currentState.mitmGatewayInput == currentState.resolvedGatewayAddress -> resolvedGatewayAddress
                 else -> currentState.mitmGatewayInput
             }
+            val keepConnectionBlockOverride =
+                currentState.isConnectionBlockModeOverridden &&
+                    currentState.preferredInterfaceName == preferredInterfaceName
+            val connectionBlockModeState = resolveConnectionBlockModeState(
+                interfaces = overview.interfaces,
+                preferredInterfaceName = preferredInterfaceName,
+                selectedHostAddress = selectedHostAddress,
+                activeInterfaceName = overview.activeInterfaceName,
+                currentSelection = currentState.selectedConnectionBlockMode,
+                keepUserSelection = keepConnectionBlockOverride
+            )
 
             _uiState.value = currentState.copy(
                 isLoading = false,
                 permissionSummary = permissionSummary,
                 activeTransportLabel = overview.activeTransportLabel,
+                activeInterfaceName = overview.activeInterfaceName,
                 interfaces = overview.interfaces,
                 statusMessage = overview.statusMessage,
                 canContinue = permissionsGranted && overview.interfaces.isNotEmpty() && shellStatus.rootGranted,
@@ -152,6 +167,10 @@ class HomeViewModel(
                 selectedPortResultFilter = currentState.selectedPortResultFilter,
                 isPortScanning = false,
                 blockedHostAddress = currentState.blockedHostAddress,
+                selectedConnectionBlockMode = connectionBlockModeState.selectedMode,
+                recommendedConnectionBlockMode = connectionBlockModeState.recommendedMode,
+                isConnectionBlockModeOverridden = keepConnectionBlockOverride,
+                connectionBlockModeSummary = connectionBlockModeState.summary,
                 connectionBlockSummary = currentState.connectionBlockSummary.ifBlank {
                     resourceProvider.getString(R.string.block_idle)
                 },
@@ -177,18 +196,42 @@ class HomeViewModel(
             currentState.mitmGatewayInput == currentState.resolvedGatewayAddress -> resolvedGatewayAddress
             else -> currentState.mitmGatewayInput
         }
+        val connectionBlockModeState = resolveConnectionBlockModeState(
+            interfaces = currentState.interfaces,
+            preferredInterfaceName = trimmed,
+            selectedHostAddress = currentState.selectedHostAddress,
+            activeInterfaceName = currentState.activeInterfaceName,
+            currentSelection = currentState.selectedConnectionBlockMode,
+            keepUserSelection = false
+        )
         savePreferredInterfaceUseCase(trimmed)
         _uiState.value = currentState.copy(
             preferredInterfaceName = trimmed,
             resolvedGatewayAddress = resolvedGatewayAddress,
-            mitmGatewayInput = mitmGatewayInput
+            mitmGatewayInput = mitmGatewayInput,
+            selectedConnectionBlockMode = connectionBlockModeState.selectedMode,
+            recommendedConnectionBlockMode = connectionBlockModeState.recommendedMode,
+            isConnectionBlockModeOverridden = false,
+            connectionBlockModeSummary = connectionBlockModeState.summary
         )
     }
 
     fun selectHost(hostAddress: String) {
         val trimmed = hostAddress.trim()
-        _uiState.value = _uiState.value.copy(
+        val currentState = _uiState.value
+        val connectionBlockModeState = resolveConnectionBlockModeState(
+            interfaces = currentState.interfaces,
+            preferredInterfaceName = currentState.preferredInterfaceName,
             selectedHostAddress = trimmed,
+            activeInterfaceName = currentState.activeInterfaceName,
+            currentSelection = currentState.selectedConnectionBlockMode,
+            keepUserSelection = currentState.isConnectionBlockModeOverridden
+        )
+        _uiState.value = currentState.copy(
+            selectedHostAddress = trimmed,
+            selectedConnectionBlockMode = connectionBlockModeState.selectedMode,
+            recommendedConnectionBlockMode = connectionBlockModeState.recommendedMode,
+            connectionBlockModeSummary = connectionBlockModeState.summary,
             portScanSummary = if (trimmed.isBlank()) {
                 resourceProvider.getString(R.string.port_scan_no_selected_host)
             } else {
@@ -199,6 +242,13 @@ class HomeViewModel(
 
     fun selectMitmMode(mode: MitmMode) {
         _uiState.value = _uiState.value.copy(selectedMitmMode = mode)
+    }
+
+    fun selectConnectionBlockMode(mode: ConnectionBlockMode) {
+        _uiState.value = _uiState.value.copy(
+            selectedConnectionBlockMode = mode,
+            isConnectionBlockModeOverridden = mode != _uiState.value.recommendedConnectionBlockMode
+        )
     }
 
     fun updateMitmPrimaryInput(value: String) {
@@ -422,6 +472,15 @@ class HomeViewModel(
             val selectedHostAddress = _uiState.value.selectedHostAddress
                 .takeIf { responsiveHosts.contains(it) }
                 ?: responsiveHosts.firstOrNull().orEmpty()
+            val currentState = _uiState.value
+            val connectionBlockModeState = resolveConnectionBlockModeState(
+                interfaces = currentState.interfaces,
+                preferredInterfaceName = currentState.preferredInterfaceName,
+                selectedHostAddress = selectedHostAddress,
+                activeInterfaceName = currentState.activeInterfaceName,
+                currentSelection = currentState.selectedConnectionBlockMode,
+                keepUserSelection = currentState.isConnectionBlockModeOverridden
+            )
 
             _uiState.value = _uiState.value.copy(
                 isScanning = false,
@@ -430,6 +489,9 @@ class HomeViewModel(
                 responsiveTargetResults = report.responsiveHosts,
                 responsiveHosts = responsiveHosts,
                 selectedHostAddress = selectedHostAddress,
+                selectedConnectionBlockMode = connectionBlockModeState.selectedMode,
+                recommendedConnectionBlockMode = connectionBlockModeState.recommendedMode,
+                connectionBlockModeSummary = connectionBlockModeState.summary,
                 portScanSummary = if (selectedHostAddress.isBlank()) {
                     resourceProvider.getString(R.string.port_scan_no_selected_host)
                 } else {
@@ -623,7 +685,11 @@ class HomeViewModel(
 
             val result = withContext(Dispatchers.Default) {
                 if (block) {
-                    blockHostUseCase(hostAddress, _uiState.value.preferredInterfaceName)
+                    blockHostUseCase(
+                        hostAddress,
+                        _uiState.value.preferredInterfaceName,
+                        _uiState.value.selectedConnectionBlockMode
+                    )
                 } else {
                     unblockHostUseCase(hostAddress)
                 }
@@ -650,6 +716,125 @@ class HomeViewModel(
             PortState.FILTERED -> resourceProvider.getString(R.string.port_state_filtered)
         }
     }
+
+    private fun resolveConnectionBlockModeState(
+        interfaces: List<NetworkInterfaceInfo>,
+        preferredInterfaceName: String,
+        selectedHostAddress: String,
+        activeInterfaceName: String,
+        currentSelection: ConnectionBlockMode,
+        keepUserSelection: Boolean
+    ): ConnectionBlockModeState {
+        val recommendation = recommendConnectionBlockMode(
+            interfaces = interfaces,
+            preferredInterfaceName = preferredInterfaceName,
+            selectedHostAddress = selectedHostAddress,
+            activeInterfaceName = activeInterfaceName
+        )
+        return ConnectionBlockModeState(
+            selectedMode = if (keepUserSelection) currentSelection else recommendation.mode,
+            recommendedMode = recommendation.mode,
+            summary = recommendation.summary
+        )
+    }
+
+    private fun recommendConnectionBlockMode(
+        interfaces: List<NetworkInterfaceInfo>,
+        preferredInterfaceName: String,
+        selectedHostAddress: String,
+        activeInterfaceName: String
+    ): ConnectionBlockModeRecommendation {
+        val selectedInterface = interfaces.firstOrNull { it.name == preferredInterfaceName }
+            ?: return ConnectionBlockModeRecommendation(
+                mode = ConnectionBlockMode.NORMAL,
+                summary = resourceProvider.getString(R.string.block_mode_unknown)
+            )
+        val lowerName = selectedInterface.name.lowercase()
+        val looksLikeHotspotInterface = lowerName.startsWith("swlan") ||
+            lowerName.startsWith("softap") ||
+            lowerName.startsWith("ap")
+        val hasGateway = !selectedInterface.defaultGatewayAddress.isNullOrBlank()
+        val differsFromActiveInterface = activeInterfaceName.isNotBlank() &&
+            !activeInterfaceName.equals(selectedInterface.name, ignoreCase = true)
+        val targetMatchesSubnet = selectedHostAddress.isBlank() || isHostOnInterfaceSubnet(
+            hostAddress = selectedHostAddress,
+            networkInterface = selectedInterface
+        )
+
+        val hotspotLikely = !hasGateway && targetMatchesSubnet &&
+            (looksLikeHotspotInterface || differsFromActiveInterface)
+
+        return if (hotspotLikely) {
+            ConnectionBlockModeRecommendation(
+                mode = ConnectionBlockMode.HOTSPOT,
+                summary = resourceProvider.getString(
+                    R.string.block_mode_detected_hotspot,
+                    selectedInterface.name
+                )
+            )
+        } else {
+            ConnectionBlockModeRecommendation(
+                mode = ConnectionBlockMode.NORMAL,
+                summary = resourceProvider.getString(
+                    if (hasGateway) {
+                        R.string.block_mode_detected_normal_gateway
+                    } else {
+                        R.string.block_mode_detected_normal_fallback
+                    },
+                    selectedInterface.name
+                )
+            )
+        }
+    }
+
+    private fun isHostOnInterfaceSubnet(
+        hostAddress: String,
+        networkInterface: NetworkInterfaceInfo
+    ): Boolean {
+        val localAddress = networkInterface.primaryAddress ?: return false
+        val prefixLength = networkInterface.prefixLength ?: return false
+        val hostOctets = parseIpv4(hostAddress) ?: return false
+        val localOctets = parseIpv4(localAddress) ?: return false
+        val fullBytes = prefixLength / 8
+        val partialBits = prefixLength % 8
+        for (index in 0 until fullBytes) {
+            if (hostOctets[index] != localOctets[index]) {
+                return false
+            }
+        }
+        if (partialBits == 0) {
+            return true
+        }
+        val mask = (0xFF shl (8 - partialBits)) and 0xFF
+        return (hostOctets[fullBytes] and mask) == (localOctets[fullBytes] and mask)
+    }
+
+    private fun parseIpv4(address: String): IntArray? {
+        val octets = address.split('.')
+        if (octets.size != 4) {
+            return null
+        }
+        val parsed = IntArray(4)
+        for (index in octets.indices) {
+            val value = octets[index].toIntOrNull() ?: return null
+            if (value !in 0..255) {
+                return null
+            }
+            parsed[index] = value
+        }
+        return parsed
+    }
+
+    private data class ConnectionBlockModeRecommendation(
+        val mode: ConnectionBlockMode,
+        val summary: String
+    )
+
+    private data class ConnectionBlockModeState(
+        val selectedMode: ConnectionBlockMode,
+        val recommendedMode: ConnectionBlockMode,
+        val summary: String
+    )
 
     companion object {
         private const val SHELL_COMMAND_TIMEOUT_MS = 5000L

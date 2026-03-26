@@ -100,6 +100,16 @@
     <string name="block_connection">阻断连接</string>
     <string name="unblock_connection">解除阻断</string>
     <string name="block_current_label">当前连接阻断</string>
+    <string name="block_mode_label">连接阻断模式</string>
+    <string name="block_mode_normal">普通模式</string>
+    <string name="block_mode_hotspot">热点模式</string>
+    <string name="block_mode_normal_desc">使用 bettercap 的 ARP ban。适合手机不是实际网关的场景。</string>
+    <string name="block_mode_hotspot_desc">使用手机本机的 iptables FORWARD 丢包。适合手机本身就是热点或网关的场景。</string>
+    <string name="block_mode_pending">正在判断当前接口应使用哪种连接阻断方式...</string>
+    <string name="block_mode_unknown">暂时无法自动判断连接阻断模式，默认保留普通模式，你也可以手动切换。</string>
+    <string name="block_mode_detected_hotspot">已为 %1$s 自动选中“热点模式”，因为它看起来像没有上游网关的热点或下游接口；如判断不准，你可以手动改成另一种模式。</string>
+    <string name="block_mode_detected_normal_gateway">已为 %1$s 自动选中“普通模式”，因为 Android 在这个接口上提供了上游网关信息；如判断不准，你可以手动改成另一种模式。</string>
+    <string name="block_mode_detected_normal_fallback">已为 %1$s 自动选中“普通模式”，因为当前没有明确识别到热点或网关场景；如判断不准，你可以手动改成另一种模式。</string>
     <string name="block_current_target">已阻断目标：%1$s</string>
     <string name="block_none">当前没有由 FSploit 管理的阻断目标。</string>
 
@@ -272,11 +282,11 @@
     <string name="mitmdump_download_retry">重试</string>
     <string name="block_idle">当前还没有执行任何连接阻断动作。</string>
     <string name="block_select_target_first">修改防火墙规则前请先选择目标主机。</string>
-    <string name="block_running">正在为 %1$s 应用 DROP 规则...</string>
-    <string name="unblock_running">正在为 %1$s 移除 DROP 规则...</string>
-    <string name="block_applied">已为 %1$s 应用连接阻断规则。</string>
+    <string name="block_running">正在为 %1$s 应用连接阻断...</string>
+    <string name="unblock_running">正在为 %1$s 解除连接阻断...</string>
+    <string name="block_applied">已对 %1$s 启用连接阻断。</string>
     <string name="block_failed">阻断 %1$s 失败。%2$s</string>
-    <string name="block_removed">已移除针对 %1$s 的连接阻断规则。</string>
+    <string name="block_removed">已解除对 %1$s 的连接阻断。</string>
     <string name="block_remove_failed">移除 %1$s 的阻断规则失败。%2$s</string>
     <string name="block_invalid_host">所选主机地址无效。</string>
 

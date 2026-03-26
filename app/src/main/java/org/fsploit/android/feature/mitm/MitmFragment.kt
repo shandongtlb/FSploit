@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import org.fsploit.android.MainActivity
 import org.fsploit.android.R
 import org.fsploit.android.databinding.FragmentMitmBinding
+import org.fsploit.android.domain.model.ConnectionBlockMode
 import org.fsploit.android.domain.model.MitmMode
 import org.fsploit.android.feature.home.HomeUiState
 import org.fsploit.android.feature.home.HomeViewModel
@@ -57,6 +58,16 @@ class MitmFragment : Fragment() {
         binding.unblockConnectionButton.setOnClickListener {
             viewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
             viewModel.unblockSelectedHost()
+        }
+        binding.connectionBlockModeGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) {
+                return@addOnButtonCheckedListener
+            }
+            val mode = when (checkedId) {
+                R.id.blockModeHotspotButton -> ConnectionBlockMode.HOTSPOT
+                else -> ConnectionBlockMode.NORMAL
+            }
+            viewModel.selectConnectionBlockMode(mode)
         }
         binding.mitmPrimaryInput.doAfterTextChanged {
             viewModel.updateMitmPrimaryInput(it?.toString().orEmpty())
@@ -119,6 +130,9 @@ class MitmFragment : Fragment() {
         } else {
             getString(R.string.block_current_target, state.blockedHostAddress)
         }
+        binding.connectionBlockModeDescriptionValue.text =
+            getString(state.selectedConnectionBlockMode.descriptionRes)
+        binding.connectionBlockModeSummaryValue.text = state.connectionBlockModeSummary
         binding.connectionBlockSummaryValue.text = state.connectionBlockSummary
         binding.activeMitmModeValue.text = if (state.mitmSession.mode == null) {
             getString(R.string.mitm_session_mode_value, getString(R.string.mitm_none))
@@ -140,6 +154,13 @@ class MitmFragment : Fragment() {
             state.rootGranted && state.selectedHostAddress.isNotBlank() && !state.isBlockingConnection
         binding.unblockConnectionButton.isEnabled =
             state.rootGranted && state.selectedHostAddress.isNotBlank() && !state.isBlockingConnection
+        val expectedBlockModeButtonId = when (state.selectedConnectionBlockMode) {
+            ConnectionBlockMode.NORMAL -> R.id.blockModeNormalButton
+            ConnectionBlockMode.HOTSPOT -> R.id.blockModeHotspotButton
+        }
+        if (binding.connectionBlockModeGroup.checkedButtonId != expectedBlockModeButtonId) {
+            binding.connectionBlockModeGroup.check(expectedBlockModeButtonId)
+        }
 
         val targetAdapter = ArrayAdapter(
             requireContext(),

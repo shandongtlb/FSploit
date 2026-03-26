@@ -1,6 +1,7 @@
 package org.fsploit.android.data.mitm
 
 import android.content.Context
+import org.fsploit.android.domain.model.ConnectionBlockMode
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -23,11 +24,14 @@ class ConnectionBlockStore(
         val properties = Properties().apply {
             FileInputStream(recordFile).use { stream -> load(stream) }
         }
-        val pid = properties.getProperty(KEY_PID)?.toLongOrNull() ?: return null
+        val mode = runCatching {
+            properties.getProperty(KEY_MODE)?.let(ConnectionBlockMode::valueOf)
+        }.getOrNull() ?: return null
         return ActiveConnectionBlockRecord(
             targetHost = properties.getProperty(KEY_TARGET_HOST).orEmpty(),
             interfaceName = properties.getProperty(KEY_INTERFACE).orEmpty(),
-            pid = pid,
+            mode = mode,
+            pid = properties.getProperty(KEY_PID)?.toLongOrNull(),
             logPath = properties.getProperty(KEY_LOG_PATH).orEmpty(),
             startedAtEpochMs = properties.getProperty(KEY_STARTED_AT)?.toLongOrNull() ?: 0L
         )
@@ -37,7 +41,8 @@ class ConnectionBlockStore(
         val properties = Properties().apply {
             setProperty(KEY_TARGET_HOST, record.targetHost)
             setProperty(KEY_INTERFACE, record.interfaceName)
-            setProperty(KEY_PID, record.pid.toString())
+            setProperty(KEY_MODE, record.mode.name)
+            record.pid?.let { setProperty(KEY_PID, it.toString()) }
             setProperty(KEY_LOG_PATH, record.logPath)
             setProperty(KEY_STARTED_AT, record.startedAtEpochMs.toString())
         }
@@ -54,6 +59,7 @@ class ConnectionBlockStore(
         private const val RECORD_FILE_NAME = "active_block.properties"
         private const val KEY_TARGET_HOST = "target_host"
         private const val KEY_INTERFACE = "interface"
+        private const val KEY_MODE = "mode"
         private const val KEY_PID = "pid"
         private const val KEY_LOG_PATH = "log_path"
         private const val KEY_STARTED_AT = "started_at"

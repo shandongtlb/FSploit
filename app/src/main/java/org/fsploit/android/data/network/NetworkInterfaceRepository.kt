@@ -53,6 +53,7 @@ class NetworkInterfaceRepository(
 
         return NetworkOverview(
             activeTransportLabel = activeTransportLabel,
+            activeInterfaceName = linkProperties?.interfaceName.orEmpty(),
             interfaces = interfaces,
             statusMessage = statusMessage
         )
@@ -115,16 +116,18 @@ class NetworkInterfaceRepository(
     private fun interfacePriority(name: String): Int {
         val lower = name.lowercase()
         return when {
-            lower.startsWith("wlan") || lower.startsWith("wifi") || lower.startsWith("ap") -> 0
-            lower.startsWith("eth") || lower.startsWith("en") -> 1
-            lower.startsWith("rndis") -> 2
-            else -> 3
+            lower.startsWith("swlan") || lower.startsWith("softap") -> 0
+            lower.startsWith("wlan") || lower.startsWith("wifi") || lower.startsWith("ap") -> 1
+            lower.startsWith("eth") || lower.startsWith("en") -> 2
+            lower.startsWith("rndis") -> 3
+            else -> 4
         }
     }
 
     private fun classify(name: String): InterfaceCategory {
         val lower = name.lowercase()
         return when {
+            lower.startsWith("swlan") || lower.startsWith("softap") -> InterfaceCategory.WIFI
             lower.startsWith("wlan") || lower.startsWith("wifi") || lower.startsWith("ap") -> InterfaceCategory.WIFI
             lower.startsWith("eth") || lower.startsWith("en") -> InterfaceCategory.ETHERNET
             lower.startsWith("rndis") -> InterfaceCategory.USB

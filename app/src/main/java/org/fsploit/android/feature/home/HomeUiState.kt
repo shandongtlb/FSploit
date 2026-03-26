@@ -1,6 +1,7 @@
 package org.fsploit.android.feature.home
 
 import org.fsploit.android.domain.model.NetworkInterfaceInfo
+import org.fsploit.android.domain.model.ConnectionBlockMode
 import org.fsploit.android.domain.model.HostScanResult
 import org.fsploit.android.domain.model.MitmReadiness
 import org.fsploit.android.domain.model.MitmMode
@@ -13,6 +14,7 @@ data class HomeUiState(
     val isLoading: Boolean = true,
     val permissionSummary: String = "",
     val activeTransportLabel: String = "",
+    val activeInterfaceName: String = "",
     val interfaces: List<NetworkInterfaceInfo> = emptyList(),
     val statusMessage: String = "",
     val canContinue: Boolean = false,
@@ -55,6 +57,10 @@ data class HomeUiState(
     val selectedPortResultFilter: PortResultFilter = PortResultFilter.ALL,
     val isPortScanning: Boolean = false,
     val blockedHostAddress: String = "",
+    val selectedConnectionBlockMode: ConnectionBlockMode = ConnectionBlockMode.NORMAL,
+    val recommendedConnectionBlockMode: ConnectionBlockMode = ConnectionBlockMode.NORMAL,
+    val isConnectionBlockModeOverridden: Boolean = false,
+    val connectionBlockModeSummary: String = "",
     val connectionBlockSummary: String = "",
     val isBlockingConnection: Boolean = false,
     val selectedShellTaskLabel: String = "",

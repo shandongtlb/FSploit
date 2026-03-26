@@ -3,6 +3,7 @@ package org.fsploit.android.data.mitm
 import org.fsploit.android.R
 import org.fsploit.android.core.ResourceProvider
 import org.fsploit.android.domain.model.ConnectionBlockResult
+import org.fsploit.android.domain.model.ConnectionBlockMode
 import org.fsploit.android.domain.model.MitmActionResult
 import org.fsploit.android.domain.model.MitmLaunchRequest
 import org.fsploit.android.domain.model.MitmReadiness
@@ -23,14 +24,18 @@ class MitmRepository(
 
     fun stopSession(): MitmActionResult = backend.stopSession()
 
-    fun blockHost(hostAddress: String, interfaceName: String): ConnectionBlockResult {
+    fun blockHost(
+        hostAddress: String,
+        interfaceName: String,
+        mode: ConnectionBlockMode
+    ): ConnectionBlockResult {
         val host = validateIpv4(hostAddress)
             ?: return ConnectionBlockResult(
                 targetHost = hostAddress,
                 success = false,
                 summary = resourceProvider.getString(R.string.block_invalid_host)
             )
-        return backend.blockHost(host, interfaceName)
+        return backend.blockHost(host, interfaceName, mode)
     }
 
     fun unblockHost(hostAddress: String): ConnectionBlockResult {
