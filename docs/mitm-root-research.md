@@ -237,3 +237,30 @@ Only after that should we wire actual traffic redirection.
 - Android Network Security Configuration: https://developer.android.com/training/articles/security-config
 - Android security guidance on unsafe trust managers: https://developer.android.com/privacy-and-security/risks/unsafe-trustmanager
 - Android TLS/security guidance: https://developer.android.com/privacy-and-security/security-ssl
+
+## Physical/Data-Link Layer Interception (ARP MITM) Feasibility
+
+### The Goal
+Attempting to perform native ARP MITM (poisoning) on a local LAN while the Android device is connected in STA mode (Wi-Fi client).
+
+### The Technical Roadblock: Kernel & Driver Hardening
+Through extensive empirical testing on modern Android implementations (specifically Android 13+, Kernel 6.6, Qualcomm `qca_cld3` driver, Samsung firmware), we have verified that **native ARP MITM is functionally blocked at the lowest levels of the driver and OS.**
+
+When a device connects to a Wi-Fi network (STA mode), the Android `WifiStateMachine` / `WifiVendorHal` actively issues Netlink Vendor Commands to the Wi-Fi hardware:
+1. **ARP/NS Offload:** Instructs the firmware to intercept and reply to ARP requests for the device's IP autonomously, while the host processor sleeps.
+2. **APF (Android Packet Filter):** Pushes BPF bytecode to the firmware to silently drop traffic (including malicious or spoofed packets) at the hardware level.
+
+As a result, an attacker process running on the phone (even as root) cannot successfully alter the local network's ARP topology or capture redirected packets; the firmware simply drops the spoofed packets or automatically corrects the ARP state.
+
+### Attempted Bypasses and Failures
+- **Promiscuous Mode:** Forcing the `wlan0` interface into promiscuous mode via `ip link set wlan0 promisc on` does not disable the firmware-level ARP offload or APF.
+- **Modifying Configuration Files:** Modifying the default WCNSS INI files (`hostArpOffload=0`, `gBpfFilterEnable=0`) and bind-mounting them over system files fails. The Android Framework explicitly overrides these defaults by dynamically pushing the configuration via HAL upon successful L3 Provisioning.
+- **Direct Netlink Vendor Commands (The "Sledgehammer" Approach):** We attempted to write a pure C Native binary (JNI/NDK) that bypasses the Framework and talks directly to the kernel via Generic Netlink (`nl80211`), intending to send the specific Qualcomm Vendor Commands (`QCA_NL80211_VENDOR_SUBCMD_SET_WIFI_CONFIGURATION` and `QCA_NL80211_VENDOR_SUBCMD_PACKET_FILTER`) to clear the filters.
+  - **Result:** **Failed.** The Android kernel hides or severely restricts access to the `nl80211` Netlink family for non-system domains. Even executing as UID 0 (`root`), the Generic Netlink socket returns `ENOENT` when querying the `nl80211` family ID. This implies strict isolation mechanisms such as SELinux domain binding (`hal_wifi_default`), Network Namespaces isolation, or closed-source kernel hardening that removes generic `sysfs` and Netlink interfaces to prevent user-space tampering with RF and data-link hardware configurations.
+
+### Conclusion on ARP MITM
+Deploying FSploit as a stealthy "drop-in" ARP poisoner on a third-party LAN using the phone's native Wi-Fi connection (STA mode) is **not viable** on highly hardened, modern Android devices.
+
+**Recommended Alternatives for FSploit:**
+1. **SoftAP (Hotspot) Mode:** Require the attacker's device to act as the Wi-Fi Hotspot. When routing traffic as an Access Point, Android inherently disables STA-specific offloads and APF, allowing unimpeded traffic interception between connected clients.
+2. **External USB Wi-Fi Adapters:** Utilize OTG and external, driver-supported USB Wi-Fi adapters (e.g., Ralink/Realtek chips with native Linux mac80211 drivers). These bypass the Android `WifiVendorHal` and Qualcomm firmware entirely, allowing true promiscuous mode and packet injection.
