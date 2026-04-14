@@ -4,6 +4,7 @@ import org.fsploit.android.R
 import org.fsploit.android.core.ResourceProvider
 import org.fsploit.android.domain.model.ShellCommandResult
 import org.fsploit.android.domain.model.ShellStatus
+import kotlin.concurrent.thread
 import java.util.concurrent.TimeUnit
 
 class ShellRepository(
@@ -49,17 +50,11 @@ class ShellRepository(
         }
 
         return try {
-            val shellBinary = if (asRoot) "su" else "sh"
-            val process = ProcessBuilder(shellBinary, "-c", sanitizedCommand)
-                .redirectErrorStream(true)
-                .start()
-
-            val completed = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)
-            if (!completed) {
-                process.destroyForcibly()
+            val result = runProcess(timeoutMs, if (asRoot) "su" else "sh", "-c", sanitizedCommand)
+            if (result.timedOut) {
                 ShellCommandResult(
                     command = sanitizedCommand,
-                    output = "",
+                    output = result.output,
                     exitCode = null,
                     timedOut = true,
                     executedAsRoot = asRoot,
@@ -69,11 +64,10 @@ class ShellRepository(
                     )
                 )
             } else {
-                val output = process.inputStream.bufferedReader().use { it.readText().trim() }
-                val exitCode = process.exitValue()
+                val exitCode = result.exitCode ?: -1
                 ShellCommandResult(
                     command = sanitizedCommand,
-                    output = output,
+                    output = result.output,
                     exitCode = exitCode,
                     timedOut = false,
                     executedAsRoot = asRoot,
@@ -111,18 +105,64 @@ class ShellRepository(
 
     private fun runCommand(vararg command: String): String {
         return try {
-            val process = ProcessBuilder(*command)
-                .redirectErrorStream(true)
-                .start()
-
-            if (!process.waitFor(2, TimeUnit.SECONDS)) {
-                process.destroyForcibly()
-                return ""
-            }
-
-            process.inputStream.bufferedReader().use { it.readText().trim() }
+            val result = runProcess(2_000L, *command)
+            if (result.timedOut) "" else result.output
         } catch (_: Exception) {
             ""
         }
+    }
+
+    private fun runProcess(timeoutMs: Long, vararg command: String): ProcessResult {
+        val process = ProcessBuilder(*command)
+            .redirectErrorStream(true)
+            .start()
+
+        val outputBuffer = StringBuilder()
+        val readerThread = thread(start = true, isDaemon = true) {
+            process.inputStream.bufferedReader().use { reader ->
+                val buffer = CharArray(DEFAULT_BUFFER_SIZE)
+                while (true) {
+                    val read = reader.read(buffer)
+                    if (read < 0) {
+                        break
+                    }
+                    if (read > 0) {
+                        synchronized(outputBuffer) {
+                            outputBuffer.append(buffer, 0, read)
+                        }
+                    }
+                }
+            }
+        }
+
+        val completed = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)
+        if (!completed) {
+            process.destroyForcibly()
+        }
+        process.waitFor(PROCESS_EXIT_GRACE_MS, TimeUnit.MILLISECONDS)
+        readerThread.join(OUTPUT_JOIN_TIMEOUT_MS)
+
+        val output = synchronized(outputBuffer) { outputBuffer.toString().trim() }
+        val exitCode = if (process.isAlive) {
+            null
+        } else {
+            runCatching { process.exitValue() }.getOrNull()
+        }
+        return ProcessResult(
+            output = output,
+            exitCode = exitCode,
+            timedOut = !completed
+        )
+    }
+
+    private data class ProcessResult(
+        val output: String,
+        val exitCode: Int?,
+        val timedOut: Boolean
+    )
+
+    companion object {
+        private const val PROCESS_EXIT_GRACE_MS = 500L
+        private const val OUTPUT_JOIN_TIMEOUT_MS = 500L
     }
 }

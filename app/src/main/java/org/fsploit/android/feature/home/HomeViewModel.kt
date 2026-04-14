@@ -142,7 +142,7 @@ class HomeViewModel(
                 responsiveTargetResults = currentState.responsiveTargetResults,
                 responsiveHosts = currentState.responsiveHosts,
                 selectedHostAddress = selectedHostAddress,
-                isScanning = false,
+                isScanning = currentState.isScanning,
                 portSpec = currentState.portSpec.ifBlank { storedPortScanConfig.portSpec },
                 connectTimeoutMs = currentState.connectTimeoutMs.ifBlank {
                     storedPortScanConfig.connectTimeoutMs.toString()
@@ -170,7 +170,7 @@ class HomeViewModel(
                 },
                 scannedPortResults = currentState.scannedPortResults,
                 selectedPortResultFilter = currentState.selectedPortResultFilter,
-                isPortScanning = false,
+                isPortScanning = currentState.isPortScanning,
                 blockedHostAddress = currentState.blockedHostAddress,
                 selectedConnectionBlockMode = connectionBlockModeState.selectedMode,
                 recommendedConnectionBlockMode = connectionBlockModeState.recommendedMode,
@@ -179,12 +179,12 @@ class HomeViewModel(
                 connectionBlockSummary = currentState.connectionBlockSummary.ifBlank {
                     resourceProvider.getString(R.string.block_idle)
                 },
-                isBlockingConnection = false,
-                isStartingMitmSession = false,
-                isSavingMitmToolchainConfig = false,
+                isBlockingConnection = currentState.isBlockingConnection,
+                isStartingMitmSession = currentState.isStartingMitmSession,
+                isSavingMitmToolchainConfig = currentState.isSavingMitmToolchainConfig,
                 selectedShellTaskLabel = currentState.selectedShellTaskLabel,
                 selectedShellTaskDescription = currentState.selectedShellTaskDescription,
-                isExecutingShell = false
+                isExecutingShell = currentState.isExecutingShell
             )
         }
     }

@@ -13,6 +13,7 @@ class BettercapPackageManager(
     override val installDirectory = File(appContext.filesDir, "toolchain/bettercap")
     override val managedExecutable = File(installDirectory, BETTERCAP_FILE_NAME)
     override val archiveUrl = BETTERCAP_ARCHIVE_URL
+    override val archiveSha256 = BETTERCAP_ARCHIVE_SHA256
     override val defaultCommand = DEFAULT_BETTERCAP_COMMAND
     override val displayName = "bettercap"
 
@@ -52,5 +53,7 @@ class BettercapPackageManager(
         private const val LIBUSB_COMPAT_FILE_NAME = "libusb-1.0.so"
         private const val BETTERCAP_ARCHIVE_URL =
             "https://github.com/shandongtlb/bettercap-android/releases/download/v0/bettercap-android-arm64-package.tar.gz"
+        private const val BETTERCAP_ARCHIVE_SHA256 =
+            "E290F3394FD342E96FFD78F7AED0B367BA73A31972B9F0B8DD162521BBE89151"
     }
 }

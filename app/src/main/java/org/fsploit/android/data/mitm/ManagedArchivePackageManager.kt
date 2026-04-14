@@ -11,6 +11,7 @@ import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.MessageDigest
 import java.util.zip.GZIPInputStream
 
 abstract class ManagedArchivePackageManager(
@@ -22,6 +23,7 @@ abstract class ManagedArchivePackageManager(
     protected abstract val installDirectory: File
     protected abstract val managedExecutable: File
     protected abstract val archiveUrl: String
+    protected open val archiveSha256: String? = null
     protected abstract val defaultCommand: String
     protected abstract val displayName: String
 
@@ -105,32 +107,63 @@ abstract class ManagedArchivePackageManager(
         }
 
         val stagingDirectory = File(parentDirectory, "${installDirectory.name}.staging")
+        val candidateDirectory = File(parentDirectory, "${installDirectory.name}.candidate")
+        val backupDirectory = File(parentDirectory, "${installDirectory.name}.backup")
         val archiveFile = File(parentDirectory, "${installDirectory.name}.download.tar.gz")
         deleteIfExists(stagingDirectory)
+        deleteIfExists(candidateDirectory)
+        deleteIfExists(backupDirectory)
         deleteIfExists(archiveFile)
 
         try {
             if (!stagingDirectory.mkdirs()) {
                 throw IOException("Failed to create ${stagingDirectory.absolutePath}")
             }
-            downloadToFile(archiveUrl, archiveFile)
+            downloadToFile(archiveUrl, archiveFile, archiveSha256)
             extractTarGz(archiveFile, stagingDirectory)
 
             val payloadRoot = locatePayloadRoot(stagingDirectory)
-            deleteIfExists(installDirectory)
-            moveDirectory(payloadRoot, installDirectory)
-            finalizeInstalledTree(installDirectory)
-
-            requiredFiles(installDirectory).firstOrNull { !it.isFile || it.length() == 0L }?.let { missing ->
-                throw IOException("Managed $displayName package is incomplete: ${missing.absolutePath}")
-            }
+            moveDirectory(payloadRoot, candidateDirectory)
+            finalizeInstalledTree(candidateDirectory)
+            validateInstalledTree(candidateDirectory)
+            replaceInstallDirectory(candidateDirectory, backupDirectory)
 
             syncInstalledBinaryPath(force = true)
             return managedExecutable.absolutePath
+        } catch (exception: Exception) {
+            restoreBackupIfNeeded(backupDirectory)
+            throw exception
         } finally {
             deleteIfExists(stagingDirectory)
+            deleteIfExists(candidateDirectory)
+            deleteIfExists(backupDirectory)
             deleteIfExists(archiveFile)
         }
+    }
+
+    private fun validateInstalledTree(root: File) {
+        requiredFiles(root).firstOrNull { !it.isFile || it.length() == 0L }?.let { missing ->
+            throw IOException("Managed $displayName package is incomplete: ${missing.absolutePath}")
+        }
+    }
+
+    private fun replaceInstallDirectory(candidateDirectory: File, backupDirectory: File) {
+        if (installDirectory.exists()) {
+            moveDirectory(installDirectory, backupDirectory)
+        }
+        try {
+            moveDirectory(candidateDirectory, installDirectory)
+        } catch (exception: Exception) {
+            restoreBackupIfNeeded(backupDirectory)
+            throw exception
+        }
+    }
+
+    private fun restoreBackupIfNeeded(backupDirectory: File) {
+        if (!backupDirectory.exists() || installDirectory.exists()) {
+            return
+        }
+        moveDirectory(backupDirectory, installDirectory)
     }
 
     private fun extractTarGz(archiveFile: File, targetDirectory: File) {
@@ -205,7 +238,7 @@ abstract class ManagedArchivePackageManager(
         }
     }
 
-    private fun downloadToFile(url: String, destination: File) {
+    private fun downloadToFile(url: String, destination: File, expectedSha256: String?) {
         val tempFile = File(destination.parentFile, "${destination.name}.part")
         if (tempFile.exists()) {
             tempFile.delete()
@@ -230,6 +263,12 @@ abstract class ManagedArchivePackageManager(
             if (tempFile.length() == 0L) {
                 throw IOException("Downloaded empty file: ${destination.name}")
             }
+            expectedSha256?.let { expected ->
+                val actual = sha256(tempFile)
+                if (!actual.equals(expected, ignoreCase = true)) {
+                    throw IOException("SHA-256 mismatch for ${destination.name}")
+                }
+            }
             if (destination.exists() && !destination.delete()) {
                 throw IOException("Failed to replace ${destination.absolutePath}")
             }
@@ -243,6 +282,23 @@ abstract class ManagedArchivePackageManager(
                 tempFile.delete()
             }
         }
+    }
+
+    private fun sha256(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().buffered().use { input ->
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) {
+                    break
+                }
+                if (read > 0) {
+                    digest.update(buffer, 0, read)
+                }
+            }
+        }
+        return digest.digest().joinToString("") { "%02X".format(it) }
     }
 
     companion object {
