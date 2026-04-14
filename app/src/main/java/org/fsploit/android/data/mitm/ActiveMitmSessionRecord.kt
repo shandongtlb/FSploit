@@ -7,5 +7,6 @@ data class ActiveMitmSessionRecord(
     val pids: List<Long>,
     val redirectPort: Int,
     val forwardingEnabled: Boolean,
+    val previousForwardingEnabled: Boolean? = null,
     val forwardDropTargetHost: String = ""
 )

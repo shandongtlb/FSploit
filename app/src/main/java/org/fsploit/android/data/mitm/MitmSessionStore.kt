@@ -44,6 +44,8 @@ class MitmSessionStore(
                 .mapNotNull { it.trim().toLongOrNull() },
             redirectPort = properties.getProperty(KEY_REDIRECT_PORT)?.toIntOrNull() ?: 0,
             forwardingEnabled = properties.getProperty(KEY_FORWARDING_ENABLED)?.toBoolean() == true,
+            previousForwardingEnabled = properties.getProperty(KEY_PREVIOUS_FORWARDING_ENABLED)
+                ?.toBooleanStrictOrNull(),
             forwardDropTargetHost = properties.getProperty(KEY_FORWARD_DROP_TARGET).orEmpty()
         )
     }
@@ -60,6 +62,9 @@ class MitmSessionStore(
             setProperty(KEY_PIDS, record.pids.joinToString(","))
             setProperty(KEY_REDIRECT_PORT, record.redirectPort.toString())
             setProperty(KEY_FORWARDING_ENABLED, record.forwardingEnabled.toString())
+            record.previousForwardingEnabled?.let {
+                setProperty(KEY_PREVIOUS_FORWARDING_ENABLED, it.toString())
+            }
             setProperty(KEY_FORWARD_DROP_TARGET, record.forwardDropTargetHost)
         }
         FileOutputStream(sessionFile).use { stream ->
@@ -83,6 +88,7 @@ class MitmSessionStore(
         private const val KEY_PIDS = "pids"
         private const val KEY_REDIRECT_PORT = "redirect_port"
         private const val KEY_FORWARDING_ENABLED = "forwarding_enabled"
+        private const val KEY_PREVIOUS_FORWARDING_ENABLED = "previous_forwarding_enabled"
         private const val KEY_FORWARD_DROP_TARGET = "forward_drop_target"
     }
 }

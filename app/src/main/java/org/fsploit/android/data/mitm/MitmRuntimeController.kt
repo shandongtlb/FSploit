@@ -83,12 +83,36 @@ class MitmRuntimeController(
         )
     }
 
-    fun setForwarding(enabled: Boolean) {
-        shellRepository.execute(
+    fun readForwardingEnabled(): Boolean? {
+        val result = shellRepository.execute(
+            command = "cat /proc/sys/net/ipv4/ip_forward 2>/dev/null",
+            asRoot = true,
+            timeoutMs = PROBE_TIMEOUT_MS
+        )
+        if (result.exitCode != 0 || result.timedOut) {
+            return null
+        }
+        return when (result.output.lineSequence().firstOrNull()?.trim()) {
+            "1" -> true
+            "0" -> false
+            else -> null
+        }
+    }
+
+    fun setForwarding(enabled: Boolean): Boolean {
+        val result = shellRepository.execute(
             command = "echo ${if (enabled) 1 else 0} > /proc/sys/net/ipv4/ip_forward",
             asRoot = true,
             timeoutMs = PROBE_TIMEOUT_MS
         )
+        return result.exitCode == 0 && !result.timedOut
+    }
+
+    fun restoreForwarding(previouslyEnabled: Boolean?): Boolean {
+        return when (previouslyEnabled) {
+            null -> false
+            else -> setForwarding(previouslyEnabled)
+        }
     }
 
     fun isProcessAlive(pid: Long): Boolean {

@@ -139,8 +139,7 @@ class MitmSessionLauncher(
         logFile: File
     ): MitmLaunchArtifacts {
         state.artifactPath = File(sessionDirectory, "capture.pcap").absolutePath
-        state.forwardingEnabled = true
-        runtimeController.setForwarding(true)
+        ensureForwardingEnabled(state)
         if (networkMode == ConnectionBlockMode.NORMAL) {
             val bettercapPid = requirePid(
                 runtimeController.startBettercapCaplet(
@@ -177,8 +176,7 @@ class MitmSessionLauncher(
         sessionDirectory: File
     ): MitmLaunchArtifacts {
         state.artifactPath = File(sessionDirectory, "credentials.log").absolutePath
-        state.forwardingEnabled = true
-        runtimeController.setForwarding(true)
+        ensureForwardingEnabled(state)
         val bettercapPid = requirePid(
             runtimeController.startBettercapCaplet(
                 config = config,
@@ -212,9 +210,8 @@ class MitmSessionLauncher(
             throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_dns_rules_required))
         }
         state.artifactPath = File(sessionDirectory, "dns.spoof.hosts").absolutePath
-        state.forwardingEnabled = true
         File(state.artifactPath).writeText(bettercapCapletFactory.normalizeDnsRules(dnsRules))
-        runtimeController.setForwarding(true)
+        ensureForwardingEnabled(state)
         val bettercapPid = requirePid(
             runtimeController.startBettercapCaplet(
                 config = config,
@@ -251,7 +248,6 @@ class MitmSessionLauncher(
             ""
         }
         state.redirectPort = config.httpRedirectPort
-        state.forwardingEnabled = true
         addonFile.writeText(mitmdumpAddonFactory.build(request, state.artifactPath))
 
         val mitmdumpPid = requirePid(
@@ -264,7 +260,7 @@ class MitmSessionLauncher(
         )
         state.pids.add(mitmdumpPid)
 
-        runtimeController.setForwarding(true)
+        ensureForwardingEnabled(state)
         runtimeController.applyPortRedirect(state.redirectPort)
         if (networkMode == ConnectionBlockMode.NORMAL) {
             val bettercapPid = requirePid(
@@ -287,13 +283,26 @@ class MitmSessionLauncher(
         return pid ?: throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
     }
 
+    private fun ensureForwardingEnabled(state: LaunchState) {
+        if (state.forwardingEnabled) {
+            return
+        }
+        val previousForwardingEnabled = runtimeController.readForwardingEnabled()
+            ?: throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
+        if (!runtimeController.setForwarding(true)) {
+            throw IllegalArgumentException(resourceProvider.getString(R.string.mitm_session_start_failed))
+        }
+        state.forwardingEnabled = true
+        state.previousForwardingEnabled = previousForwardingEnabled
+    }
+
     private fun cleanup(artifacts: MitmLaunchArtifacts) {
         artifacts.pids.forEach(runtimeController::terminateProcess)
         if (artifacts.redirectPort > 0) {
             runtimeController.clearPortRedirect(artifacts.redirectPort)
         }
         if (artifacts.forwardingEnabled) {
-            runtimeController.setForwarding(false)
+            runtimeController.restoreForwarding(artifacts.previousForwardingEnabled ?: false)
         }
         if (artifacts.forwardDropTargetHost.isNotBlank()) {
             runtimeController.clearForwardDrop(artifacts.forwardDropTargetHost)
@@ -304,6 +313,7 @@ class MitmSessionLauncher(
         var artifactPath: String = ""
         var redirectPort: Int = 0
         var forwardingEnabled: Boolean = false
+        var previousForwardingEnabled: Boolean? = null
         var forwardDropTargetHost: String = ""
         val pids = mutableListOf<Long>()
 
@@ -312,6 +322,7 @@ class MitmSessionLauncher(
                 artifactPath = artifactPath,
                 redirectPort = redirectPort,
                 forwardingEnabled = forwardingEnabled,
+                previousForwardingEnabled = previousForwardingEnabled,
                 forwardDropTargetHost = forwardDropTargetHost,
                 pids = pids.toList()
             )
@@ -323,6 +334,7 @@ data class MitmLaunchArtifacts(
     val artifactPath: String = "",
     val redirectPort: Int = 0,
     val forwardingEnabled: Boolean = false,
+    val previousForwardingEnabled: Boolean? = null,
     val forwardDropTargetHost: String = "",
     val pids: List<Long> = emptyList()
 )

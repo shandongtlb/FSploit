@@ -108,10 +108,10 @@ class ExternalToolMitmBackend(
                 logFile = mainLogFile
             )
         } catch (exception: IllegalArgumentException) {
-            cleanupSession(emptyList(), 0, false, "")
+            cleanupSession(emptyList(), 0, false, null, "")
             return MitmActionResult(success = false, summary = exception.message.orEmpty())
         } catch (_: Exception) {
-            cleanupSession(emptyList(), 0, false, "")
+            cleanupSession(emptyList(), 0, false, null, "")
             return MitmActionResult(
                 success = false,
                 summary = resourceProvider.getString(R.string.mitm_session_start_failed)
@@ -138,6 +138,7 @@ class ExternalToolMitmBackend(
                 pids = launchArtifacts.pids,
                 redirectPort = launchArtifacts.redirectPort,
                 forwardingEnabled = launchArtifacts.forwardingEnabled,
+                previousForwardingEnabled = launchArtifacts.previousForwardingEnabled,
                 forwardDropTargetHost = launchArtifacts.forwardDropTargetHost
             )
         )
@@ -161,6 +162,7 @@ class ExternalToolMitmBackend(
             record.pids,
             record.redirectPort,
             record.forwardingEnabled,
+            record.previousForwardingEnabled,
             record.forwardDropTargetHost
         )
         sessionStore.clear()
@@ -290,6 +292,7 @@ class ExternalToolMitmBackend(
         pids: List<Long>,
         redirectPort: Int,
         forwardingEnabled: Boolean,
+        previousForwardingEnabled: Boolean?,
         forwardDropTargetHost: String
     ) {
         pids.forEach { pid ->
@@ -299,7 +302,7 @@ class ExternalToolMitmBackend(
             runtimeController.clearPortRedirect(redirectPort)
         }
         if (forwardingEnabled) {
-            runtimeController.setForwarding(false)
+            runtimeController.restoreForwarding(previousForwardingEnabled ?: false)
         }
         if (forwardDropTargetHost.isNotBlank()) {
             runtimeController.clearForwardDrop(forwardDropTargetHost)
