@@ -204,34 +204,12 @@ class MitmFragment : Fragment() {
     }
 
     private fun renderModeFields(mode: MitmMode) {
-        val primaryHint = when (mode) {
-            MitmMode.REDIRECT -> getString(R.string.mitm_primary_hint_redirect_host)
-            MitmMode.IMAGE_REPLACE -> getString(R.string.mitm_primary_hint_image_url)
-            MitmMode.VIDEO_REPLACE -> getString(R.string.mitm_primary_hint_video_url)
-            else -> getString(R.string.mitm_primary_hint_empty)
-        }
-        val secondaryHint = when (mode) {
-            MitmMode.REDIRECT -> getString(R.string.mitm_secondary_hint_redirect_port)
-            else -> getString(R.string.mitm_secondary_hint_empty)
-        }
-        val payloadHint = when (mode) {
-            MitmMode.DNS_SPOOF -> getString(R.string.mitm_payload_hint_dns_rules)
-            MitmMode.SCRIPT_INJECTION -> getString(R.string.mitm_payload_hint_script)
-            MitmMode.CUSTOM_FILTER -> getString(R.string.mitm_payload_hint_filter_rules)
-            else -> getString(R.string.mitm_payload_hint_empty)
-        }
-
-        val showPrimary = mode in setOf(
-            MitmMode.REDIRECT,
-            MitmMode.IMAGE_REPLACE,
-            MitmMode.VIDEO_REPLACE
-        )
-        val showSecondary = mode == MitmMode.REDIRECT
-        val showPayload = mode in setOf(
-            MitmMode.DNS_SPOOF,
-            MitmMode.SCRIPT_INJECTION,
-            MitmMode.CUSTOM_FILTER
-        )
+        val primaryHint = getString(mode.primaryHintRes ?: R.string.mitm_primary_hint_empty)
+        val secondaryHint = getString(mode.secondaryHintRes ?: R.string.mitm_secondary_hint_empty)
+        val payloadHint = getString(mode.payloadHintRes ?: R.string.mitm_payload_hint_empty)
+        val showPrimary = mode.showsPrimaryInput
+        val showSecondary = mode.showsSecondaryInput
+        val showPayload = mode.showsPayloadInput
 
         binding.mitmPrimaryInputLayout.visibility = if (showPrimary) View.VISIBLE else View.GONE
         binding.mitmPrimaryInputLayout.hint = primaryHint
