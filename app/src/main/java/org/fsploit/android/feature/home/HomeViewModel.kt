@@ -24,6 +24,7 @@ import org.fsploit.android.domain.usecase.GetPreferredInterfaceUseCase
 import org.fsploit.android.domain.usecase.LoadMitmReadinessUseCase
 import org.fsploit.android.domain.usecase.LoadMitmSessionUseCase
 import org.fsploit.android.domain.usecase.LoadMitmToolchainConfigUseCase
+import org.fsploit.android.domain.usecase.LoadMsfOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadMsfRpcConfigUseCase
 import org.fsploit.android.domain.usecase.LoadNetworkOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadPortScanConfigUseCase
@@ -51,6 +52,7 @@ class HomeViewModel(
     private val loadMitmReadinessUseCase: LoadMitmReadinessUseCase,
     private val loadMitmSessionUseCase: LoadMitmSessionUseCase,
     private val loadMitmToolchainConfigUseCase: LoadMitmToolchainConfigUseCase,
+    private val loadMsfOverviewUseCase: LoadMsfOverviewUseCase,
     private val loadMsfRpcConfigUseCase: LoadMsfRpcConfigUseCase,
     private val runHostSweep: RunHostSweepUseCase,
     private val runPortScanUseCase: RunPortScanUseCase,
@@ -188,6 +190,12 @@ class HomeViewModel(
                     resourceProvider.getString(R.string.msf_launch_idle)
                 },
                 msfLaunchOutput = currentState.msfLaunchOutput,
+                msfConnected = currentState.msfConnected,
+                msfFrameworkVersion = currentState.msfFrameworkVersion,
+                msfRubyVersion = currentState.msfRubyVersion,
+                msfApiVersion = currentState.msfApiVersion,
+                msfSessions = currentState.msfSessions,
+                msfJobs = currentState.msfJobs,
                 scannedPortResults = currentState.scannedPortResults,
                 selectedPortResultFilter = currentState.selectedPortResultFilter,
                 isPortScanning = currentState.isPortScanning,
@@ -204,6 +212,7 @@ class HomeViewModel(
                 isSavingMitmToolchainConfig = currentState.isSavingMitmToolchainConfig,
                 isSavingMsfRpcConfig = currentState.isSavingMsfRpcConfig,
                 isLaunchingMsfRpc = currentState.isLaunchingMsfRpc,
+                isRefreshingMsf = currentState.isRefreshingMsf,
                 selectedShellTaskLabel = currentState.selectedShellTaskLabel,
                 selectedShellTaskDescription = currentState.selectedShellTaskDescription,
                 isExecutingShell = currentState.isExecutingShell
@@ -513,6 +522,51 @@ class HomeViewModel(
                 msfLaunchOutput = result.output.ifBlank {
                     resourceProvider.getString(R.string.shell_command_no_output)
                 }
+            )
+        }
+    }
+
+    fun refreshMsfOverview() {
+        val state = _uiState.value
+        val config = state.msfRpcConfig
+        if (config.host.trim().isEmpty()) {
+            _uiState.value = state.copy(
+                msfSummary = resourceProvider.getString(R.string.msf_host_required)
+            )
+            return
+        }
+        if (config.port !in 1..65535) {
+            _uiState.value = state.copy(
+                msfSummary = resourceProvider.getString(R.string.msf_port_invalid)
+            )
+            return
+        }
+        if (config.username.trim().isEmpty() || config.password.isEmpty()) {
+            _uiState.value = state.copy(
+                msfSummary = resourceProvider.getString(R.string.msf_credentials_required)
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = state.copy(
+                isRefreshingMsf = true,
+                msfSummary = resourceProvider.getString(R.string.msf_probe_running)
+            )
+
+            val overview = withContext(Dispatchers.Default) {
+                loadMsfOverviewUseCase(config)
+            }
+
+            _uiState.value = _uiState.value.copy(
+                isRefreshingMsf = false,
+                msfConnected = overview.connected,
+                msfFrameworkVersion = overview.frameworkVersion,
+                msfRubyVersion = overview.rubyVersion,
+                msfApiVersion = overview.apiVersion,
+                msfSessions = overview.sessions,
+                msfJobs = overview.jobs,
+                msfSummary = overview.summary
             )
         }
     }

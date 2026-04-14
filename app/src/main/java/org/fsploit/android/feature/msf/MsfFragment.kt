@@ -66,6 +66,9 @@ class MsfFragment : Fragment() {
         binding.saveMsfSettingsButton.setOnClickListener {
             viewModel.saveMsfRpcConfig()
         }
+        binding.refreshMsfButton.setOnClickListener {
+            viewModel.refreshMsfOverview()
+        }
         binding.launchMsfRpcButton.setOnClickListener {
             viewModel.launchMsfRpcCommand()
         }
@@ -97,6 +100,15 @@ class MsfFragment : Fragment() {
         binding.rootGateValue.text = state.rootGateSummary
         binding.shellSummaryValue.text = state.shellSummary
         binding.msfSummaryValue.text = state.msfSummary
+        binding.msfVersionValue.text = state.msfFrameworkVersion.ifBlank {
+            getString(R.string.msf_value_unknown)
+        }
+        binding.msfRubyValue.text = state.msfRubyVersion.ifBlank {
+            getString(R.string.msf_value_unknown)
+        }
+        binding.msfApiValue.text = state.msfApiVersion.ifBlank {
+            getString(R.string.msf_value_unknown)
+        }
         binding.savedMsfConfigValue.text = getString(
             R.string.msf_config_value,
             state.msfRpcConfig.host,
@@ -123,7 +135,37 @@ class MsfFragment : Fragment() {
         binding.msfLaunchOutputValue.text = state.msfLaunchOutput.ifBlank {
             getString(R.string.msf_launch_output_empty)
         }
+        binding.msfSessionsValue.text = if (state.msfSessions.isEmpty()) {
+            getString(R.string.msf_sessions_empty)
+        } else {
+            state.msfSessions.joinToString(separator = "\n\n") { session ->
+                buildString {
+                    append("#")
+                    append(session.id)
+                    append("  ")
+                    append(session.type.ifBlank { getString(R.string.msf_value_unknown) })
+                    append('\n')
+                    append(getString(R.string.msf_session_target, session.targetHost.ifBlank { "-" }))
+                    append('\n')
+                    append(getString(R.string.msf_session_peer, session.tunnelPeer.ifBlank { "-" }))
+                    append('\n')
+                    append(getString(R.string.msf_session_via, session.viaExploit.ifBlank { "-" }))
+                    if (session.description.isNotBlank()) {
+                        append('\n')
+                        append(session.description)
+                    }
+                }
+            }
+        }
+        binding.msfJobsValue.text = if (state.msfJobs.isEmpty()) {
+            getString(R.string.msf_jobs_empty)
+        } else {
+            state.msfJobs.joinToString(separator = "\n") { job ->
+                "#${job.id}  ${job.name.ifBlank { getString(R.string.msf_value_unknown) }}"
+            }
+        }
         binding.saveMsfSettingsButton.isEnabled = !state.isSavingMsfRpcConfig
+        binding.refreshMsfButton.isEnabled = !state.isRefreshingMsf
         binding.launchMsfRpcButton.isEnabled = state.rootGranted && !state.isLaunchingMsfRpc
     }
 

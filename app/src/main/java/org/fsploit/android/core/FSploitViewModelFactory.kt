@@ -7,6 +7,7 @@ import org.fsploit.android.domain.usecase.BlockHostUseCase
 import org.fsploit.android.domain.usecase.LoadMitmReadinessUseCase
 import org.fsploit.android.domain.usecase.LoadMitmSessionUseCase
 import org.fsploit.android.domain.usecase.LoadMitmToolchainConfigUseCase
+import org.fsploit.android.domain.usecase.LoadMsfOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadMsfRpcConfigUseCase
 import org.fsploit.android.domain.usecase.LoadNetworkOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadPortScanConfigUseCase
@@ -34,6 +35,7 @@ class FSploitViewModelFactory(
     private val loadMitmReadiness: LoadMitmReadinessUseCase,
     private val loadMitmSession: LoadMitmSessionUseCase,
     private val loadMitmToolchainConfig: LoadMitmToolchainConfigUseCase,
+    private val loadMsfOverview: LoadMsfOverviewUseCase,
     private val loadMsfRpcConfig: LoadMsfRpcConfigUseCase,
     private val runHostSweep: RunHostSweepUseCase,
     private val runPortScan: RunPortScanUseCase,
@@ -61,6 +63,7 @@ class FSploitViewModelFactory(
                     loadMitmReadinessUseCase = loadMitmReadiness,
                     loadMitmSessionUseCase = loadMitmSession,
                     loadMitmToolchainConfigUseCase = loadMitmToolchainConfig,
+                    loadMsfOverviewUseCase = loadMsfOverview,
                     loadMsfRpcConfigUseCase = loadMsfRpcConfig,
                     runHostSweep = runHostSweep,
                     runPortScanUseCase = runPortScan,

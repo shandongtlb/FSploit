@@ -1,6 +1,7 @@
 package org.fsploit.android.core
 
 import android.content.Context
+import org.fsploit.android.data.msf.MsfRepository
 import org.fsploit.android.data.mitm.BettercapPackageManager
 import org.fsploit.android.data.mitm.ExternalToolMitmBackend
 import org.fsploit.android.data.mitm.MitmdumpPackageManager
@@ -16,6 +17,7 @@ import org.fsploit.android.domain.usecase.LoadMitmReadinessUseCase
 import org.fsploit.android.domain.usecase.LoadMitmSessionUseCase
 import org.fsploit.android.domain.usecase.LoadMitmToolchainConfigUseCase
 import org.fsploit.android.domain.usecase.LoadMsfRpcConfigUseCase
+import org.fsploit.android.domain.usecase.LoadMsfOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadNetworkOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadPortScanConfigUseCase
 import org.fsploit.android.domain.usecase.ProbeShellUseCase
@@ -52,6 +54,7 @@ class AppContainer(
         shellRepository
     )
     private val portScanRepository = PortScanRepository(resourceProvider)
+    private val msfRepository = MsfRepository(resourceProvider)
 
     val homeViewModelFactory = FSploitViewModelFactory(
         resourceProvider = resourceProvider,
@@ -65,6 +68,7 @@ class AppContainer(
         loadMitmSession = LoadMitmSessionUseCase(mitmRepository),
         loadMitmToolchainConfig = LoadMitmToolchainConfigUseCase(preferencesRepository),
         loadMsfRpcConfig = LoadMsfRpcConfigUseCase(preferencesRepository),
+        loadMsfOverview = LoadMsfOverviewUseCase(msfRepository),
         runHostSweep = RunHostSweepUseCase(hostSweepRepository),
         runPortScan = RunPortScanUseCase(portScanRepository),
         runShellCommand = RunShellCommandUseCase(shellRepository),
