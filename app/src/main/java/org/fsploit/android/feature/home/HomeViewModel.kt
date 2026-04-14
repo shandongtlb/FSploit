@@ -15,6 +15,7 @@ import org.fsploit.android.domain.model.ConnectionBlockMode
 import org.fsploit.android.domain.model.MitmLaunchRequest
 import org.fsploit.android.domain.model.MitmMode
 import org.fsploit.android.domain.model.MitmToolchainConfig
+import org.fsploit.android.domain.model.MsfRpcConfig
 import org.fsploit.android.domain.model.NetworkInterfaceInfo
 import org.fsploit.android.domain.model.PortScanConfig
 import org.fsploit.android.domain.model.PortState
@@ -23,6 +24,7 @@ import org.fsploit.android.domain.usecase.GetPreferredInterfaceUseCase
 import org.fsploit.android.domain.usecase.LoadMitmReadinessUseCase
 import org.fsploit.android.domain.usecase.LoadMitmSessionUseCase
 import org.fsploit.android.domain.usecase.LoadMitmToolchainConfigUseCase
+import org.fsploit.android.domain.usecase.LoadMsfRpcConfigUseCase
 import org.fsploit.android.domain.usecase.LoadNetworkOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadPortScanConfigUseCase
 import org.fsploit.android.domain.usecase.ProbeShellUseCase
@@ -32,6 +34,7 @@ import org.fsploit.android.domain.usecase.RunShellCommandUseCase
 import org.fsploit.android.domain.usecase.SavePortScanConfigUseCase
 import org.fsploit.android.domain.usecase.SavePreferredInterfaceUseCase
 import org.fsploit.android.domain.usecase.SaveMitmToolchainConfigUseCase
+import org.fsploit.android.domain.usecase.SaveMsfRpcConfigUseCase
 import org.fsploit.android.domain.usecase.StartMitmSessionUseCase
 import org.fsploit.android.domain.usecase.StopMitmSessionUseCase
 import org.fsploit.android.domain.usecase.UnblockHostUseCase
@@ -48,12 +51,14 @@ class HomeViewModel(
     private val loadMitmReadinessUseCase: LoadMitmReadinessUseCase,
     private val loadMitmSessionUseCase: LoadMitmSessionUseCase,
     private val loadMitmToolchainConfigUseCase: LoadMitmToolchainConfigUseCase,
+    private val loadMsfRpcConfigUseCase: LoadMsfRpcConfigUseCase,
     private val runHostSweep: RunHostSweepUseCase,
     private val runPortScanUseCase: RunPortScanUseCase,
     private val runShellCommandUseCase: RunShellCommandUseCase,
     private val blockHostUseCase: BlockHostUseCase,
     private val unblockHostUseCase: UnblockHostUseCase,
     private val saveMitmToolchainConfigUseCase: SaveMitmToolchainConfigUseCase,
+    private val saveMsfRpcConfigUseCase: SaveMsfRpcConfigUseCase,
     private val startMitmSessionUseCase: StartMitmSessionUseCase,
     private val stopMitmSessionUseCase: StopMitmSessionUseCase
 ) : ViewModel() {
@@ -72,6 +77,9 @@ class HomeViewModel(
             mitmSessionSummary = resourceProvider.getString(R.string.mitm_session_idle),
             mitmDiagnosticsSummary = resourceProvider.getString(R.string.mitm_diagnostics_idle),
             mitmSettingsSummary = resourceProvider.getString(R.string.mitm_settings_idle),
+            msfSummary = resourceProvider.getString(R.string.msf_summary_pending),
+            msfSettingsSummary = resourceProvider.getString(R.string.msf_settings_idle),
+            msfLaunchSummary = resourceProvider.getString(R.string.msf_launch_idle),
             portScanSummary = resourceProvider.getString(R.string.port_scan_not_run),
             connectionBlockModeSummary = resourceProvider.getString(R.string.block_mode_pending),
             connectionBlockSummary = resourceProvider.getString(R.string.block_idle),
@@ -89,7 +97,10 @@ class HomeViewModel(
             val mitmReadiness = loadMitmReadinessUseCase(shellStatus)
             val mitmSession = loadMitmSessionUseCase()
             val mitmToolchainConfig = loadMitmToolchainConfigUseCase()
+            val storedMsfRpcConfig = loadMsfRpcConfigUseCase()
             val currentState = _uiState.value
+            val msfRpcConfig = currentState.msfRpcConfig.takeUnless { it == MsfRpcConfig() }
+                ?: storedMsfRpcConfig
             val interfaceNames = overview.interfaces.map { it.name }
             val preferredInterfaceName = getPreferredInterface()
                 .takeIf { it.isNotBlank() && interfaceNames.contains(it) }
@@ -168,6 +179,15 @@ class HomeViewModel(
                 mitmSettingsSummary = currentState.mitmSettingsSummary.ifBlank {
                     resourceProvider.getString(R.string.mitm_settings_idle)
                 },
+                msfRpcConfig = msfRpcConfig,
+                msfSummary = buildMsfSummary(msfRpcConfig),
+                msfSettingsSummary = currentState.msfSettingsSummary.ifBlank {
+                    resourceProvider.getString(R.string.msf_settings_idle)
+                },
+                msfLaunchSummary = currentState.msfLaunchSummary.ifBlank {
+                    resourceProvider.getString(R.string.msf_launch_idle)
+                },
+                msfLaunchOutput = currentState.msfLaunchOutput,
                 scannedPortResults = currentState.scannedPortResults,
                 selectedPortResultFilter = currentState.selectedPortResultFilter,
                 isPortScanning = currentState.isPortScanning,
@@ -182,6 +202,8 @@ class HomeViewModel(
                 isBlockingConnection = currentState.isBlockingConnection,
                 isStartingMitmSession = currentState.isStartingMitmSession,
                 isSavingMitmToolchainConfig = currentState.isSavingMitmToolchainConfig,
+                isSavingMsfRpcConfig = currentState.isSavingMsfRpcConfig,
+                isLaunchingMsfRpc = currentState.isLaunchingMsfRpc,
                 selectedShellTaskLabel = currentState.selectedShellTaskLabel,
                 selectedShellTaskDescription = currentState.selectedShellTaskDescription,
                 isExecutingShell = currentState.isExecutingShell
@@ -337,6 +359,160 @@ class HomeViewModel(
             _uiState.value = _uiState.value.copy(
                 isSavingMitmToolchainConfig = false,
                 mitmSettingsSummary = resourceProvider.getString(R.string.mitm_settings_saved)
+            )
+        }
+    }
+
+    fun updateMsfRpcHost(value: String) {
+        _uiState.value = _uiState.value.copy(
+            msfRpcConfig = _uiState.value.msfRpcConfig.copy(host = value.trim())
+        )
+    }
+
+    fun updateMsfRpcPort(value: String) {
+        val parsed = value.trim().toIntOrNull() ?: 0
+        _uiState.value = _uiState.value.copy(
+            msfRpcConfig = _uiState.value.msfRpcConfig.copy(port = parsed)
+        )
+    }
+
+    fun updateMsfRpcUsername(value: String) {
+        _uiState.value = _uiState.value.copy(
+            msfRpcConfig = _uiState.value.msfRpcConfig.copy(username = value)
+        )
+    }
+
+    fun updateMsfRpcPassword(value: String) {
+        _uiState.value = _uiState.value.copy(
+            msfRpcConfig = _uiState.value.msfRpcConfig.copy(password = value)
+        )
+    }
+
+    fun updateMsfRpcUseSsl(value: Boolean) {
+        _uiState.value = _uiState.value.copy(
+            msfRpcConfig = _uiState.value.msfRpcConfig.copy(useSsl = value)
+        )
+    }
+
+    fun updateMsfRpcLaunchCommand(value: String) {
+        _uiState.value = _uiState.value.copy(
+            msfRpcConfig = _uiState.value.msfRpcConfig.copy(launchCommand = value)
+        )
+    }
+
+    fun applyMsfMsgrpcPreset() {
+        val current = _uiState.value.msfRpcConfig
+        _uiState.value = _uiState.value.copy(
+            msfRpcConfig = current.copy(
+                host = "127.0.0.1",
+                port = 55552,
+                username = "msf",
+                password = "msf",
+                useSsl = false,
+                launchCommand = "nh -r \"msfconsole -qx 'load msgrpc ServerHost=127.0.0.1 ServerPort=55552 User=msf Pass=msf SSL=false'\""
+            ),
+            msfSettingsSummary = resourceProvider.getString(R.string.msf_preset_msgrpc_applied)
+        )
+    }
+
+    fun applyMsfMsfrpcdPreset() {
+        val current = _uiState.value.msfRpcConfig
+        _uiState.value = _uiState.value.copy(
+            msfRpcConfig = current.copy(
+                host = "127.0.0.1",
+                port = 55553,
+                username = "msf",
+                password = "msf",
+                useSsl = true,
+                launchCommand = "nh -r \"msfrpcd -P msf -U msf -a 127.0.0.1 -p 55553 -S\""
+            ),
+            msfSettingsSummary = resourceProvider.getString(R.string.msf_preset_msfrpcd_applied)
+        )
+    }
+
+    fun saveMsfRpcConfig() {
+        val config = _uiState.value.msfRpcConfig
+        if (config.host.trim().isEmpty()) {
+            _uiState.value = _uiState.value.copy(
+                msfSettingsSummary = resourceProvider.getString(R.string.msf_host_required)
+            )
+            return
+        }
+        if (config.port !in 1..65535) {
+            _uiState.value = _uiState.value.copy(
+                msfSettingsSummary = resourceProvider.getString(R.string.msf_port_invalid)
+            )
+            return
+        }
+        if (config.username.trim().isEmpty() || config.password.isEmpty()) {
+            _uiState.value = _uiState.value.copy(
+                msfSettingsSummary = resourceProvider.getString(R.string.msf_credentials_required)
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isSavingMsfRpcConfig = true,
+                msfSettingsSummary = resourceProvider.getString(R.string.msf_settings_saving)
+            )
+
+            withContext(Dispatchers.Default) {
+                saveMsfRpcConfigUseCase(
+                    config.copy(
+                        host = config.host.trim(),
+                        username = config.username.trim(),
+                        launchCommand = config.launchCommand.trim()
+                    )
+                )
+            }
+
+            _uiState.value = _uiState.value.copy(
+                isSavingMsfRpcConfig = false,
+                msfSummary = buildMsfSummary(_uiState.value.msfRpcConfig),
+                msfSettingsSummary = resourceProvider.getString(R.string.msf_settings_saved)
+            )
+        }
+    }
+
+    fun launchMsfRpcCommand() {
+        if (!ensureRootReady()) {
+            _uiState.value = _uiState.value.copy(
+                msfLaunchSummary = resourceProvider.getString(R.string.root_gate_blocked)
+            )
+            return
+        }
+
+        val state = _uiState.value
+        val command = state.msfRpcConfig.launchCommand.trim()
+        if (command.isEmpty()) {
+            _uiState.value = state.copy(
+                msfLaunchSummary = resourceProvider.getString(R.string.msf_launch_command_empty),
+                msfLaunchOutput = ""
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = state.copy(
+                isLaunchingMsfRpc = true,
+                msfLaunchSummary = resourceProvider.getString(R.string.msf_launch_running)
+            )
+
+            val result = withContext(Dispatchers.Default) {
+                runShellCommandUseCase(
+                    command = command,
+                    asRoot = true,
+                    timeoutMs = MSF_LAUNCH_TIMEOUT_MS
+                )
+            }
+
+            _uiState.value = _uiState.value.copy(
+                isLaunchingMsfRpc = false,
+                msfLaunchSummary = result.summary,
+                msfLaunchOutput = result.output.ifBlank {
+                    resourceProvider.getString(R.string.shell_command_no_output)
+                }
             )
         }
     }
@@ -720,9 +896,29 @@ class HomeViewModel(
             portScanSummary = resourceProvider.getString(R.string.root_gate_blocked),
             shellExecutionSummary = resourceProvider.getString(R.string.root_gate_blocked),
             mitmSessionSummary = resourceProvider.getString(R.string.root_gate_blocked),
-            mitmDiagnosticsSummary = resourceProvider.getString(R.string.root_gate_blocked)
+            mitmDiagnosticsSummary = resourceProvider.getString(R.string.root_gate_blocked),
+            msfLaunchSummary = resourceProvider.getString(R.string.root_gate_blocked)
         )
         return false
+    }
+
+    private fun buildMsfSummary(config: MsfRpcConfig): String {
+        return resourceProvider.getString(
+            if (config.launchCommand.isBlank()) {
+                R.string.msf_summary_remote
+            } else {
+                R.string.msf_summary_local_launch
+            },
+            config.host,
+            config.port,
+            resourceProvider.getString(
+                if (config.useSsl) {
+                    R.string.msf_ssl_enabled
+                } else {
+                    R.string.msf_ssl_disabled
+                }
+            )
+        )
     }
 
     private fun buildMitmDiagnosticsCommand(state: HomeUiState): String {
@@ -1066,5 +1262,6 @@ class HomeViewModel(
     companion object {
         private const val SHELL_COMMAND_TIMEOUT_MS = 5000L
         private const val MITM_DIAGNOSTICS_TIMEOUT_MS = 8000L
+        private const val MSF_LAUNCH_TIMEOUT_MS = 8000L
     }
 }

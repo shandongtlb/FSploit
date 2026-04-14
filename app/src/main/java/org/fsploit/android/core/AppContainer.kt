@@ -15,6 +15,7 @@ import org.fsploit.android.domain.usecase.GetPreferredInterfaceUseCase
 import org.fsploit.android.domain.usecase.LoadMitmReadinessUseCase
 import org.fsploit.android.domain.usecase.LoadMitmSessionUseCase
 import org.fsploit.android.domain.usecase.LoadMitmToolchainConfigUseCase
+import org.fsploit.android.domain.usecase.LoadMsfRpcConfigUseCase
 import org.fsploit.android.domain.usecase.LoadNetworkOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadPortScanConfigUseCase
 import org.fsploit.android.domain.usecase.ProbeShellUseCase
@@ -24,6 +25,7 @@ import org.fsploit.android.domain.usecase.RunShellCommandUseCase
 import org.fsploit.android.domain.usecase.SavePortScanConfigUseCase
 import org.fsploit.android.domain.usecase.SavePreferredInterfaceUseCase
 import org.fsploit.android.domain.usecase.SaveMitmToolchainConfigUseCase
+import org.fsploit.android.domain.usecase.SaveMsfRpcConfigUseCase
 import org.fsploit.android.domain.usecase.StartMitmSessionUseCase
 import org.fsploit.android.domain.usecase.StopMitmSessionUseCase
 import org.fsploit.android.domain.usecase.UnblockHostUseCase
@@ -62,12 +64,14 @@ class AppContainer(
         loadMitmReadiness = LoadMitmReadinessUseCase(mitmRepository),
         loadMitmSession = LoadMitmSessionUseCase(mitmRepository),
         loadMitmToolchainConfig = LoadMitmToolchainConfigUseCase(preferencesRepository),
+        loadMsfRpcConfig = LoadMsfRpcConfigUseCase(preferencesRepository),
         runHostSweep = RunHostSweepUseCase(hostSweepRepository),
         runPortScan = RunPortScanUseCase(portScanRepository),
         runShellCommand = RunShellCommandUseCase(shellRepository),
         blockHost = BlockHostUseCase(mitmRepository),
         unblockHost = UnblockHostUseCase(mitmRepository),
         saveMitmToolchainConfig = SaveMitmToolchainConfigUseCase(preferencesRepository),
+        saveMsfRpcConfig = SaveMsfRpcConfigUseCase(preferencesRepository),
         startMitmSession = StartMitmSessionUseCase(mitmRepository),
         stopMitmSession = StopMitmSessionUseCase(mitmRepository)
     )

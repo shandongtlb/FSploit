@@ -24,6 +24,7 @@ import org.fsploit.android.data.mitm.MitmdumpPackageManager
 import org.fsploit.android.databinding.ActivityMainBinding
 import org.fsploit.android.feature.discovery.DiscoveryFragment
 import org.fsploit.android.feature.home.HomeViewModel
+import org.fsploit.android.feature.msf.MsfFragment
 import org.fsploit.android.feature.mitm.MitmFragment
 import org.fsploit.android.feature.overview.OverviewFragment
 import org.fsploit.android.feature.settings.SettingsFragment
@@ -134,6 +135,7 @@ class MainActivity : AppCompatActivity() {
         val fragment = when (screen) {
             MainScreen.OVERVIEW -> OverviewFragment()
             MainScreen.MITM -> MitmFragment()
+            MainScreen.MSF -> MsfFragment()
             MainScreen.DISCOVERY -> DiscoveryFragment()
             MainScreen.TARGET_DETAIL -> TargetDetailFragment()
             MainScreen.TOOLS -> ToolsFragment()

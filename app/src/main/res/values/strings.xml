@@ -5,6 +5,7 @@
 
     <string name="nav_overview">Overview</string>
     <string name="nav_mitm">MITM</string>
+    <string name="nav_msf">MSF</string>
     <string name="nav_discovery">Discovery</string>
     <string name="nav_target_detail">Target Detail</string>
     <string name="nav_tools">Tools</string>
@@ -15,6 +16,7 @@
     <string name="section_overview_title">System Overview</string>
     <string name="section_discovery_title">Host Discovery</string>
     <string name="section_target_detail_title">Target Detail</string>
+    <string name="section_msf_title">Metasploit RPC</string>
     <string name="section_tools_title">Shell Tooling</string>
     <string name="root_gate_title">Root gate</string>
 
@@ -171,6 +173,44 @@
     <string name="settings_not_configured">Not configured</string>
     <string name="settings_port_profile_value">Ports: %1$s\nTimeout: %2$s ms\nParallelism: %3$s</string>
     <string name="language_follow_system">Follow system language. Supported: English and Simplified Chinese.</string>
+
+    <string name="msf_module_intro">Independent Metasploit RPC workspace for NetHunter chroot or remote framework endpoints. This module stays separate from MITM orchestration.</string>
+    <string name="msf_status_title">MSF module summary</string>
+    <string name="msf_saved_config_label">Saved RPC endpoint</string>
+    <string name="msf_config_value">Host: %1$s\nPort: %2$d\nUser: %3$s\nTransport: %4$s</string>
+    <string name="msf_rpc_config_title">RPC configuration</string>
+    <string name="msf_rpc_host">RPC host</string>
+    <string name="msf_rpc_port">RPC port</string>
+    <string name="msf_rpc_user">RPC username</string>
+    <string name="msf_rpc_password">RPC password</string>
+    <string name="msf_rpc_ssl">Use SSL/TLS for RPC</string>
+    <string name="msf_rpc_launch_command">Local launch command</string>
+    <string name="msf_rpc_launch_command_hint">Use a self-backgrounding NetHunter command here if you want FSploit to start msgrpc or msfrpcd locally. Leave it empty for pure remote/manual RPC.</string>
+    <string name="msf_apply_msgrpc_preset">NetHunter msgrpc</string>
+    <string name="msf_apply_msfrpcd_preset">NetHunter msfrpcd</string>
+    <string name="msf_save_settings">Save MSF Settings</string>
+    <string name="msf_launch_rpc">Run Launch Command</string>
+    <string name="msf_launch_status_title">Launch status</string>
+    <string name="msf_launch_output_title">Launch output</string>
+    <string name="msf_launch_output_empty">No MSF launch output is available yet.</string>
+    <string name="msf_show_password">Show password</string>
+    <string name="msf_hide_password">Hide password</string>
+    <string name="msf_ssl_enabled">HTTPS / SSL</string>
+    <string name="msf_ssl_disabled">HTTP / plain</string>
+    <string name="msf_summary_pending">Preparing the standalone Metasploit RPC workspace...</string>
+    <string name="msf_summary_remote">Configured for an independent RPC endpoint at %1$s:%2$d over %3$s. Add a local launch command only if you want FSploit to start NetHunter services itself.</string>
+    <string name="msf_summary_local_launch">Configured for %1$s:%2$d over %3$s with a local launch command. FSploit can save the endpoint and trigger a NetHunter-backed RPC startup without involving MITM flows.</string>
+    <string name="msf_settings_idle">No MSF RPC settings changes have been saved yet.</string>
+    <string name="msf_settings_saving">Saving MSF RPC settings...</string>
+    <string name="msf_settings_saved">MSF RPC settings saved.</string>
+    <string name="msf_host_required">Enter an RPC host before saving MSF settings.</string>
+    <string name="msf_port_invalid">RPC port must be between 1 and 65535.</string>
+    <string name="msf_credentials_required">Both RPC username and password are required.</string>
+    <string name="msf_preset_msgrpc_applied">Applied the NetHunter msgrpc preset. Review the command and credentials before saving.</string>
+    <string name="msf_preset_msfrpcd_applied">Applied the NetHunter msfrpcd preset. Review the command and credentials before saving.</string>
+    <string name="msf_launch_idle">No MSF launch command has been run yet.</string>
+    <string name="msf_launch_running">Running the configured MSF launch command via su -c...</string>
+    <string name="msf_launch_command_empty">Enter a local NetHunter launch command first, or leave launch empty and treat this page as a remote RPC config.</string>
 
     <string name="permission_summary_pending">Checking permissions...</string>
     <string name="permissions_granted">All required permissions are granted.</string>

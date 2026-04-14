@@ -5,6 +5,7 @@
 
     <string name="nav_overview">概览</string>
     <string name="nav_mitm">MITM</string>
+    <string name="nav_msf">MSF</string>
     <string name="nav_discovery">发现</string>
     <string name="nav_target_detail">目标详情</string>
     <string name="nav_tools">工具</string>
@@ -15,6 +16,7 @@
     <string name="section_overview_title">系统概览</string>
     <string name="section_discovery_title">主机发现</string>
     <string name="section_target_detail_title">目标详情</string>
+    <string name="section_msf_title">Metasploit RPC</string>
     <string name="section_tools_title">Shell 工具</string>
     <string name="root_gate_title">Root 门禁</string>
 
@@ -171,6 +173,44 @@
     <string name="settings_not_configured">未配置</string>
     <string name="settings_port_profile_value">端口：%1$s\n超时：%2$s ms\n并发：%3$s</string>
     <string name="language_follow_system">跟随系统语言。当前支持：英语、简体中文。</string>
+
+    <string name="msf_module_intro">独立的 Metasploit RPC 工作区，可接 Kali NetHunter chroot 或远端框架端点。这个模块与 MITM 编排完全分离。</string>
+    <string name="msf_status_title">MSF 模块概览</string>
+    <string name="msf_saved_config_label">已保存的 RPC 端点</string>
+    <string name="msf_config_value">主机：%1$s\n端口：%2$d\n用户：%3$s\n传输：%4$s</string>
+    <string name="msf_rpc_config_title">RPC 配置</string>
+    <string name="msf_rpc_host">RPC 主机</string>
+    <string name="msf_rpc_port">RPC 端口</string>
+    <string name="msf_rpc_user">RPC 用户名</string>
+    <string name="msf_rpc_password">RPC 密码</string>
+    <string name="msf_rpc_ssl">RPC 使用 SSL/TLS</string>
+    <string name="msf_rpc_launch_command">本地启动命令</string>
+    <string name="msf_rpc_launch_command_hint">如果你希望 FSploit 直接启动 NetHunter 里的 msgrpc 或 msfrpcd，就在这里放一个会自行后台化的命令。留空则表示只做远端或手动 RPC 配置。</string>
+    <string name="msf_apply_msgrpc_preset">NetHunter msgrpc</string>
+    <string name="msf_apply_msfrpcd_preset">NetHunter msfrpcd</string>
+    <string name="msf_save_settings">保存 MSF 设置</string>
+    <string name="msf_launch_rpc">执行启动命令</string>
+    <string name="msf_launch_status_title">启动状态</string>
+    <string name="msf_launch_output_title">启动输出</string>
+    <string name="msf_launch_output_empty">当前还没有 MSF 启动输出。</string>
+    <string name="msf_show_password">显示密码</string>
+    <string name="msf_hide_password">隐藏密码</string>
+    <string name="msf_ssl_enabled">HTTPS / SSL</string>
+    <string name="msf_ssl_disabled">HTTP / 明文</string>
+    <string name="msf_summary_pending">正在准备独立的 Metasploit RPC 工作区...</string>
+    <string name="msf_summary_remote">当前已将独立 RPC 端点配置为 %1$s:%2$d，传输为 %3$s。只有在你希望 FSploit 直接启动 NetHunter 服务时，才需要填写本地启动命令。</string>
+    <string name="msf_summary_local_launch">当前已将 %1$s:%2$d 配置为 %3$s，并附带本地启动命令。FSploit 可以保存这个端点，并在不依赖 MITM 的情况下触发 NetHunter RPC 启动。</string>
+    <string name="msf_settings_idle">当前还没有保存任何 MSF RPC 设置改动。</string>
+    <string name="msf_settings_saving">正在保存 MSF RPC 设置...</string>
+    <string name="msf_settings_saved">MSF RPC 设置已保存。</string>
+    <string name="msf_host_required">保存 MSF 设置前请先填写 RPC 主机。</string>
+    <string name="msf_port_invalid">RPC 端口必须在 1 到 65535 之间。</string>
+    <string name="msf_credentials_required">RPC 用户名和密码都必须填写。</string>
+    <string name="msf_preset_msgrpc_applied">已应用 NetHunter msgrpc 预设。保存前请再次确认命令与凭据。</string>
+    <string name="msf_preset_msfrpcd_applied">已应用 NetHunter msfrpcd 预设。保存前请再次确认命令与凭据。</string>
+    <string name="msf_launch_idle">当前还没有执行任何 MSF 启动命令。</string>
+    <string name="msf_launch_running">正在通过 su -c 执行已配置的 MSF 启动命令...</string>
+    <string name="msf_launch_command_empty">请先输入本地 NetHunter 启动命令；如果你只想把这里当成远端 RPC 配置页，也可以保持留空。</string>
 
     <string name="permission_summary_pending">正在检查权限...</string>
     <string name="permissions_granted">所有必需权限均已授予。</string>
