@@ -1154,6 +1154,7 @@ class HomeViewModel(
                     blockHostUseCase(
                         hostAddress,
                         _uiState.value.preferredInterfaceName,
+                        _uiState.value.resolvedGatewayAddress,
                         _uiState.value.selectedConnectionBlockMode
                     )
                 } else {

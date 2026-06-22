@@ -54,6 +54,6 @@ class BettercapPackageManager(
         private const val BETTERCAP_ARCHIVE_URL =
             "https://github.com/shandongtlb/bettercap-android/releases/download/v0/bettercap-android-arm64-package.tar.gz"
         private const val BETTERCAP_ARCHIVE_SHA256 =
-            "E290F3394FD342E96FFD78F7AED0B367BA73A31972B9F0B8DD162521BBE89151"
+            "AB233286812FAC1308B33EF025EAFB27275891CF82389B0020717F90FE0BCF63"
     }
 }

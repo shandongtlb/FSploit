@@ -32,6 +32,7 @@ class MitmSessionLauncher(
                     networkMode = request.networkMode,
                     interfaceName = interfaceName,
                     targetHost = targetHost,
+                    gatewayAddress = gatewayAddress,
                     sessionDirectory = sessionDirectory,
                     logFile = logFile
                 )
@@ -98,6 +99,7 @@ class MitmSessionLauncher(
         networkMode: ConnectionBlockMode,
         interfaceName: String,
         targetHost: String,
+        gatewayAddress: String,
         sessionDirectory: File,
         logFile: File
     ): MitmLaunchArtifacts {
@@ -110,7 +112,8 @@ class MitmSessionLauncher(
                         interfaceName = interfaceName,
                         sessionDirectory = sessionDirectory,
                         logFile = logFile,
-                        capletContent = bettercapCapletFactory.buildArpBanCaplet(targetHost)
+                        capletContent = bettercapCapletFactory.buildArpBanCaplet(targetHost),
+                        gatewayAddress = gatewayAddress
                     )
                 )
                 state.pids.add(pid)
@@ -148,7 +151,8 @@ class MitmSessionLauncher(
                     interfaceName = interfaceName,
                     sessionDirectory = sessionDirectory,
                     logFile = logFile,
-                    capletContent = bettercapCapletFactory.buildArpSpoofCaplet(targetHost, gatewayAddress)
+                    capletContent = bettercapCapletFactory.buildArpSpoofCaplet(targetHost, gatewayAddress),
+                    gatewayAddress = gatewayAddress
                 )
             )
             state.pids.add(bettercapPid)
@@ -188,7 +192,8 @@ class MitmSessionLauncher(
                     bettercapCapletFactory.buildPasswordSniffCaplet(targetHost, gatewayAddress)
                 } else {
                     bettercapCapletFactory.buildHotspotPasswordSniffCaplet(targetHost)
-                }
+                },
+                gatewayAddress = if (networkMode == ConnectionBlockMode.NORMAL) gatewayAddress else ""
             )
         )
         state.pids.add(bettercapPid)
@@ -223,7 +228,8 @@ class MitmSessionLauncher(
                     bettercapCapletFactory.buildDnsSpoofCaplet(targetHost, gatewayAddress, state.artifactPath)
                 } else {
                     bettercapCapletFactory.buildHotspotDnsSpoofCaplet(targetHost, state.artifactPath)
-                }
+                },
+                gatewayAddress = if (networkMode == ConnectionBlockMode.NORMAL) gatewayAddress else ""
             )
         )
         state.pids.add(bettercapPid)
@@ -270,7 +276,8 @@ class MitmSessionLauncher(
                     interfaceName = interfaceName,
                     sessionDirectory = sessionDirectory,
                     logFile = logFile,
-                    capletContent = bettercapCapletFactory.buildArpSpoofCaplet(targetHost, gatewayAddress)
+                    capletContent = bettercapCapletFactory.buildArpSpoofCaplet(targetHost, gatewayAddress),
+                    gatewayAddress = gatewayAddress
                 )
             )
             state.pids.add(bettercapPid)

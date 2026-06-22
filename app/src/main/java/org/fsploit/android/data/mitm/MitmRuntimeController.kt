@@ -13,11 +13,12 @@ class MitmRuntimeController(
         interfaceName: String,
         sessionDirectory: File,
         logFile: File,
-        capletContent: String
+        capletContent: String,
+        gatewayAddress: String = ""
     ): Long? {
         val capletFile = File(sessionDirectory, "$name.cap")
         capletFile.writeText(capletContent)
-        val scriptBody = buildBettercapScript(config, interfaceName, capletFile)
+        val scriptBody = buildBettercapScript(config, interfaceName, capletFile, gatewayAddress)
         if (scriptBody.isBlank()) {
             return null
         }
@@ -215,8 +216,12 @@ class MitmRuntimeController(
     private fun buildBettercapScript(
         config: MitmToolchainConfig,
         interfaceName: String,
-        capletFile: File
+        capletFile: File,
+        gatewayAddress: String
     ): String {
+        val gatewayArgs = gatewayAddress.trim().let { gateway ->
+            if (gateway.isEmpty()) "" else " -gateway-override ${shellQuote(gateway)}"
+        }
         val bettercapPath = config.bettercapPath.trim()
         if (bettercapPath.contains('/')) {
             val sourceBinary = File(bettercapPath)
@@ -253,6 +258,7 @@ class MitmRuntimeController(
                 append("\"${'$'}runtime_dir/bettercap\"")
                 append(" -iface ")
                 append(shellQuote(interfaceName))
+                append(gatewayArgs)
                 append(" -no-colors -caplet ")
                 append(shellQuote(capletFile.absolutePath))
                 append('\n')
@@ -263,6 +269,7 @@ class MitmRuntimeController(
             append(shellCommandToken(bettercapPath))
             append(" -iface ")
             append(shellQuote(interfaceName))
+            append(gatewayArgs)
             append(" -no-colors -caplet ")
             append(shellQuote(capletFile.absolutePath))
             append('\n')

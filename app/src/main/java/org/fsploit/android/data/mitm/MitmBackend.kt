@@ -16,6 +16,7 @@ interface MitmBackend {
     fun blockHost(
         targetHost: String,
         interfaceName: String,
+        gatewayAddress: String,
         mode: ConnectionBlockMode
     ): ConnectionBlockResult
     fun unblockHost(hostAddress: String): ConnectionBlockResult

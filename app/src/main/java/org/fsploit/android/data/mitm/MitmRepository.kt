@@ -27,6 +27,7 @@ class MitmRepository(
     fun blockHost(
         hostAddress: String,
         interfaceName: String,
+        gatewayAddress: String,
         mode: ConnectionBlockMode
     ): ConnectionBlockResult {
         val host = validateIpv4(hostAddress)
@@ -35,7 +36,7 @@ class MitmRepository(
                 success = false,
                 summary = resourceProvider.getString(R.string.block_invalid_host)
             )
-        return backend.blockHost(host, interfaceName, mode)
+        return backend.blockHost(host, interfaceName, gatewayAddress, mode)
     }
 
     fun unblockHost(hostAddress: String): ConnectionBlockResult {

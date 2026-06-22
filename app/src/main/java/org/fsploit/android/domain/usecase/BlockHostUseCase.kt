@@ -10,8 +10,9 @@ class BlockHostUseCase(
     operator fun invoke(
         hostAddress: String,
         interfaceName: String,
+        gatewayAddress: String,
         mode: ConnectionBlockMode
     ): ConnectionBlockResult {
-        return mitmRepository.blockHost(hostAddress, interfaceName, mode)
+        return mitmRepository.blockHost(hostAddress, interfaceName, gatewayAddress, mode)
     }
 }

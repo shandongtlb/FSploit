@@ -75,7 +75,7 @@ class ExternalToolMitmBackend(
                     summary = resourceProvider.getString(R.string.mitm_gateway_required, interfaceName)
                 )
         } else {
-            ""
+            validateIpv4(request.gatewayAddress).orEmpty()
         }
 
         val readiness = loadReadiness(
@@ -177,6 +177,7 @@ class ExternalToolMitmBackend(
     override fun blockHost(
         targetHost: String,
         interfaceName: String,
+        gatewayAddress: String,
         mode: ConnectionBlockMode
     ): ConnectionBlockResult {
         if (interfaceName.isBlank()) {
@@ -215,7 +216,8 @@ class ExternalToolMitmBackend(
                     interfaceName = interfaceName,
                     sessionDirectory = blockDirectory,
                     logFile = logFile,
-                    capletContent = bettercapCapletFactory.buildArpBanCaplet(targetHost)
+                    capletContent = bettercapCapletFactory.buildArpBanCaplet(targetHost),
+                    gatewayAddress = gatewayAddress
                 )
                 if (pid == null) {
                     return ConnectionBlockResult(
