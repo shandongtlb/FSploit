@@ -12,7 +12,10 @@ local.properties
 # IDE
 .idea/
 *.iml
-.vscode/
+.vscode/*
+!.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
 app/.cxx/
 
 # Android Studio captures
