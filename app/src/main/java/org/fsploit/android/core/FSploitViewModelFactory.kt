@@ -113,7 +113,8 @@ class FSploitViewModelFactory(
                 session = sessionStateHolder,
                 loadPortScanConfig = loadPortScanConfig,
                 savePortScanConfig = savePortScanConfig,
-                runPortScanUseCase = runPortScan
+                runPortScanUseCase = runPortScan,
+                runShellCommandUseCase = runShellCommand
             ) as T
 
             modelClass.isAssignableFrom(SettingsViewModel::class.java) -> SettingsViewModel(

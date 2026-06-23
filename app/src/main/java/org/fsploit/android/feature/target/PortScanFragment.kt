@@ -110,6 +110,8 @@ class PortScanFragment : Fragment() {
             sessionViewModel.uiState.value.rootGranted &&
             sessionViewModel.uiState.value.selectedHostAddress.isNotBlank() &&
             !state.isPortScanning
+        binding.hostFingerprintValue.text =
+            state.hostFingerprint.ifBlank { getString(R.string.fingerprint_pending) }
         binding.portScanSummaryValue.text = state.portScanSummary
         val filteredResults = state.scannedPortResults.filter { result ->
             when (state.selectedPortResultFilter) {
