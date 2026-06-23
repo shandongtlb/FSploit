@@ -18,6 +18,7 @@ import org.fsploit.android.domain.model.MitmMode
 import org.fsploit.android.feature.session.SessionState
 import org.fsploit.android.feature.session.SessionViewModel
 import org.fsploit.android.ui.NonFilteringStringAdapter
+import org.fsploit.android.ui.bindCollapsible
 import org.fsploit.android.ui.enableFullDropdown
 import org.fsploit.android.ui.setStatusDot
 
@@ -102,6 +103,10 @@ class MitmFragment : Fragment() {
             viewModel.selectMitmMode(MitmMode.entries[position])
         }
 
+        // Low-frequency sections collapse to keep the core controls in focus.
+        bindCollapsible(binding.readinessHeader, binding.readinessBody, binding.readinessChevron)
+        bindCollapsible(binding.advancedHeader, binding.advancedBody, binding.advancedChevron)
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                 launch { viewModel.uiState.collect { renderAll() } }
@@ -134,6 +139,11 @@ class MitmFragment : Fragment() {
         binding.dotBettercap.setStatusDot(m.bettercapAvailable)
         binding.dotMitmdump.setStatusDot(m.mitmdumpAvailable)
         binding.dotCaStore.setStatusDot(m.certificateStoreAccessible)
+        val envReady = s.rootGranted && m.iptablesAvailable && m.tcpdumpAvailable &&
+            m.bettercapAvailable && m.mitmdumpAvailable && m.certificateStoreAccessible
+        binding.dotReadiness.setStatusDot(envReady)
+        binding.readinessStatusValue.text =
+            getString(if (envReady) R.string.mitm_env_ready else R.string.mitm_env_not_ready)
         binding.selectedTargetValue.text = if (s.selectedHostAddress.isBlank()) {
             getString(R.string.discovery_no_target_selected)
         } else {

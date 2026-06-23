@@ -125,65 +125,100 @@
                     android:layout_marginTop="16dp"
                     android:background="@color/fsploit_stroke" />
 
-                <!-- versions -->
+                <!-- versions (collapsed: only relevant once connected) -->
                 <LinearLayout
+                    android:id="@+id/msfVersionsHeader"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
+                    android:layout_marginTop="12dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
                     android:orientation="horizontal">
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/msf_framework_version_label"
+                        android:text="@string/msf_versions_title"
                         android:textAppearance="@style/TextAppearance.FSploit.Label" />
 
-                    <TextView
-                        android:id="@+id/msfVersionValue"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="@style/TextAppearance.FSploit.Mono" />
+                    <ImageView
+                        android:id="@+id/msfVersionsChevron"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginStart="8dp"
+                        android:src="@drawable/ic_chevron"
+                        android:contentDescription="@null" />
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/msfVersionsBody"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:orientation="horizontal">
+                    android:orientation="vertical"
+                    android:visibility="gone">
 
-                    <TextView
-                        android:layout_width="0dp"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/msf_ruby_version_label"
-                        android:textAppearance="@style/TextAppearance.FSploit.Label" />
+                        android:layout_marginTop="14dp"
+                        android:orientation="horizontal">
 
-                    <TextView
-                        android:id="@+id/msfRubyValue"
-                        android:layout_width="wrap_content"
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/msf_framework_version_label"
+                            android:textAppearance="@style/TextAppearance.FSploit.Label" />
+
+                        <TextView
+                            android:id="@+id/msfVersionValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/TextAppearance.FSploit.Mono" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAppearance="@style/TextAppearance.FSploit.Mono" />
-                </LinearLayout>
+                        android:layout_marginTop="10dp"
+                        android:orientation="horizontal">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/msf_ruby_version_label"
+                            android:textAppearance="@style/TextAppearance.FSploit.Label" />
 
-                    <TextView
-                        android:layout_width="0dp"
+                        <TextView
+                            android:id="@+id/msfRubyValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/TextAppearance.FSploit.Mono" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/msf_api_version_label"
-                        android:textAppearance="@style/TextAppearance.FSploit.Label" />
+                        android:layout_marginTop="10dp"
+                        android:orientation="horizontal">
 
-                    <TextView
-                        android:id="@+id/msfApiValue"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="@style/TextAppearance.FSploit.Mono" />
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/msf_api_version_label"
+                            android:textAppearance="@style/TextAppearance.FSploit.Label" />
+
+                        <TextView
+                            android:id="@+id/msfApiValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/TextAppearance.FSploit.Mono" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <TextView

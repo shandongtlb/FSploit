@@ -43,6 +43,11 @@
     <string name="open_target_detail">Open Target Detail</string>
     <string name="target_detail_summary">Inspecting target %1$s.</string>
     <string name="mitm_readiness_title">MITM readiness</string>
+    <string name="mitm_env_title">Environment</string>
+    <string name="mitm_env_ready">Ready</string>
+    <string name="mitm_env_not_ready">Not ready</string>
+    <string name="mitm_advanced_title">Advanced / Diagnostics</string>
+    <string name="msf_versions_title">Versions</string>
     <string name="mitm_iptables_label">iptables available</string>
     <string name="mitm_tcpdump_label">tcpdump available</string>
     <string name="mitm_bettercap_label">bettercap available</string>

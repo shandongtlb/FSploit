@@ -43,6 +43,11 @@
     <string name="open_target_detail">打开目标详情</string>
     <string name="target_detail_summary">正在检查目标 %1$s。</string>
     <string name="mitm_readiness_title">MITM 就绪状态</string>
+    <string name="mitm_env_title">运行环境</string>
+    <string name="mitm_env_ready">就绪</string>
+    <string name="mitm_env_not_ready">未就绪</string>
+    <string name="mitm_advanced_title">高级 / 诊断</string>
+    <string name="msf_versions_title">版本信息</string>
     <string name="mitm_iptables_label">iptables 可用性</string>
     <string name="mitm_tcpdump_label">tcpdump 可用性</string>
     <string name="mitm_bettercap_label">bettercap 可用性</string>

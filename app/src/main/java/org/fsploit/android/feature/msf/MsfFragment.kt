@@ -15,6 +15,7 @@ import org.fsploit.android.R
 import org.fsploit.android.databinding.FragmentMsfBinding
 import org.fsploit.android.feature.session.SessionState
 import org.fsploit.android.feature.session.SessionViewModel
+import org.fsploit.android.ui.bindCollapsible
 import org.fsploit.android.ui.setStatusDot
 
 class MsfFragment : Fragment() {
@@ -74,6 +75,8 @@ class MsfFragment : Fragment() {
         binding.launchMsfRpcButton.setOnClickListener {
             viewModel.launchMsfRpcCommand()
         }
+
+        bindCollapsible(binding.msfVersionsHeader, binding.msfVersionsBody, binding.msfVersionsChevron)
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
