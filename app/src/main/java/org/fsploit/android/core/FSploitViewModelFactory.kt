@@ -16,8 +16,10 @@ import org.fsploit.android.domain.usecase.ProbeShellUseCase
 import org.fsploit.android.domain.usecase.ReadMitmLootUseCase
 import org.fsploit.android.domain.usecase.ReadMsfSessionUseCase
 import org.fsploit.android.domain.usecase.RunHostSweepUseCase
+import org.fsploit.android.domain.usecase.RunMsfExploitUseCase
 import org.fsploit.android.domain.usecase.RunPortScanUseCase
 import org.fsploit.android.domain.usecase.RunShellCommandUseCase
+import org.fsploit.android.domain.usecase.StartMsfHandlerUseCase
 import org.fsploit.android.domain.usecase.SaveMitmToolchainConfigUseCase
 import org.fsploit.android.domain.usecase.SaveMsfRpcConfigUseCase
 import org.fsploit.android.domain.usecase.SavePortScanConfigUseCase
@@ -61,6 +63,8 @@ class FSploitViewModelFactory(
     private val stopMsfJob: StopMsfJobUseCase,
     private val writeMsfSession: WriteMsfSessionUseCase,
     private val readMsfSession: ReadMsfSessionUseCase,
+    private val startMsfHandler: StartMsfHandlerUseCase,
+    private val runMsfExploit: RunMsfExploitUseCase,
     private val runHostSweep: RunHostSweepUseCase,
     private val runPortScan: RunPortScanUseCase,
     private val runShellCommand: RunShellCommandUseCase,
@@ -108,7 +112,9 @@ class FSploitViewModelFactory(
                 stopMsfSessionUseCase = stopMsfSession,
                 stopMsfJobUseCase = stopMsfJob,
                 writeMsfSessionUseCase = writeMsfSession,
-                readMsfSessionUseCase = readMsfSession
+                readMsfSessionUseCase = readMsfSession,
+                startMsfHandlerUseCase = startMsfHandler,
+                runMsfExploitUseCase = runMsfExploit
             ) as T
 
             modelClass.isAssignableFrom(LootViewModel::class.java) -> LootViewModel(

@@ -302,6 +302,38 @@
     <string name="msf_console_cleared">Console cleared.</string>
     <string name="msf_console_write_success">Wrote command to session #%1$s.</string>
 
+    <!-- module.execute shared -->
+    <string name="msf_module_exec_success">%1$s executed. Job #%2$s started. Sessions return asynchronously — refresh the overview.</string>
+
+    <!-- Listener + payload (A) -->
+    <string name="msf_handler_title">Listener + payload</string>
+    <string name="msf_handler_intro">Start a multi/handler listener over RPC, then generate a payload with msfvenom (root shell). Drop the payload on the target and the session calls back into the list.</string>
+    <string name="msf_payload_hint">PAYLOAD (e.g. linux/x64/meterpreter/reverse_tcp)</string>
+    <string name="msf_lhost_hint">LHOST</string>
+    <string name="msf_lport_hint">LPORT</string>
+    <string name="msf_venom_format_hint">msfvenom -f format (raw / apk / elf / exe)</string>
+    <string name="msf_venom_output_hint">Output file path (e.g. /sdcard/payload.bin)</string>
+    <string name="msf_venom_command_label">msfvenom command (auto-filled, editable)</string>
+    <string name="msf_start_handler">Start Listener</string>
+    <string name="msf_generate_payload">Generate Payload</string>
+    <string name="msf_venom_output_title">msfvenom output</string>
+    <string name="msf_handler_idle">No listener started yet. Fill PAYLOAD / LHOST / LPORT.</string>
+    <string name="msf_handler_starting">Starting multi/handler over RPC...</string>
+    <string name="msf_handler_payload_required">Enter a PAYLOAD first.</string>
+    <string name="msf_venom_command_required">The msfvenom command is empty.</string>
+    <string name="msf_venom_generating">Running msfvenom via root shell (this can take a while)...</string>
+
+    <!-- Run exploit against host (C) -->
+    <string name="msf_exploit_title">Run exploit against host</string>
+    <string name="msf_exploit_intro">Point an exploit module at the selected target. RHOSTS is pre-filled from the host workbench selection; tune RPORT / PAYLOAD / LHOST / LPORT and fire.</string>
+    <string name="msf_exploit_module_hint">Module path (e.g. unix/ftp/vsftpd_234_backdoor)</string>
+    <string name="msf_rhosts_hint">RHOSTS (target)</string>
+    <string name="msf_rport_hint">RPORT</string>
+    <string name="msf_run_exploit">Run Exploit</string>
+    <string name="msf_exploit_idle">No exploit run yet. Pick a module and target.</string>
+    <string name="msf_exploit_running">Executing the exploit module over RPC...</string>
+    <string name="msf_exploit_module_required">Enter a module path first.</string>
+
     <string name="permission_summary_pending">Checking permissions...</string>
     <string name="permissions_granted">All required permissions are granted.</string>
     <string name="permissions_missing">Missing: %1$s</string>

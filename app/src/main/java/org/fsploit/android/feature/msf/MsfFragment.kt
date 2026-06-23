@@ -96,6 +96,25 @@ class MsfFragment : Fragment() {
             viewModel.clearConsole()
         }
 
+        // Listener + payload (A)
+        binding.payloadInput.doAfterTextChanged { viewModel.updatePayload(it?.toString().orEmpty()) }
+        binding.lhostInput.doAfterTextChanged { viewModel.updateLhost(it?.toString().orEmpty()) }
+        binding.lportInput.doAfterTextChanged { viewModel.updateLport(it?.toString().orEmpty()) }
+        binding.venomFormatInput.doAfterTextChanged { viewModel.updateVenomFormat(it?.toString().orEmpty()) }
+        binding.venomOutputInput.doAfterTextChanged { viewModel.updateVenomOutput(it?.toString().orEmpty()) }
+        binding.venomCommandInput.doAfterTextChanged { viewModel.updateVenomCommand(it?.toString().orEmpty()) }
+        binding.startHandlerButton.setOnClickListener { viewModel.startHandler() }
+        binding.generatePayloadButton.setOnClickListener { viewModel.generatePayload() }
+
+        // Run exploit against host (C)
+        binding.exploitModuleInput.doAfterTextChanged { viewModel.updateExploitModule(it?.toString().orEmpty()) }
+        binding.exploitRhostsInput.doAfterTextChanged { viewModel.updateExploitRhosts(it?.toString().orEmpty()) }
+        binding.exploitRportInput.doAfterTextChanged { viewModel.updateExploitRport(it?.toString().orEmpty()) }
+        binding.exploitPayloadInput.doAfterTextChanged { viewModel.updateExploitPayload(it?.toString().orEmpty()) }
+        binding.exploitLhostInput.doAfterTextChanged { viewModel.updateExploitLhost(it?.toString().orEmpty()) }
+        binding.exploitLportInput.doAfterTextChanged { viewModel.updateExploitLport(it?.toString().orEmpty()) }
+        binding.runExploitButton.setOnClickListener { viewModel.runExploit() }
+
         bindCollapsible(binding.msfVersionsHeader, binding.msfVersionsBody, binding.msfVersionsChevron)
         bindCollapsible(binding.msfLaunchHeader, binding.msfLaunchOutputValue, binding.msfLaunchChevron)
 
@@ -206,6 +225,27 @@ class MsfFragment : Fragment() {
         }
         binding.consoleSummaryValue.text = state.consoleSummary
 
+        // Listener + payload (A)
+        syncInput(binding.payloadInput, state.payload)
+        syncInput(binding.lhostInput, state.lhost)
+        syncInput(binding.lportInput, state.lport)
+        syncInput(binding.venomFormatInput, state.venomFormat)
+        syncInput(binding.venomOutputInput, state.venomOutput)
+        syncInput(binding.venomCommandInput, state.venomCommand)
+        binding.handlerSummaryValue.text = state.handlerSummary
+        binding.venomOutputValue.text = state.venomOutputText.ifBlank {
+            getString(R.string.msf_venom_output_title)
+        }
+
+        // Run exploit against host (C)
+        syncInput(binding.exploitModuleInput, state.exploitModule)
+        syncInput(binding.exploitRhostsInput, state.exploitRhosts)
+        syncInput(binding.exploitRportInput, state.exploitRport)
+        syncInput(binding.exploitPayloadInput, state.exploitPayload)
+        syncInput(binding.exploitLhostInput, state.exploitLhost)
+        syncInput(binding.exploitLportInput, state.exploitLport)
+        binding.exploitSummaryValue.text = state.exploitSummary
+
         binding.saveMsfSettingsButton.isEnabled = !state.isSavingMsfRpcConfig
         binding.refreshMsfButton.isEnabled = !state.isRefreshingMsf
         binding.launchMsfRpcButton.isEnabled = sessionViewModel.uiState.value.rootGranted && !state.isLaunchingMsfRpc
@@ -213,6 +253,10 @@ class MsfFragment : Fragment() {
         binding.stopJobButton.isEnabled = !state.isRunningMsfAction
         binding.consoleSendButton.isEnabled = !state.isConsoleBusy
         binding.consoleReadButton.isEnabled = !state.isConsoleBusy
+        binding.startHandlerButton.isEnabled = !state.isStartingHandler
+        binding.generatePayloadButton.isEnabled =
+            sessionViewModel.uiState.value.rootGranted && !state.isGeneratingPayload
+        binding.runExploitButton.isEnabled = !state.isRunningExploit
     }
 
     private fun syncInput(input: com.google.android.material.textfield.TextInputEditText, value: String) {

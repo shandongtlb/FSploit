@@ -26,8 +26,10 @@ import org.fsploit.android.domain.usecase.ProbeShellUseCase
 import org.fsploit.android.domain.usecase.ReadMitmLootUseCase
 import org.fsploit.android.domain.usecase.ReadMsfSessionUseCase
 import org.fsploit.android.domain.usecase.RunHostSweepUseCase
+import org.fsploit.android.domain.usecase.RunMsfExploitUseCase
 import org.fsploit.android.domain.usecase.RunPortScanUseCase
 import org.fsploit.android.domain.usecase.RunShellCommandUseCase
+import org.fsploit.android.domain.usecase.StartMsfHandlerUseCase
 import org.fsploit.android.domain.usecase.SavePortScanConfigUseCase
 import org.fsploit.android.domain.usecase.SavePreferredInterfaceUseCase
 import org.fsploit.android.domain.usecase.SaveMitmToolchainConfigUseCase
@@ -85,6 +87,8 @@ class AppContainer(
         stopMsfJob = StopMsfJobUseCase(msfRepository),
         writeMsfSession = WriteMsfSessionUseCase(msfRepository),
         readMsfSession = ReadMsfSessionUseCase(msfRepository),
+        startMsfHandler = StartMsfHandlerUseCase(msfRepository),
+        runMsfExploit = RunMsfExploitUseCase(msfRepository),
         runHostSweep = RunHostSweepUseCase(hostSweepRepository),
         runPortScan = RunPortScanUseCase(portScanRepository),
         runShellCommand = RunShellCommandUseCase(shellRepository),

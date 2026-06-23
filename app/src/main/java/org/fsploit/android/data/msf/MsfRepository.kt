@@ -143,6 +143,43 @@ class MsfRepository(
         }
     }
 
+    fun startHandler(
+        config: MsfRpcConfig,
+        payload: String,
+        lhost: String,
+        lport: String
+    ): MsfActionResult {
+        val options = MsfModuleCommand.buildHandlerOptions(payload, lhost, lport)
+        return executeModule(config, "exploit", "multi/handler", options)
+    }
+
+    fun runExploit(
+        config: MsfRpcConfig,
+        modulePath: String,
+        options: Map<String, Any>
+    ): MsfActionResult {
+        return executeModule(config, "exploit", modulePath, options)
+    }
+
+    /** Generic `module.execute`; surfaces the resulting job id (sessions appear asynchronously). */
+    private fun executeModule(
+        config: MsfRpcConfig,
+        moduleType: String,
+        moduleName: String,
+        options: Map<String, Any>
+    ): MsfActionResult {
+        return runAction {
+            val client = MsfRpcClient(config)
+            val response = try {
+                client.call("module.execute", moduleType, moduleName, options) as? Map<*, *>
+            } finally {
+                client.logout()
+            }
+            val jobId = response?.get("job_id")?.toString().orEmpty().ifBlank { "-" }
+            resourceProvider.getString(R.string.msf_module_exec_success, moduleName, jobId)
+        }
+    }
+
     private inline fun runAction(block: () -> String): MsfActionResult {
         return try {
             MsfActionResult(success = true, message = block())
