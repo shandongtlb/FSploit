@@ -3,6 +3,7 @@ package org.fsploit.android.core
 import android.content.Context
 import org.fsploit.android.data.msf.MsfRepository
 import org.fsploit.android.data.mitm.BettercapPackageManager
+import org.fsploit.android.data.mitm.CredentialLogParser
 import org.fsploit.android.data.mitm.ExternalToolMitmBackend
 import org.fsploit.android.data.mitm.MitmdumpPackageManager
 import org.fsploit.android.data.mitm.MitmRepository
@@ -21,6 +22,7 @@ import org.fsploit.android.domain.usecase.LoadMsfOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadNetworkOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadPortScanConfigUseCase
 import org.fsploit.android.domain.usecase.ProbeShellUseCase
+import org.fsploit.android.domain.usecase.ReadMitmLootUseCase
 import org.fsploit.android.domain.usecase.RunHostSweepUseCase
 import org.fsploit.android.domain.usecase.RunPortScanUseCase
 import org.fsploit.android.domain.usecase.RunShellCommandUseCase
@@ -69,6 +71,7 @@ class AppContainer(
         probeShell = ProbeShellUseCase(shellRepository),
         loadMitmReadiness = LoadMitmReadinessUseCase(mitmRepository),
         loadMitmSession = LoadMitmSessionUseCase(mitmRepository),
+        readMitmLoot = ReadMitmLootUseCase(RunShellCommandUseCase(shellRepository), CredentialLogParser()),
         loadMitmToolchainConfig = LoadMitmToolchainConfigUseCase(preferencesRepository),
         loadMsfRpcConfig = LoadMsfRpcConfigUseCase(preferencesRepository),
         loadMsfOverview = LoadMsfOverviewUseCase(msfRepository),

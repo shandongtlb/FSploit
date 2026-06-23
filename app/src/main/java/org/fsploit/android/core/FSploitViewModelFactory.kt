@@ -12,6 +12,7 @@ import org.fsploit.android.domain.usecase.LoadMsfRpcConfigUseCase
 import org.fsploit.android.domain.usecase.LoadNetworkOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadPortScanConfigUseCase
 import org.fsploit.android.domain.usecase.ProbeShellUseCase
+import org.fsploit.android.domain.usecase.ReadMitmLootUseCase
 import org.fsploit.android.domain.usecase.RunHostSweepUseCase
 import org.fsploit.android.domain.usecase.RunPortScanUseCase
 import org.fsploit.android.domain.usecase.RunShellCommandUseCase
@@ -22,6 +23,7 @@ import org.fsploit.android.domain.usecase.SavePreferredInterfaceUseCase
 import org.fsploit.android.domain.usecase.StartMitmSessionUseCase
 import org.fsploit.android.domain.usecase.StopMitmSessionUseCase
 import org.fsploit.android.domain.usecase.UnblockHostUseCase
+import org.fsploit.android.feature.loot.LootViewModel
 import org.fsploit.android.feature.mitm.MitmViewModel
 import org.fsploit.android.feature.msf.MsfViewModel
 import org.fsploit.android.feature.session.SessionStateHolder
@@ -45,6 +47,7 @@ class FSploitViewModelFactory(
     private val probeShell: ProbeShellUseCase,
     private val loadMitmReadiness: LoadMitmReadinessUseCase,
     private val loadMitmSession: LoadMitmSessionUseCase,
+    private val readMitmLoot: ReadMitmLootUseCase,
     private val loadMitmToolchainConfig: LoadMitmToolchainConfigUseCase,
     private val loadMsfOverview: LoadMsfOverviewUseCase,
     private val loadMsfRpcConfig: LoadMsfRpcConfigUseCase,
@@ -91,6 +94,12 @@ class FSploitViewModelFactory(
                 loadMsfOverviewUseCase = loadMsfOverview,
                 saveMsfRpcConfigUseCase = saveMsfRpcConfig,
                 runShellCommandUseCase = runShellCommand
+            ) as T
+
+            modelClass.isAssignableFrom(LootViewModel::class.java) -> LootViewModel(
+                resourceProvider = resourceProvider,
+                loadMitmSessionUseCase = loadMitmSession,
+                readMitmLootUseCase = readMitmLoot
             ) as T
 
             modelClass.isAssignableFrom(ToolsViewModel::class.java) -> ToolsViewModel(
