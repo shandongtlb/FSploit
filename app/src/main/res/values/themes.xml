@@ -2,9 +2,157 @@
     <style name="Theme.FSploit" parent="Theme.Material3.Dark.NoActionBar">
         <item name="colorPrimary">@color/fsploit_primary</item>
         <item name="colorOnPrimary">@color/fsploit_on_primary</item>
+        <item name="colorSecondary">@color/fsploit_accent</item>
+        <item name="colorSurface">@color/fsploit_surface</item>
+        <item name="colorOnSurface">@color/fsploit_text_primary</item>
+        <item name="colorError">@color/fsploit_danger</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@color/fsploit_background</item>
         <item name="android:windowLightStatusBar" tools:targetApi="23">false</item>
         <item name="android:windowBackground">@color/fsploit_background</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.FSploit.Dialog</item>
+        <item name="textInputStyle">@style/Widget.FSploit.TextField</item>
+    </style>
+
+    <style name="ThemeOverlay.FSploit.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorSurface">@color/fsploit_surface_alt</item>
+        <item name="colorPrimary">@color/fsploit_primary</item>
+    </style>
+
+    <!-- ============ Toolbar ============ -->
+    <style name="Widget.FSploit.Toolbar" parent="Widget.Material3.Toolbar">
+        <item name="android:background">@color/fsploit_background</item>
+        <item name="titleTextColor">@color/fsploit_text_primary</item>
+        <item name="subtitleTextColor">@color/fsploit_primary</item>
+        <item name="titleTextAppearance">@style/TextAppearance.FSploit.ToolbarTitle</item>
+        <item name="subtitleTextAppearance">@style/TextAppearance.FSploit.ToolbarSubtitle</item>
+    </style>
+
+    <style name="TextAppearance.FSploit.ToolbarTitle" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textColor">@color/fsploit_text_primary</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.04</item>
+    </style>
+
+    <style name="TextAppearance.FSploit.ToolbarSubtitle" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:textColor">@color/fsploit_primary</item>
+        <item name="android:fontFamily">monospace</item>
+    </style>
+
+    <!-- ============ Cards ============ -->
+    <style name="Widget.FSploit.Card" parent="Widget.Material3.CardView.Outlined">
+        <item name="cardBackgroundColor">@color/fsploit_surface</item>
+        <item name="cardCornerRadius">14dp</item>
+        <item name="strokeColor">@color/fsploit_stroke</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="contentPadding">18dp</item>
+    </style>
+
+    <!-- ============ Text appearances ============ -->
+    <!-- Big screen title, e.g. "// MITM" -->
+    <style name="TextAppearance.FSploit.Title" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textColor">@color/fsploit_text_primary</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.02</item>
+    </style>
+
+    <!-- Card section header -->
+    <style name="TextAppearance.FSploit.Section" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:textColor">@color/fsploit_text_primary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Dim uppercase mono label above a value -->
+    <style name="TextAppearance.FSploit.Label" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:textColor">@color/fsploit_text_secondary</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="android:textAllCaps">true</item>
+    </style>
+
+    <!-- Normal readable body/value -->
+    <style name="TextAppearance.FSploit.Value" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:textColor">@color/fsploit_text_primary</item>
+    </style>
+
+    <style name="TextAppearance.FSploit.Body" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:textColor">@color/fsploit_text_secondary</item>
+    </style>
+
+    <!-- Monospace data value (IPs, paths, versions) -->
+    <style name="TextAppearance.FSploit.Mono" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:textColor">@color/fsploit_mono</item>
+        <item name="android:fontFamily">monospace</item>
+    </style>
+
+    <!-- ============ Section header (green bar + title in one view) ============ -->
+    <style name="Widget.FSploit.SectionHeader" parent="">
+        <item name="android:textAppearance">@style/TextAppearance.FSploit.Section</item>
+        <item name="android:drawableStart">@drawable/ic_section_bar</item>
+        <item name="android:drawablePadding">10dp</item>
+        <item name="android:gravity">center_vertical</item>
+    </style>
+
+    <!-- Big screen title (top of each fragment) -->
+    <style name="Widget.FSploit.ScreenTitle" parent="">
+        <item name="android:textAppearance">@style/TextAppearance.FSploit.Title</item>
+        <item name="android:drawableStart">@drawable/ic_section_bar</item>
+        <item name="android:drawablePadding">12dp</item>
+        <item name="android:gravity">center_vertical</item>
+    </style>
+
+    <!-- ============ Buttons ============ -->
+    <style name="Widget.FSploit.Button" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/fsploit_primary</item>
+        <item name="android:textColor">@color/fsploit_on_primary</item>
+        <item name="android:textStyle">bold</item>
+        <item name="cornerRadius">10dp</item>
+        <item name="android:letterSpacing">0.03</item>
+    </style>
+
+    <style name="Widget.FSploit.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:textColor">@color/fsploit_primary</item>
+        <item name="strokeColor">@color/fsploit_stroke_strong</item>
+        <item name="cornerRadius">10dp</item>
+        <item name="rippleColor">@color/fsploit_primary</item>
+    </style>
+
+    <!-- Small "preset / tag" chip-button -->
+    <style name="Widget.FSploit.Chip" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:textColor">@color/fsploit_accent</item>
+        <item name="strokeColor">@color/fsploit_stroke_strong</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="cornerRadius">8dp</item>
+        <item name="android:minHeight">40dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <!-- Segmented toggle button -->
+    <style name="Widget.FSploit.Toggle" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:textColor">@color/fsploit_text_secondary</item>
+        <item name="strokeColor">@color/fsploit_stroke_strong</item>
+        <item name="android:fontFamily">monospace</item>
+    </style>
+
+    <!-- ============ Text fields ============ -->
+    <style name="Widget.FSploit.TextField" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/fsploit_text_field_stroke</item>
+        <item name="boxBackgroundColor">@color/fsploit_surface_alt</item>
+        <item name="boxCornerRadiusTopStart">10dp</item>
+        <item name="boxCornerRadiusTopEnd">10dp</item>
+        <item name="boxCornerRadiusBottomStart">10dp</item>
+        <item name="boxCornerRadiusBottomEnd">10dp</item>
+        <item name="hintTextColor">@color/fsploit_primary</item>
+        <item name="android:textColorHint">@color/fsploit_text_muted</item>
+        <item name="endIconTint">@color/fsploit_text_secondary</item>
+    </style>
+
+    <!-- ============ Switch ============ -->
+    <style name="Widget.FSploit.Switch" parent="Widget.Material3.CompoundButton.MaterialSwitch">
+        <item name="android:textColor">@color/fsploit_text_primary</item>
+        <item name="android:fontFamily">monospace</item>
     </style>
 </resources>

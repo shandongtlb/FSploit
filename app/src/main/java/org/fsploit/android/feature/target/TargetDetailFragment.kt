@@ -93,7 +93,7 @@ class TargetDetailFragment : Fragment() {
         }
         if (binding.portSpecInput.text?.toString() != state.portSpec) {
             binding.portSpecInput.setText(state.portSpec)
-            binding.portSpecInput.setSelection(binding.portSpecInput.text?.length ?: 0)
+            binding.portSpecInput.setSelection(0)
         }
         if (binding.timeoutInput.text?.toString() != state.connectTimeoutMs) {
             binding.timeoutInput.setText(state.connectTimeoutMs)

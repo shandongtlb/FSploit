@@ -14,10 +14,15 @@
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
+            style="@style/Widget.FSploit.Toolbar"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@color/fsploit_surface"
+            android:layout_height="?attr/actionBarSize"
             app:titleCentered="false" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/fsploit_stroke" />
 
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/contentFrame"
@@ -28,12 +33,18 @@
 
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/navigationView"
-        android:layout_width="320dp"
+        android:layout_width="300dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
+        android:background="@color/fsploit_background"
         android:fitsSystemWindows="false"
+        app:dividerInsetEnd="0dp"
+        app:dividerInsetStart="0dp"
         app:headerLayout="@layout/nav_header_main"
-        app:itemTextColor="@color/fsploit_text_primary"
+        app:itemBackground="@drawable/bg_nav_item"
+        app:itemHorizontalPadding="14dp"
+        app:itemIconTint="@color/nav_item_tint"
+        app:itemTextColor="@color/nav_item_tint"
         app:menu="@menu/drawer_main" />
 
 </androidx.drawerlayout.widget.DrawerLayout>

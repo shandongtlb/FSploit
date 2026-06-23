@@ -3,158 +3,200 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/fsploit_background">
+    android:background="@color/fsploit_background"
+    android:clipToPadding="false">
 
-    <com.google.android.material.card.MaterialCardView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="20dp"
-        app:cardBackgroundColor="@color/fsploit_surface"
-        app:cardCornerRadius="24dp"
-        app:strokeColor="@color/fsploit_stroke"
-        app:strokeWidth="1dp">
+        android:orientation="vertical"
+        android:padding="@dimen/fs_screen_margin">
 
-        <LinearLayout
+        <TextView
+            style="@style/Widget.FSploit.ScreenTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/section_tools_title" />
+
+        <!-- ===== Shell ===== -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.FSploit.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="20dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/section_tools_title"
-                android:textAppearance="@style/TextAppearance.Material3.TitleLarge" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:text="@string/shell_status"
-                android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
-
-            <TextView
-                android:id="@+id/shellSummaryValue"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:text="@string/shell_task_selected"
-                android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
-
-            <TextView
-                android:id="@+id/selectedTaskLabelValue"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
-
-            <TextView
-                android:id="@+id/selectedTaskDescriptionValue"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:hint="@string/shell_command_label">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/commandInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textMultiLine|textNoSuggestions"
-                    android:minLines="3" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/runAsRootSwitch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="@string/shell_run_as_root" />
+            android:layout_marginTop="@dimen/fs_block_gap">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:orientation="horizontal">
+                android:orientation="vertical">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/presetInterfacesButton"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        style="@style/Widget.FSploit.SectionHeader"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/shell_status" />
+
+                    <ImageView
+                        android:id="@+id/dotShellTools"
+                        android:layout_width="9dp"
+                        android:layout_height="9dp"
+                        android:src="@drawable/status_dot"
+                        android:contentDescription="@null" />
+
+                    <TextView
+                        android:id="@+id/shellSummaryValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:textAppearance="@style/TextAppearance.FSploit.Value" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/selectedTaskLabelValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Section" />
+
+                <TextView
+                    android:id="@+id/selectedTaskDescriptionValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Body" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.FSploit.TextField"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:hint="@string/shell_command_label">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/commandInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:inputType="textMultiLine|textNoSuggestions"
+                        android:minLines="3" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/runAsRootSwitch"
+                    style="@style/Widget.FSploit.Switch"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/shell_task_network_interfaces_short" />
+                    android:layout_marginTop="14dp"
+                    android:text="@string/shell_run_as_root" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/presetArpButton"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="@string/shell_task_arp_neighbors_short" />
+                    android:layout_marginTop="16dp"
+                    android:text="@string/shell_task_selected"
+                    android:textAppearance="@style/TextAppearance.FSploit.Label" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/presetInterfacesButton"
+                        style="@style/Widget.FSploit.Chip"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/shell_task_network_interfaces_short" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/presetArpButton"
+                        style="@style/Widget.FSploit.Chip"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:text="@string/shell_task_arp_neighbors_short" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/presetIptablesButton"
+                        style="@style/Widget.FSploit.Chip"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/shell_task_iptables_rules_short" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/presetTcpdumpButton"
+                        style="@style/Widget.FSploit.Chip"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:text="@string/shell_task_tcpdump_version_short" />
+                </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/presetIptablesButton"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
+                    android:id="@+id/runCommandButton"
+                    style="@style/Widget.FSploit.Button"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="@string/shell_task_iptables_rules_short" />
+                    android:layout_marginTop="16dp"
+                    android:text="@string/shell_run_command" />
             </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/presetTcpdumpButton"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/shell_task_tcpdump_version_short" />
+        <!-- ===== Output ===== -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.FSploit.Card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/fs_card_gap">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/runCommandButton"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="@string/shell_run_command" />
+                android:orientation="vertical">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:text="@string/shell_command_status"
-                android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+                <TextView
+                    style="@style/Widget.FSploit.SectionHeader"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/shell_command_output" />
 
-            <TextView
-                android:id="@+id/commandStatusValue"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+                <TextView
+                    android:id="@+id/commandStatusValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Value" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:text="@string/shell_command_output"
-                android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
-
-            <TextView
-                android:id="@+id/commandOutputValue"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:fontFamily="monospace"
-                android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+                <TextView
+                    android:id="@+id/commandOutputValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_terminal"
+                    android:padding="14dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Mono"
+                    android:textIsSelectable="true"
+                    android:lineSpacingExtra="2dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
 </androidx.core.widget.NestedScrollView>

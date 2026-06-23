@@ -1,4 +1,10 @@
 <resources>
     <dimen name="discovery_target_default_stroke">1dp</dimen>
     <dimen name="discovery_target_selected_stroke">2dp</dimen>
+
+    <!-- Layout rhythm -->
+    <dimen name="fs_screen_margin">16dp</dimen>
+    <dimen name="fs_card_gap">14dp</dimen>
+    <dimen name="fs_block_gap">16dp</dimen>
+    <dimen name="fs_label_gap">14dp</dimen>
 </resources>

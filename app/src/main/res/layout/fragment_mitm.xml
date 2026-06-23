@@ -3,245 +3,262 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/fsploit_background">
+    android:background="@color/fsploit_background"
+    android:clipToPadding="false">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="20dp"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="@dimen/fs_screen_margin">
 
+        <TextView
+            style="@style/Widget.FSploit.ScreenTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/nav_mitm" />
+
+        <!-- ===== Readiness ===== -->
         <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.FSploit.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/fsploit_surface"
-            app:cardCornerRadius="24dp"
-            app:strokeColor="@color/fsploit_stroke"
-            app:strokeWidth="1dp">
+            android:layout_marginTop="@dimen/fs_block_gap">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
+                android:orientation="vertical">
 
                 <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/nav_mitm"
-                    android:textAppearance="@style/TextAppearance.Material3.TitleLarge" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:text="@string/root_gate_title"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
-
-                <TextView
-                    android:id="@+id/rootGateValue"
+                    style="@style/Widget.FSploit.SectionHeader"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+                    android:text="@string/mitm_readiness_title" />
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <!-- ROOT -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:text="@string/mitm_readiness_title"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+                    android:layout_marginTop="14dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/dotMitmRoot"
+                        android:layout_width="9dp"
+                        android:layout_height="9dp"
+                        android:src="@drawable/status_dot"
+                        android:contentDescription="@null" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:text="@string/root_gate_title"
+                        android:textAppearance="@style/TextAppearance.FSploit.Label" />
+
+                    <TextView
+                        android:id="@+id/rootGateValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="end"
+                        android:textAppearance="@style/TextAppearance.FSploit.Value" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="14dp"
+                    android:background="@color/fsploit_stroke" />
+
+                <!-- Tool rows -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/dotIptables"
+                        android:layout_width="9dp"
+                        android:layout_height="9dp"
+                        android:src="@drawable/status_dot"
+                        android:contentDescription="@null" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:text="@string/mitm_iptables_label"
+                        android:textAppearance="@style/TextAppearance.FSploit.Label" />
+
+                    <TextView
+                        android:id="@+id/iptablesValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.FSploit.Mono" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/dotTcpdump"
+                        android:layout_width="9dp"
+                        android:layout_height="9dp"
+                        android:src="@drawable/status_dot"
+                        android:contentDescription="@null" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:text="@string/mitm_tcpdump_label"
+                        android:textAppearance="@style/TextAppearance.FSploit.Label" />
+
+                    <TextView
+                        android:id="@+id/tcpdumpValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.FSploit.Mono" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/dotBettercap"
+                        android:layout_width="9dp"
+                        android:layout_height="9dp"
+                        android:src="@drawable/status_dot"
+                        android:contentDescription="@null" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:text="@string/mitm_bettercap_label"
+                        android:textAppearance="@style/TextAppearance.FSploit.Label" />
+
+                    <TextView
+                        android:id="@+id/bettercapValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.FSploit.Mono" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/dotMitmdump"
+                        android:layout_width="9dp"
+                        android:layout_height="9dp"
+                        android:src="@drawable/status_dot"
+                        android:contentDescription="@null" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:text="@string/mitm_mitmdump_label"
+                        android:textAppearance="@style/TextAppearance.FSploit.Label" />
+
+                    <TextView
+                        android:id="@+id/mitmdumpValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.FSploit.Mono" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/dotCaStore"
+                        android:layout_width="9dp"
+                        android:layout_height="9dp"
+                        android:src="@drawable/status_dot"
+                        android:contentDescription="@null" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:text="@string/mitm_ca_store_label"
+                        android:textAppearance="@style/TextAppearance.FSploit.Label" />
+
+                    <TextView
+                        android:id="@+id/caStoreValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.FSploit.Mono" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/mitmSummaryValue"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:text="@string/mitm_iptables_label"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
-
-                <TextView
-                    android:id="@+id/iptablesValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="@string/mitm_tcpdump_label"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
-
-                <TextView
-                    android:id="@+id/tcpdumpValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="@string/mitm_bettercap_label"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
-
-                <TextView
-                    android:id="@+id/bettercapValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="@string/mitm_mitmdump_label"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
-
-                <TextView
-                    android:id="@+id/mitmdumpValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="@string/mitm_ca_store_label"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
-
-                <TextView
-                    android:id="@+id/caStoreValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+                    android:layout_marginTop="14dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Body" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- ===== Mode config ===== -->
         <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.FSploit.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardBackgroundColor="@color/fsploit_surface"
-            app:cardCornerRadius="24dp"
-            app:strokeColor="@color/fsploit_stroke"
-            app:strokeWidth="1dp">
+            android:layout_marginTop="@dimen/fs_card_gap">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
+                android:orientation="vertical">
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    style="@style/Widget.FSploit.SectionHeader"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/mitm_mode_config"
-                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:text="@string/target_host"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
+                    android:text="@string/mitm_mode_config" />
 
                 <TextView
                     android:id="@+id/selectedTargetValue"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="@string/block_mode_label"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
-
-                <com.google.android.material.button.MaterialButtonToggleGroup
-                    android:id="@+id/connectionBlockModeGroup"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    app:selectionRequired="true"
-                    app:singleSelection="true">
+                    android:textAppearance="@style/TextAppearance.FSploit.Value" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/blockModeNormalButton"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/block_mode_normal" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/blockModeHotspotButton"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/block_mode_hotspot" />
-                </com.google.android.material.button.MaterialButtonToggleGroup>
-
-                <TextView
-                    android:id="@+id/connectionBlockModeDescriptionValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
-
-                <TextView
-                    android:id="@+id/connectionBlockModeSummaryValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodySmall" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="@string/mitm_gateway_label"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
-
-                <TextView
-                    android:id="@+id/mitmGatewayResolvedValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
-
+                <!-- target -->
                 <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/mitmGatewayInputLayout"
+                    style="@style/Widget.FSploit.TextField"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:hint="@string/mitm_gateway_input_label">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/mitmGatewayInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="textUri" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="14dp"
                     android:hint="@string/target_host">
 
                     <com.google.android.material.textfield.MaterialAutoCompleteTextView
@@ -251,10 +268,12 @@
                         android:inputType="textUri" />
                 </com.google.android.material.textfield.TextInputLayout>
 
+                <!-- mode -->
                 <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.FSploit.TextField"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="12dp"
                     android:hint="@string/mitm_mode_label">
 
                     <com.google.android.material.textfield.MaterialAutoCompleteTextView
@@ -269,13 +288,87 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+                    android:textAppearance="@style/TextAppearance.FSploit.Body" />
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/mitmPrimaryInputLayout"
+                <!-- network mode -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/block_mode_label"
+                    android:textAppearance="@style/TextAppearance.FSploit.Label" />
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/connectionBlockModeGroup"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    app:selectionRequired="true"
+                    app:singleSelection="true">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/blockModeNormalButton"
+                        style="@style/Widget.FSploit.Toggle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/block_mode_normal" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/blockModeHotspotButton"
+                        style="@style/Widget.FSploit.Toggle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/block_mode_hotspot" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                <TextView
+                    android:id="@+id/connectionBlockModeDescriptionValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Body" />
+
+                <TextView
+                    android:id="@+id/connectionBlockModeSummaryValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Body"
+                    android:textColor="@color/fsploit_text_muted" />
+
+                <!-- gateway -->
+                <TextView
+                    android:id="@+id/mitmGatewayResolvedValue"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Body" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/mitmGatewayInputLayout"
+                    style="@style/Widget.FSploit.TextField"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:hint="@string/mitm_gateway_input_label">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/mitmGatewayInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:inputType="textUri" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- dynamic per-mode inputs -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/mitmPrimaryInputLayout"
+                    style="@style/Widget.FSploit.TextField"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
                     android:hint="@string/mitm_primary_input_label">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -284,18 +377,12 @@
                         android:layout_height="wrap_content" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <TextView
-                    android:id="@+id/mitmPrimaryHelperValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodySmall" />
-
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/mitmSecondaryInputLayout"
+                    style="@style/Widget.FSploit.TextField"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="12dp"
                     android:hint="@string/mitm_secondary_input_label">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -304,18 +391,12 @@
                         android:layout_height="wrap_content" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <TextView
-                    android:id="@+id/mitmSecondaryHelperValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodySmall" />
-
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/mitmPayloadInputLayout"
+                    style="@style/Widget.FSploit.TextField"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="12dp"
                     android:hint="@string/mitm_payload_input_label">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -327,13 +408,6 @@
                         android:minLines="4" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <TextView
-                    android:id="@+id/mitmPayloadHelperValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodySmall" />
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -342,6 +416,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/startMitmSessionButton"
+                        style="@style/Widget.FSploit.Button"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -349,7 +424,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/stopMitmSessionButton"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/Widget.FSploit.Button.Outlined"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="12dp"
@@ -359,148 +434,40 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- ===== Connection block ===== -->
         <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.FSploit.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardBackgroundColor="@color/fsploit_surface"
-            app:cardCornerRadius="24dp"
-            app:strokeColor="@color/fsploit_stroke"
-            app:strokeWidth="1dp">
+            android:layout_marginTop="@dimen/fs_card_gap">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
+                android:orientation="vertical">
 
                 <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/mitm_active_session_title"
-                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
-
-                <TextView
-                    android:id="@+id/activeMitmModeValue"
+                    style="@style/Widget.FSploit.SectionHeader"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+                    android:text="@string/block_current_label" />
 
                 <TextView
-                    android:id="@+id/activeMitmSummaryValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="@string/mitm_artifact_label"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
-
-                <TextView
-                    android:id="@+id/activeMitmArtifactValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="@string/mitm_log_label"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelLarge" />
-
-                <TextView
-                    android:id="@+id/activeMitmLogValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardBackgroundColor="@color/fsploit_surface"
-            app:cardCornerRadius="24dp"
-            app:strokeColor="@color/fsploit_stroke"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/mitm_diagnostics_title"
-                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/runMitmDiagnosticsButton"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="@string/mitm_run_diagnostics" />
-
-                <TextView
-                    android:id="@+id/mitmDiagnosticsSummaryValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
-
-                <TextView
-                    android:id="@+id/mitmDiagnosticsOutputValue"
+                    android:id="@+id/currentBlockValue"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:fontFamily="monospace"
-                    android:lineSpacingExtra="2dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                    android:textIsSelectable="true" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardBackgroundColor="@color/fsploit_surface"
-            app:cardCornerRadius="24dp"
-            app:strokeColor="@color/fsploit_stroke"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/block_current_label"
-                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+                    android:textAppearance="@style/TextAppearance.FSploit.Value" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="14dp"
                     android:orientation="horizontal">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/blockConnectionButton"
+                        style="@style/Widget.FSploit.Button"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -508,7 +475,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/unblockConnectionButton"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/Widget.FSploit.Button.Outlined"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="12dp"
@@ -517,18 +484,119 @@
                 </LinearLayout>
 
                 <TextView
-                    android:id="@+id/currentBlockValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-
-                <TextView
                     android:id="@+id/connectionBlockSummaryValue"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+                    android:layout_marginTop="12dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Body" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ===== Active session ===== -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.FSploit.Card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/fs_card_gap">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/Widget.FSploit.SectionHeader"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/mitm_active_session_title" />
+
+                <TextView
+                    android:id="@+id/activeMitmModeValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Value" />
+
+                <TextView
+                    android:id="@+id/activeMitmSummaryValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Body" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="@string/mitm_artifact_label"
+                    android:textAppearance="@style/TextAppearance.FSploit.Label" />
+
+                <TextView
+                    android:id="@+id/activeMitmArtifactValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Mono" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/mitm_log_label"
+                    android:textAppearance="@style/TextAppearance.FSploit.Label" />
+
+                <TextView
+                    android:id="@+id/activeMitmLogValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Mono" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ===== Diagnostics ===== -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.FSploit.Card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/fs_card_gap">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/Widget.FSploit.SectionHeader"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/mitm_diagnostics_title" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/runMitmDiagnosticsButton"
+                    style="@style/Widget.FSploit.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="@string/mitm_run_diagnostics" />
+
+                <TextView
+                    android:id="@+id/mitmDiagnosticsSummaryValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Body" />
+
+                <TextView
+                    android:id="@+id/mitmDiagnosticsOutputValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_terminal"
+                    android:padding="14dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Mono"
+                    android:lineSpacingExtra="2dp"
+                    android:textIsSelectable="true" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>

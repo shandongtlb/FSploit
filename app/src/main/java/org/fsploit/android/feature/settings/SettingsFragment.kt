@@ -71,13 +71,6 @@ class SettingsFragment : Fragment() {
             state.connectTimeoutMs.ifBlank { "-" },
             state.parallelism.ifBlank { "-" }
         )
-        binding.mitmToolchainValue.text = getString(
-            R.string.settings_mitm_toolchain_value,
-            state.mitmToolchainConfig.bettercapPath.ifBlank { getString(R.string.settings_not_configured) },
-            state.mitmToolchainConfig.tcpdumpPath.ifBlank { getString(R.string.settings_not_configured) },
-            state.mitmToolchainConfig.mitmdumpPath.ifBlank { getString(R.string.settings_not_configured) },
-            state.mitmToolchainConfig.httpRedirectPort
-        )
         syncInput(binding.bettercapPathInput, state.mitmToolchainConfig.bettercapPath)
         syncInput(binding.tcpdumpPathInput, state.mitmToolchainConfig.tcpdumpPath)
         syncInput(binding.mitmdumpPathInput, state.mitmToolchainConfig.mitmdumpPath)

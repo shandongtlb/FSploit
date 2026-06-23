@@ -1,8 +1,6 @@
 package org.fsploit.android.feature.msf
 
 import android.os.Bundle
-import android.text.method.HideReturnsTransformationMethod
-import android.text.method.PasswordTransformationMethod
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,6 +15,7 @@ import org.fsploit.android.R
 import org.fsploit.android.databinding.FragmentMsfBinding
 import org.fsploit.android.feature.home.HomeUiState
 import org.fsploit.android.feature.home.HomeViewModel
+import org.fsploit.android.ui.setStatusDot
 
 class MsfFragment : Fragment() {
 
@@ -72,22 +71,6 @@ class MsfFragment : Fragment() {
         binding.launchMsfRpcButton.setOnClickListener {
             viewModel.launchMsfRpcCommand()
         }
-        binding.togglePasswordButton.setOnClickListener {
-            val showingPassword = binding.msfPasswordInput.transformationMethod == HideReturnsTransformationMethod.getInstance()
-            binding.msfPasswordInput.transformationMethod = if (showingPassword) {
-                PasswordTransformationMethod.getInstance()
-            } else {
-                HideReturnsTransformationMethod.getInstance()
-            }
-            binding.msfPasswordInput.setSelection(binding.msfPasswordInput.text?.length ?: 0)
-            binding.togglePasswordButton.text = getString(
-                if (showingPassword) {
-                    R.string.msf_show_password
-                } else {
-                    R.string.msf_hide_password
-                }
-            )
-        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
@@ -99,6 +82,8 @@ class MsfFragment : Fragment() {
     private fun render(state: HomeUiState) {
         binding.rootGateValue.text = state.rootGateSummary
         binding.shellSummaryValue.text = state.shellSummary
+        binding.dotMsfRoot.setStatusDot(state.rootGranted)
+        binding.dotMsfShell.setStatusDot(state.shellAvailable)
         binding.msfSummaryValue.text = state.msfSummary
         binding.msfVersionValue.text = state.msfFrameworkVersion.ifBlank {
             getString(R.string.msf_value_unknown)

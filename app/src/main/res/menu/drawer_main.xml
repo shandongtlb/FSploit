@@ -3,24 +3,31 @@
     <group android:checkableBehavior="single">
         <item
             android:id="@+id/nav_overview"
+            android:icon="@drawable/ic_nav_overview"
             android:title="@string/nav_overview" />
         <item
             android:id="@+id/nav_discovery"
+            android:icon="@drawable/ic_nav_discovery"
             android:title="@string/nav_discovery" />
         <item
             android:id="@+id/nav_target_detail"
+            android:icon="@drawable/ic_nav_target"
             android:title="@string/nav_target_detail" />
         <item
             android:id="@+id/nav_mitm"
+            android:icon="@drawable/ic_nav_mitm"
             android:title="@string/nav_mitm" />
         <item
             android:id="@+id/nav_msf"
+            android:icon="@drawable/ic_nav_msf"
             android:title="@string/nav_msf" />
         <item
             android:id="@+id/nav_tools"
+            android:icon="@drawable/ic_nav_tools"
             android:title="@string/nav_tools" />
         <item
             android:id="@+id/nav_settings"
+            android:icon="@drawable/ic_nav_settings"
             android:title="@string/nav_settings" />
     </group>
 </menu>

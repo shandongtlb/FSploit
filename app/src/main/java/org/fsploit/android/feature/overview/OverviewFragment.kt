@@ -15,6 +15,7 @@ import org.fsploit.android.databinding.FragmentOverviewBinding
 import org.fsploit.android.domain.model.InterfaceCategory
 import org.fsploit.android.feature.home.HomeUiState
 import org.fsploit.android.feature.home.HomeViewModel
+import org.fsploit.android.ui.setStatusDot
 
 class OverviewFragment : Fragment() {
 
@@ -57,8 +58,12 @@ class OverviewFragment : Fragment() {
         binding.permissionSummaryValue.text = state.permissionSummary
         binding.activeTransportValue.text = state.activeTransportLabel
         binding.shellSummaryValue.text = state.shellSummary
-        binding.requestPermissionsButton.isEnabled =
-            !(requireActivity() as MainActivity).hasAllRequiredPermissionsForUi()
+        val permissionsGranted = (requireActivity() as MainActivity).hasAllRequiredPermissionsForUi()
+        binding.dotRoot.setStatusDot(state.rootGranted)
+        binding.dotPermission.setStatusDot(permissionsGranted)
+        binding.dotTransport.setStatusDot(state.interfaces.isNotEmpty())
+        binding.dotShell.setStatusDot(state.shellAvailable)
+        binding.requestPermissionsButton.isEnabled = !permissionsGranted
         binding.continueHint.text = if (state.canContinue) {
             getString(R.string.home_ready)
         } else {

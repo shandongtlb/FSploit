@@ -35,6 +35,7 @@
     <string name="discovery_selected_target">Selected target: %1$s</string>
     <string name="discovery_no_target_selected">No target is selected yet.</string>
     <string name="discovery_no_targets">Run a host sweep to populate clickable targets.</string>
+    <string name="discovery_manual_entry">MANUAL ENTRY</string>
     <string name="target_host">Target host</string>
     <string name="run_port_scan">Run Port Scan</string>
     <string name="port_scan_summary">Port scan summary</string>
@@ -69,9 +70,6 @@
     <string name="mitm_payload_hint_script">Injected script or HTML snippet</string>
     <string name="mitm_payload_hint_dns_rules">One rule per line, e.g. example.com A 10.0.0.5</string>
     <string name="mitm_payload_hint_filter_rules">One rule per line: regex =&gt; replacement</string>
-    <string name="mitm_primary_hidden">This mode does not need a primary input.</string>
-    <string name="mitm_secondary_hidden">This mode does not need a secondary input.</string>
-    <string name="mitm_payload_hidden">This mode does not need a payload.</string>
     <string name="mitm_start_session">Start Session</string>
     <string name="mitm_stop_session">Stop Session</string>
     <string name="mitm_active_session_title">Active MITM session</string>
@@ -169,7 +167,6 @@
     <string name="settings_mitm_mitmdump">mitmdump path</string>
     <string name="settings_mitm_redirect_port">HTTP redirect port</string>
     <string name="settings_mitm_save">Save MITM Settings</string>
-    <string name="settings_mitm_toolchain_value">bettercap: %1$s\ntcpdump: %2$s\nmitmdump: %3$s\nHTTP redirect port: %4$d</string>
     <string name="settings_not_configured">Not configured</string>
     <string name="settings_port_profile_value">Ports: %1$s\nTimeout: %2$s ms\nParallelism: %3$s</string>
     <string name="language_follow_system">Follow system language. Supported: English and Simplified Chinese.</string>
@@ -205,8 +202,6 @@
     <string name="msf_session_peer">Tunnel peer: %1$s</string>
     <string name="msf_session_via">Via exploit: %1$s</string>
     <string name="msf_value_unknown">Unknown</string>
-    <string name="msf_show_password">Show password</string>
-    <string name="msf_hide_password">Hide password</string>
     <string name="msf_ssl_enabled">HTTPS / SSL</string>
     <string name="msf_ssl_disabled">HTTP / plain</string>
     <string name="msf_summary_pending">Preparing the standalone Metasploit RPC workspace...</string>

@@ -19,6 +19,7 @@ import org.fsploit.android.feature.home.HomeUiState
 import org.fsploit.android.feature.home.HomeViewModel
 import org.fsploit.android.ui.NonFilteringStringAdapter
 import org.fsploit.android.ui.enableFullDropdown
+import org.fsploit.android.ui.setStatusDot
 
 class MitmFragment : Fragment() {
 
@@ -115,6 +116,12 @@ class MitmFragment : Fragment() {
         binding.bettercapValue.text = yesNo(state.bettercapAvailable)
         binding.mitmdumpValue.text = yesNo(state.mitmdumpAvailable)
         binding.caStoreValue.text = yesNo(state.certificateStoreAccessible)
+        binding.dotMitmRoot.setStatusDot(state.rootGranted)
+        binding.dotIptables.setStatusDot(state.iptablesAvailable)
+        binding.dotTcpdump.setStatusDot(state.tcpdumpAvailable)
+        binding.dotBettercap.setStatusDot(state.bettercapAvailable)
+        binding.dotMitmdump.setStatusDot(state.mitmdumpAvailable)
+        binding.dotCaStore.setStatusDot(state.certificateStoreAccessible)
         binding.selectedTargetValue.text = if (state.selectedHostAddress.isBlank()) {
             getString(R.string.discovery_no_target_selected)
         } else {
@@ -204,22 +211,14 @@ class MitmFragment : Fragment() {
     }
 
     private fun renderModeFields(mode: MitmMode) {
-        val primaryHint = getString(mode.primaryHintRes ?: R.string.mitm_primary_hint_empty)
-        val secondaryHint = getString(mode.secondaryHintRes ?: R.string.mitm_secondary_hint_empty)
-        val payloadHint = getString(mode.payloadHintRes ?: R.string.mitm_payload_hint_empty)
-        val showPrimary = mode.showsPrimaryInput
-        val showSecondary = mode.showsSecondaryInput
-        val showPayload = mode.showsPayloadInput
-
-        binding.mitmPrimaryInputLayout.visibility = if (showPrimary) View.VISIBLE else View.GONE
-        binding.mitmPrimaryInputLayout.hint = primaryHint
-        binding.mitmPrimaryHelperValue.text = if (showPrimary) primaryHint else getString(R.string.mitm_primary_hidden)
-        binding.mitmSecondaryInputLayout.visibility = if (showSecondary) View.VISIBLE else View.GONE
-        binding.mitmSecondaryInputLayout.hint = secondaryHint
-        binding.mitmSecondaryHelperValue.text = if (showSecondary) secondaryHint else getString(R.string.mitm_secondary_hidden)
-        binding.mitmPayloadInputLayout.visibility = if (showPayload) View.VISIBLE else View.GONE
-        binding.mitmPayloadInputLayout.hint = payloadHint
-        binding.mitmPayloadHelperValue.text = if (showPayload) payloadHint else getString(R.string.mitm_payload_hidden)
+        // Each per-mode input simply appears with its own labelled hint, or is hidden
+        // entirely when the mode does not use it — no "field not needed" filler text.
+        binding.mitmPrimaryInputLayout.visibility = if (mode.showsPrimaryInput) View.VISIBLE else View.GONE
+        binding.mitmPrimaryInputLayout.hint = getString(mode.primaryHintRes ?: R.string.mitm_primary_input_label)
+        binding.mitmSecondaryInputLayout.visibility = if (mode.showsSecondaryInput) View.VISIBLE else View.GONE
+        binding.mitmSecondaryInputLayout.hint = getString(mode.secondaryHintRes ?: R.string.mitm_secondary_input_label)
+        binding.mitmPayloadInputLayout.visibility = if (mode.showsPayloadInput) View.VISIBLE else View.GONE
+        binding.mitmPayloadInputLayout.hint = getString(mode.payloadHintRes ?: R.string.mitm_payload_input_label)
     }
 
     private fun syncInput(input: com.google.android.material.textfield.TextInputEditText, value: String) {

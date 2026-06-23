@@ -16,6 +16,7 @@ import org.fsploit.android.core.ShellTaskPreset
 import org.fsploit.android.databinding.FragmentToolsBinding
 import org.fsploit.android.feature.home.HomeUiState
 import org.fsploit.android.feature.home.HomeViewModel
+import org.fsploit.android.ui.setStatusDot
 
 class ToolsFragment : Fragment() {
 
@@ -69,6 +70,7 @@ class ToolsFragment : Fragment() {
 
     private fun render(state: HomeUiState) {
         binding.shellSummaryValue.text = state.shellSummary
+        binding.dotShellTools.setStatusDot(state.rootGranted)
         binding.selectedTaskLabelValue.text = state.selectedShellTaskLabel
         binding.selectedTaskDescriptionValue.text = state.selectedShellTaskDescription
         if (binding.commandInput.text?.toString() != state.shellCommandInput) {

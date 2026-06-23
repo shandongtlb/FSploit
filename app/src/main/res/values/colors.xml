@@ -1,10 +1,29 @@
 <resources>
-    <color name="fsploit_background">#0B1220</color>
-    <color name="fsploit_surface">#131D31</color>
-    <color name="fsploit_stroke">#2D3F63</color>
-    <color name="fsploit_primary">#8FE3C8</color>
-    <color name="fsploit_on_primary">#072319</color>
-    <color name="fsploit_on_background">#EAF1FF</color>
-    <color name="fsploit_text_primary">#EAF1FF</color>
-    <color name="fsploit_text_secondary">#B8C6E3</color>
+    <!-- Core surfaces — near-black, blue-tinted "terminal" stack -->
+    <color name="fsploit_background">#05080F</color>
+    <color name="fsploit_surface">#0A1322</color>
+    <color name="fsploit_surface_alt">#0E1B30</color>
+    <color name="fsploit_terminal_bg">#03060C</color>
+
+    <!-- Strokes / dividers -->
+    <color name="fsploit_stroke">#1B2C49</color>
+    <color name="fsploit_stroke_strong">#27496B</color>
+
+    <!-- Neon accents -->
+    <color name="fsploit_primary">#34F5A0</color>
+    <color name="fsploit_primary_dim">#1C7F5B</color>
+    <color name="fsploit_on_primary">#03150D</color>
+    <color name="fsploit_accent">#36E0E6</color>
+
+    <!-- Status -->
+    <color name="fsploit_ok">#34F5A0</color>
+    <color name="fsploit_danger">#FF5C6E</color>
+    <color name="fsploit_warn">#F7C948</color>
+
+    <!-- Text -->
+    <color name="fsploit_on_background">#D4E2FB</color>
+    <color name="fsploit_text_primary">#D4E2FB</color>
+    <color name="fsploit_text_secondary">#7186A8</color>
+    <color name="fsploit_text_muted">#4C5E7E</color>
+    <color name="fsploit_mono">#74F2BC</color>
 </resources>
