@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- terminal prompt: ">_"  (kept inside the 72dp adaptive safe zone) -->
+    <path
+        android:pathData="M36,40 L55,54 L36,68"
+        android:strokeColor="#34F5A0"
+        android:strokeWidth="8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <path
+        android:pathData="M58,67 L75,67"
+        android:strokeColor="#36E0E6"
+        android:strokeWidth="7"
+        android:strokeLineCap="round" />
+</vector>

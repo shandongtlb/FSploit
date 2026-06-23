@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- dark blue-black terminal gradient, full-bleed for adaptive masking -->
+    <path android:pathData="M0,0 h108 v108 h-108 z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="0"
+                android:endX="108"
+                android:endY="108"
+                android:startColor="#0B1A2E"
+                android:endColor="#05080F" />
+        </aapt:attr>
+    </path>
+
+    <!-- faint accent stroke in a lower corner for depth -->
+    <path
+        android:pathData="M0,86 L108,52"
+        android:strokeColor="#102742"
+        android:strokeWidth="14" />
+</vector>
