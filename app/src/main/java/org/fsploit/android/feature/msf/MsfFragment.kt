@@ -77,6 +77,7 @@ class MsfFragment : Fragment() {
         }
 
         bindCollapsible(binding.msfVersionsHeader, binding.msfVersionsBody, binding.msfVersionsChevron)
+        bindCollapsible(binding.msfLaunchHeader, binding.msfLaunchOutputValue, binding.msfLaunchChevron)
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
@@ -101,6 +102,10 @@ class MsfFragment : Fragment() {
 
     private fun render(state: MsfUiState) {
         binding.msfSummaryValue.text = state.msfSummary
+        binding.dotMsfConnected.setStatusDot(state.msfConnected)
+        binding.msfConnectedValue.text = getString(
+            if (state.msfConnected) R.string.msf_connected else R.string.msf_disconnected
+        )
         binding.msfVersionValue.text = state.msfFrameworkVersion.ifBlank {
             getString(R.string.msf_value_unknown)
         }

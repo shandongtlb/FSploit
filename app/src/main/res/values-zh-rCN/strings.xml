@@ -49,6 +49,9 @@
     <string name="mitm_env_not_ready">未就绪</string>
     <string name="mitm_advanced_title">高级 / 诊断</string>
     <string name="msf_versions_title">版本信息</string>
+    <string name="msf_rpc_status_label">RPC 连接</string>
+    <string name="msf_connected">已连接</string>
+    <string name="msf_disconnected">未连接</string>
     <string name="loot_tab_title">战利品</string>
     <string name="loot_idle">还没有嗅探会话。启动 MITM 的【密码嗅探】或【会话劫持】后,抓到的凭据会在这里实时显示。</string>
     <string name="loot_unsupported_mode">当前 MITM 模式不产生可解析的战利品。请使用【密码嗅探】或【会话劫持】。</string>

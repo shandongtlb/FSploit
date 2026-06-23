@@ -49,6 +49,9 @@
     <string name="mitm_env_not_ready">Not ready</string>
     <string name="mitm_advanced_title">Advanced / Diagnostics</string>
     <string name="msf_versions_title">Versions</string>
+    <string name="msf_rpc_status_label">RPC connection</string>
+    <string name="msf_connected">Connected</string>
+    <string name="msf_disconnected">Not connected</string>
     <string name="loot_tab_title">Loot</string>
     <string name="loot_idle">No sniffing session running. Start a MITM Password Sniffer or Session Hijack — captured credentials show here in real time.</string>
     <string name="loot_unsupported_mode">The current MITM mode does not produce parseable loot. Use Password Sniffer or Session Hijack.</string>
