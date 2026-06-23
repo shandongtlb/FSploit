@@ -1,6 +1,9 @@
 package org.fsploit.android.data.settings
 
 import android.content.Context
+import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import org.fsploit.android.domain.model.MsfRpcConfig
 import org.fsploit.android.domain.model.MitmToolchainConfig
 import org.fsploit.android.domain.model.PortScanConfig
@@ -8,10 +11,51 @@ import org.fsploit.android.domain.model.PortScanConfig
 class AppPreferencesRepository(
     context: Context
 ) {
-    private val preferences = context.applicationContext.getSharedPreferences(
-        "fsploit_preferences",
-        Context.MODE_PRIVATE
-    )
+    private val preferences: SharedPreferences = buildPreferences(context.applicationContext)
+
+    /**
+     * Prefer an AES-256 [EncryptedSharedPreferences] store so the saved RPC password is not left as
+     * plaintext on disk. The Android keystore can fail on unusual ROMs or after a key corruption, so
+     * we degrade gracefully to a plain private store rather than crash the app on launch.
+     */
+    private fun buildPreferences(context: Context): SharedPreferences {
+        return try {
+            val masterKey = MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
+            val secure = EncryptedSharedPreferences.create(
+                context,
+                SECURE_PREFS_NAME,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+            migrateLegacyIfNeeded(context, secure)
+            secure
+        } catch (_: Exception) {
+            context.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
+        }
+    }
+
+    /** One-time copy of any previously saved plaintext settings into the encrypted store. */
+    private fun migrateLegacyIfNeeded(context: Context, secure: SharedPreferences) {
+        if (secure.getBoolean(KEY_MIGRATED, false)) {
+            return
+        }
+        val legacy = context.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
+        val editor = secure.edit()
+        for ((key, value) in legacy.all) {
+            when (value) {
+                is String -> editor.putString(key, value)
+                is Int -> editor.putInt(key, value)
+                is Boolean -> editor.putBoolean(key, value)
+                is Long -> editor.putLong(key, value)
+                is Float -> editor.putFloat(key, value)
+            }
+        }
+        editor.putBoolean(KEY_MIGRATED, true).apply()
+        legacy.edit().clear().apply()
+    }
 
     fun getPreferredInterfaceName(): String = preferences.getString(KEY_PREFERRED_INTERFACE, "").orEmpty()
 
@@ -76,6 +120,9 @@ class AppPreferencesRepository(
     }
 
     companion object {
+        private const val SECURE_PREFS_NAME = "fsploit_secure_preferences"
+        private const val LEGACY_PREFS_NAME = "fsploit_preferences"
+        private const val KEY_MIGRATED = "prefs_migrated_to_encrypted"
         private const val KEY_PREFERRED_INTERFACE = "preferred_interface"
         private const val KEY_PORT_SPEC = "port_spec"
         private const val KEY_CONNECT_TIMEOUT_MS = "connect_timeout_ms"

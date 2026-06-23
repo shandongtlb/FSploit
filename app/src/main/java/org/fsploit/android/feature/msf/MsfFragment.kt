@@ -75,6 +75,26 @@ class MsfFragment : Fragment() {
         binding.launchMsfRpcButton.setOnClickListener {
             viewModel.launchMsfRpcCommand()
         }
+        binding.stopSessionButton.setOnClickListener {
+            viewModel.stopSession(binding.stopSessionIdInput.text?.toString().orEmpty())
+        }
+        binding.stopJobButton.setOnClickListener {
+            viewModel.stopJob(binding.stopJobIdInput.text?.toString().orEmpty())
+        }
+        binding.consoleSessionIdInput.doAfterTextChanged {
+            viewModel.updateConsoleSessionId(it?.toString().orEmpty())
+        }
+        binding.consoleSendButton.setOnClickListener { sendConsoleCommand() }
+        binding.consoleCommandInput.setOnEditorActionListener { _, _, _ ->
+            sendConsoleCommand()
+            true
+        }
+        binding.consoleReadButton.setOnClickListener {
+            viewModel.readConsole()
+        }
+        binding.consoleClearButton.setOnClickListener {
+            viewModel.clearConsole()
+        }
 
         bindCollapsible(binding.msfVersionsHeader, binding.msfVersionsBody, binding.msfVersionsChevron)
         bindCollapsible(binding.msfLaunchHeader, binding.msfLaunchOutputValue, binding.msfLaunchChevron)
@@ -90,6 +110,15 @@ class MsfFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         viewModel.refresh()
+    }
+
+    private fun sendConsoleCommand() {
+        val command = binding.consoleCommandInput.text?.toString().orEmpty()
+        if (command.isBlank()) {
+            return
+        }
+        viewModel.sendConsoleCommand(command)
+        binding.consoleCommandInput.setText("")
     }
 
     private fun renderSession(state: SessionState) {
@@ -170,9 +199,20 @@ class MsfFragment : Fragment() {
                 "#${job.id}  ${job.name.ifBlank { getString(R.string.msf_value_unknown) }}"
             }
         }
+        binding.msfActionSummaryValue.text = state.msfActionSummary
+        syncInput(binding.consoleSessionIdInput, state.consoleSessionId)
+        binding.consoleOutputValue.text = state.consoleOutput.ifBlank {
+            getString(R.string.msf_console_output_empty)
+        }
+        binding.consoleSummaryValue.text = state.consoleSummary
+
         binding.saveMsfSettingsButton.isEnabled = !state.isSavingMsfRpcConfig
         binding.refreshMsfButton.isEnabled = !state.isRefreshingMsf
         binding.launchMsfRpcButton.isEnabled = sessionViewModel.uiState.value.rootGranted && !state.isLaunchingMsfRpc
+        binding.stopSessionButton.isEnabled = !state.isRunningMsfAction
+        binding.stopJobButton.isEnabled = !state.isRunningMsfAction
+        binding.consoleSendButton.isEnabled = !state.isConsoleBusy
+        binding.consoleReadButton.isEnabled = !state.isConsoleBusy
     }
 
     private fun syncInput(input: com.google.android.material.textfield.TextInputEditText, value: String) {

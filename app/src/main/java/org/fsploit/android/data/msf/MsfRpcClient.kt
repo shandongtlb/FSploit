@@ -18,13 +18,31 @@ import javax.net.ssl.X509TrustManager
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 
+/**
+ * Stateful MSF RPC client. Authenticates once (lazily) and reuses the temporary `auth.login`
+ * token for every subsequent call, so a multi-call batch is one login + N calls rather than
+ * one login + one token_generate + the call *per* request. We deliberately avoid
+ * `auth.token_generate`: it mints a *permanent* token that MSF never reclaims, so calling it on
+ * every refresh leaks tokens into the framework's token table. The temporary login token is
+ * enough for everything FSploit does, and [logout] revokes it when the batch is done.
+ *
+ * Not thread-safe: drive a single client instance from one coroutine sequentially.
+ */
 class MsfRpcClient(
     private val config: MsfRpcConfig
 ) {
+    private var cachedToken: String? = null
+
     fun call(method: String, vararg args: Any?): Any? {
-        val tempToken = login()
-        val token = tokenGenerate(tempToken)
+        val token = cachedToken ?: login().also { cachedToken = it }
         return callWithToken(method, token, *args)
+    }
+
+    /** Best-effort revocation of the cached token so MSF does not accumulate stale tokens. */
+    fun logout() {
+        val token = cachedToken ?: return
+        cachedToken = null
+        runCatching { callWithToken("auth.logout", token, token) }
     }
 
     private fun login(): String {
@@ -34,15 +52,6 @@ class MsfRpcClient(
         ) as? Map<*, *> ?: throw IOException("Unexpected auth.login response")
         return response["token"]?.toString()
             ?: throw IOException("Missing token from auth.login")
-    }
-
-    private fun tokenGenerate(tempToken: String): String {
-        val response = performRequest(
-            method = "auth.token_generate",
-            args = arrayOf(tempToken)
-        ) as? Map<*, *> ?: throw IOException("Unexpected auth.token_generate response")
-        return response["token"]?.toString()
-            ?: throw IOException("Missing token from auth.token_generate")
     }
 
     private fun callWithToken(method: String, token: String, vararg args: Any?): Any? {

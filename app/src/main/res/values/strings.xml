@@ -266,6 +266,41 @@
     <string name="msf_launch_idle">No MSF launch command has been run yet.</string>
     <string name="msf_launch_running">Running the configured MSF launch command via su -c...</string>
     <string name="msf_launch_command_empty">Enter a local NetHunter launch command first, or leave launch empty and treat this page as a remote RPC config.</string>
+    <string name="msf_launch_probing">Launch fired. Waiting for the RPC daemon to answer core.version...</string>
+    <string name="msf_launch_reachable">RPC daemon is up and answering. Overview refreshed.</string>
+    <string name="msf_launch_unreachable">Launch fired, but the RPC endpoint did not answer in time. Check the launch output, then probe manually.</string>
+
+    <!-- Session / job actions -->
+    <string name="msf_actions_title">Session and job actions</string>
+    <string name="msf_action_idle">No MSF action has been run yet.</string>
+    <string name="msf_action_running">Running the requested MSF RPC action...</string>
+    <string name="msf_action_failed">MSF RPC action failed. %1$s</string>
+    <string name="msf_action_id_required">Enter an ID first.</string>
+    <string name="msf_stop_session_id_hint">Session ID to stop</string>
+    <string name="msf_stop_job_id_hint">Job ID to stop</string>
+    <string name="msf_stop_session">Stop Session</string>
+    <string name="msf_stop_job">Stop Job</string>
+    <string name="msf_session_stop_success">Stop request sent for session #%1$s.</string>
+    <string name="msf_job_stop_success">Stop request sent for job #%1$s.</string>
+
+    <!-- Interactive session console -->
+    <string name="msf_console_title">Session console</string>
+    <string name="msf_console_intro">Send commands to a live shell or meterpreter session and read the response. Transport is chosen automatically from the session type.</string>
+    <string name="msf_console_session_id_hint">Session ID</string>
+    <string name="msf_console_command_hint">Command to send</string>
+    <string name="msf_console_send">Send</string>
+    <string name="msf_console_read">Read</string>
+    <string name="msf_console_clear">Clear</string>
+    <string name="msf_console_output_empty">No console output yet. Pick a session ID and send a command.</string>
+    <string name="msf_console_idle">Console ready. Refresh the overview to discover live session IDs.</string>
+    <string name="msf_console_sending">Sending command to the session...</string>
+    <string name="msf_console_reading">Reading session output...</string>
+    <string name="msf_console_sent">Command sent. Use Read to pull more output.</string>
+    <string name="msf_console_read_ok">Output appended.</string>
+    <string name="msf_console_read_empty">No new output was available.</string>
+    <string name="msf_console_command_required">Enter a command to send.</string>
+    <string name="msf_console_cleared">Console cleared.</string>
+    <string name="msf_console_write_success">Wrote command to session #%1$s.</string>
 
     <string name="permission_summary_pending">Checking permissions...</string>
     <string name="permissions_granted">All required permissions are granted.</string>
