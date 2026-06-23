@@ -11,11 +11,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import org.fsploit.android.MainActivity
-import org.fsploit.android.R
 import org.fsploit.android.core.ShellTaskPreset
 import org.fsploit.android.databinding.FragmentToolsBinding
-import org.fsploit.android.feature.home.HomeUiState
-import org.fsploit.android.feature.home.HomeViewModel
+import org.fsploit.android.feature.session.SessionState
+import org.fsploit.android.feature.session.SessionViewModel
 import org.fsploit.android.ui.setStatusDot
 
 class ToolsFragment : Fragment() {
@@ -23,7 +22,10 @@ class ToolsFragment : Fragment() {
     private var _binding: FragmentToolsBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: HomeViewModel by activityViewModels {
+    private val sessionViewModel: SessionViewModel by activityViewModels {
+        (requireActivity() as MainActivity).viewModelFactory
+    }
+    private val viewModel: ToolsViewModel by activityViewModels {
         (requireActivity() as MainActivity).viewModelFactory
     }
 
@@ -63,14 +65,24 @@ class ToolsFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
-                viewModel.uiState.collect(::render)
+                launch { viewModel.uiState.collect(::render) }
+                launch { sessionViewModel.uiState.collect(::renderSession) }
             }
         }
     }
 
-    private fun render(state: HomeUiState) {
+    private fun renderSession(state: SessionState) {
         binding.shellSummaryValue.text = state.shellSummary
         binding.dotShellTools.setStatusDot(state.rootGranted)
+        binding.runAsRootSwitch.isEnabled = state.rootGranted
+        binding.presetInterfacesButton.isEnabled = state.rootGranted
+        binding.presetArpButton.isEnabled = state.rootGranted
+        binding.presetIptablesButton.isEnabled = state.rootGranted
+        binding.presetTcpdumpButton.isEnabled = state.rootGranted
+        binding.runCommandButton.isEnabled = state.rootGranted && !viewModel.uiState.value.isExecutingShell
+    }
+
+    private fun render(state: ToolsUiState) {
         binding.selectedTaskLabelValue.text = state.selectedShellTaskLabel
         binding.selectedTaskDescriptionValue.text = state.selectedShellTaskDescription
         if (binding.commandInput.text?.toString() != state.shellCommandInput) {
@@ -80,12 +92,7 @@ class ToolsFragment : Fragment() {
         if (binding.runAsRootSwitch.isChecked != state.shellRunAsRoot) {
             binding.runAsRootSwitch.isChecked = state.shellRunAsRoot
         }
-        binding.runCommandButton.isEnabled = state.rootGranted && !state.isExecutingShell
-        binding.runAsRootSwitch.isEnabled = state.rootGranted
-        binding.presetInterfacesButton.isEnabled = state.rootGranted
-        binding.presetArpButton.isEnabled = state.rootGranted
-        binding.presetIptablesButton.isEnabled = state.rootGranted
-        binding.presetTcpdumpButton.isEnabled = state.rootGranted
+        binding.runCommandButton.isEnabled = sessionViewModel.uiState.value.rootGranted && !state.isExecutingShell
         binding.commandStatusValue.text = state.shellExecutionSummary
         binding.commandOutputValue.text = state.shellExecutionOutput
     }

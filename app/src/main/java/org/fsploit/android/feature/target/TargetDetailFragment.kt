@@ -13,9 +13,8 @@ import kotlinx.coroutines.launch
 import org.fsploit.android.MainActivity
 import org.fsploit.android.R
 import org.fsploit.android.databinding.FragmentTargetDetailBinding
-import org.fsploit.android.feature.home.HomeUiState
-import org.fsploit.android.feature.home.HomeViewModel
-import org.fsploit.android.feature.target.PortResultFilter
+import org.fsploit.android.feature.session.SessionState
+import org.fsploit.android.feature.session.SessionViewModel
 import org.fsploit.android.ui.NonFilteringStringAdapter
 import org.fsploit.android.ui.enableFullDropdown
 
@@ -24,7 +23,10 @@ class TargetDetailFragment : Fragment() {
     private var _binding: FragmentTargetDetailBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: HomeViewModel by activityViewModels {
+    private val sessionViewModel: SessionViewModel by activityViewModels {
+        (requireActivity() as MainActivity).viewModelFactory
+    }
+    private val viewModel: TargetDetailViewModel by activityViewModels {
         (requireActivity() as MainActivity).viewModelFactory
     }
 
@@ -43,10 +45,10 @@ class TargetDetailFragment : Fragment() {
         binding.targetHostInput.enableFullDropdown()
         binding.targetHostInput.setOnItemClickListener { _, _, position, _ ->
             val selected = binding.targetHostInput.adapter.getItem(position)?.toString().orEmpty()
-            viewModel.selectHost(selected)
+            sessionViewModel.selectHost(selected)
         }
         binding.targetHostInput.doAfterTextChanged {
-            viewModel.selectHost(it?.toString().orEmpty())
+            sessionViewModel.selectHost(it?.toString().orEmpty())
         }
         binding.portSpecInput.doAfterTextChanged {
             viewModel.updatePortSpec(it?.toString().orEmpty())
@@ -70,27 +72,35 @@ class TargetDetailFragment : Fragment() {
             viewModel.selectPortResultFilter(filter)
         }
         binding.runPortScanButton.setOnClickListener {
-            viewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
+            sessionViewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
             viewModel.runPortScan()
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
-                viewModel.uiState.collect(::render)
+                launch { viewModel.uiState.collect(::render) }
+                launch { sessionViewModel.uiState.collect(::renderSession) }
             }
         }
     }
 
-    private fun render(state: HomeUiState) {
+    private fun renderSession(state: SessionState) {
         binding.targetHostInput.setAdapter(
-            NonFilteringStringAdapter(
-                requireContext(),
-                state.responsiveHosts
-            )
+            NonFilteringStringAdapter(requireContext(), state.responsiveHosts)
         )
         if (binding.targetHostInput.text?.toString() != state.selectedHostAddress) {
             binding.targetHostInput.setText(state.selectedHostAddress, false)
         }
+        binding.targetSummaryValue.text = if (state.selectedHostAddress.isBlank()) {
+            getString(R.string.port_scan_no_selected_host)
+        } else {
+            getString(R.string.target_detail_summary, state.selectedHostAddress)
+        }
+        binding.runPortScanButton.isEnabled =
+            state.rootGranted && state.selectedHostAddress.isNotBlank() && !viewModel.uiState.value.isPortScanning
+    }
+
+    private fun render(state: TargetDetailUiState) {
         if (binding.portSpecInput.text?.toString() != state.portSpec) {
             binding.portSpecInput.setText(state.portSpec)
             binding.portSpecInput.setSelection(0)
@@ -104,11 +114,6 @@ class TargetDetailFragment : Fragment() {
             binding.parallelismInput.setSelection(binding.parallelismInput.text?.length ?: 0)
         }
 
-        binding.targetSummaryValue.text = if (state.selectedHostAddress.isBlank()) {
-            getString(R.string.port_scan_no_selected_host)
-        } else {
-            getString(R.string.target_detail_summary, state.selectedHostAddress)
-        }
         val checkedFilterButton = when (state.selectedPortResultFilter) {
             PortResultFilter.ALL -> R.id.filterAllButton
             PortResultFilter.OPEN -> R.id.filterOpenButton
@@ -119,7 +124,9 @@ class TargetDetailFragment : Fragment() {
             binding.portFilterGroup.check(checkedFilterButton)
         }
         binding.runPortScanButton.isEnabled =
-            state.rootGranted && state.selectedHostAddress.isNotBlank() && !state.isPortScanning
+            sessionViewModel.uiState.value.rootGranted &&
+            sessionViewModel.uiState.value.selectedHostAddress.isNotBlank() &&
+            !state.isPortScanning
         binding.portScanSummaryValue.text = state.portScanSummary
         val filteredResults = state.scannedPortResults.filter { result ->
             when (state.selectedPortResultFilter) {
@@ -130,7 +137,7 @@ class TargetDetailFragment : Fragment() {
             }
         }
         binding.portScanResultsValue.text = if (filteredResults.isEmpty()) {
-            if (state.responsiveHosts.isEmpty()) {
+            if (sessionViewModel.uiState.value.responsiveHosts.isEmpty()) {
                 getString(R.string.no_target_hosts)
             } else if (state.scannedPortResults.isNotEmpty()) {
                 getString(R.string.no_port_results_for_filter)

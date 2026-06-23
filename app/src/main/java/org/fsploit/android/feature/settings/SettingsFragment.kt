@@ -13,15 +13,18 @@ import kotlinx.coroutines.launch
 import org.fsploit.android.MainActivity
 import org.fsploit.android.R
 import org.fsploit.android.databinding.FragmentSettingsBinding
-import org.fsploit.android.feature.home.HomeUiState
-import org.fsploit.android.feature.home.HomeViewModel
+import org.fsploit.android.feature.session.SessionState
+import org.fsploit.android.feature.session.SessionViewModel
 
 class SettingsFragment : Fragment() {
 
     private var _binding: FragmentSettingsBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: HomeViewModel by activityViewModels {
+    private val sessionViewModel: SessionViewModel by activityViewModels {
+        (requireActivity() as MainActivity).viewModelFactory
+    }
+    private val viewModel: SettingsViewModel by activityViewModels {
         (requireActivity() as MainActivity).viewModelFactory
     }
 
@@ -53,23 +56,33 @@ class SettingsFragment : Fragment() {
             viewModel.saveMitmToolchainConfig()
         }
 
+        binding.languageValue.text = getString(R.string.language_follow_system)
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
-                viewModel.uiState.collect(::render)
+                launch { viewModel.uiState.collect(::render) }
+                launch { sessionViewModel.uiState.collect(::renderSession) }
             }
         }
     }
 
-    private fun render(state: HomeUiState) {
-        binding.languageValue.text = getString(R.string.language_follow_system)
+    override fun onResume() {
+        super.onResume()
+        viewModel.refresh()
+    }
+
+    private fun renderSession(state: SessionState) {
         binding.interfaceValue.text = state.preferredInterfaceName.ifBlank {
             getString(R.string.settings_not_configured)
         }
+    }
+
+    private fun render(state: SettingsUiState) {
         binding.portProfileValue.text = getString(
             R.string.settings_port_profile_value,
-            state.portSpec.ifBlank { getString(R.string.settings_not_configured) },
-            state.connectTimeoutMs.ifBlank { "-" },
-            state.parallelism.ifBlank { "-" }
+            state.portScanConfig.portSpec.ifBlank { getString(R.string.settings_not_configured) },
+            state.portScanConfig.connectTimeoutMs.takeIf { it > 0 }?.toString() ?: "-",
+            state.portScanConfig.parallelism.takeIf { it > 0 }?.toString() ?: "-"
         )
         syncInput(binding.bettercapPathInput, state.mitmToolchainConfig.bettercapPath)
         syncInput(binding.tcpdumpPathInput, state.mitmToolchainConfig.tcpdumpPath)

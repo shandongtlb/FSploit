@@ -15,8 +15,8 @@ import org.fsploit.android.R
 import org.fsploit.android.databinding.FragmentMitmBinding
 import org.fsploit.android.domain.model.ConnectionBlockMode
 import org.fsploit.android.domain.model.MitmMode
-import org.fsploit.android.feature.home.HomeUiState
-import org.fsploit.android.feature.home.HomeViewModel
+import org.fsploit.android.feature.session.SessionState
+import org.fsploit.android.feature.session.SessionViewModel
 import org.fsploit.android.ui.NonFilteringStringAdapter
 import org.fsploit.android.ui.enableFullDropdown
 import org.fsploit.android.ui.setStatusDot
@@ -26,7 +26,10 @@ class MitmFragment : Fragment() {
     private var _binding: FragmentMitmBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: HomeViewModel by activityViewModels {
+    private val sessionViewModel: SessionViewModel by activityViewModels {
+        (requireActivity() as MainActivity).viewModelFactory
+    }
+    private val viewModel: MitmViewModel by activityViewModels {
         (requireActivity() as MainActivity).viewModelFactory
     }
 
@@ -46,28 +49,28 @@ class MitmFragment : Fragment() {
         binding.mitmModeInput.enableFullDropdown()
         binding.targetHostInput.setOnItemClickListener { _, _, position, _ ->
             val selected = binding.targetHostInput.adapter.getItem(position)?.toString().orEmpty()
-            viewModel.selectHost(selected)
+            sessionViewModel.selectHost(selected)
         }
         binding.targetHostInput.doAfterTextChanged {
-            viewModel.selectHost(it?.toString().orEmpty())
+            sessionViewModel.selectHost(it?.toString().orEmpty())
         }
         binding.startMitmSessionButton.setOnClickListener {
-            viewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
+            sessionViewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
             viewModel.startMitmSession()
         }
         binding.stopMitmSessionButton.setOnClickListener {
             viewModel.stopMitmSession()
         }
         binding.runMitmDiagnosticsButton.setOnClickListener {
-            viewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
+            sessionViewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
             viewModel.runMitmDiagnostics()
         }
         binding.blockConnectionButton.setOnClickListener {
-            viewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
+            sessionViewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
             viewModel.blockSelectedHost()
         }
         binding.unblockConnectionButton.setOnClickListener {
-            viewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
+            sessionViewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
             viewModel.unblockSelectedHost()
         }
         binding.connectionBlockModeGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
@@ -101,81 +104,86 @@ class MitmFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
-                viewModel.uiState.collect(::render)
+                launch { viewModel.uiState.collect { renderAll() } }
+                launch { sessionViewModel.uiState.collect { renderAll() } }
             }
         }
     }
 
-    private fun render(state: HomeUiState) {
-        val mode = state.selectedMitmMode
-        val useHotspotMode = state.selectedConnectionBlockMode == ConnectionBlockMode.HOTSPOT
-        binding.rootGateValue.text = state.rootGateSummary
-        binding.mitmSummaryValue.text = state.mitmSummary
-        binding.iptablesValue.text = yesNo(state.iptablesAvailable)
-        binding.tcpdumpValue.text = yesNo(state.tcpdumpAvailable)
-        binding.bettercapValue.text = yesNo(state.bettercapAvailable)
-        binding.mitmdumpValue.text = yesNo(state.mitmdumpAvailable)
-        binding.caStoreValue.text = yesNo(state.certificateStoreAccessible)
-        binding.dotMitmRoot.setStatusDot(state.rootGranted)
-        binding.dotIptables.setStatusDot(state.iptablesAvailable)
-        binding.dotTcpdump.setStatusDot(state.tcpdumpAvailable)
-        binding.dotBettercap.setStatusDot(state.bettercapAvailable)
-        binding.dotMitmdump.setStatusDot(state.mitmdumpAvailable)
-        binding.dotCaStore.setStatusDot(state.certificateStoreAccessible)
-        binding.selectedTargetValue.text = if (state.selectedHostAddress.isBlank()) {
+    override fun onResume() {
+        super.onResume()
+        viewModel.refresh()
+    }
+
+    private fun renderAll() {
+        val s: SessionState = sessionViewModel.uiState.value
+        val m: MitmUiState = viewModel.uiState.value
+        val mode = m.selectedMitmMode
+        val useHotspotMode = m.selectedConnectionBlockMode == ConnectionBlockMode.HOTSPOT
+
+        binding.rootGateValue.text = s.rootGateSummary
+        binding.mitmSummaryValue.text = m.mitmSummary
+        binding.iptablesValue.text = yesNo(m.iptablesAvailable)
+        binding.tcpdumpValue.text = yesNo(m.tcpdumpAvailable)
+        binding.bettercapValue.text = yesNo(m.bettercapAvailable)
+        binding.mitmdumpValue.text = yesNo(m.mitmdumpAvailable)
+        binding.caStoreValue.text = yesNo(m.certificateStoreAccessible)
+        binding.dotMitmRoot.setStatusDot(s.rootGranted)
+        binding.dotIptables.setStatusDot(m.iptablesAvailable)
+        binding.dotTcpdump.setStatusDot(m.tcpdumpAvailable)
+        binding.dotBettercap.setStatusDot(m.bettercapAvailable)
+        binding.dotMitmdump.setStatusDot(m.mitmdumpAvailable)
+        binding.dotCaStore.setStatusDot(m.certificateStoreAccessible)
+        binding.selectedTargetValue.text = if (s.selectedHostAddress.isBlank()) {
             getString(R.string.discovery_no_target_selected)
         } else {
-            getString(R.string.discovery_selected_target, state.selectedHostAddress)
+            getString(R.string.discovery_selected_target, s.selectedHostAddress)
         }
-        syncInput(
-            binding.mitmGatewayInput,
-            state.mitmGatewayInput
-        )
+        syncInput(binding.mitmGatewayInput, m.mitmGatewayInput)
         binding.mitmGatewayResolvedValue.text = if (useHotspotMode) {
             getString(R.string.mitm_gateway_hotspot_mode)
-        } else if (state.resolvedGatewayAddress.isBlank()) {
+        } else if (s.resolvedGatewayAddress.isBlank()) {
             getString(R.string.mitm_gateway_unresolved)
         } else {
-            getString(R.string.mitm_gateway_detected, state.resolvedGatewayAddress)
+            getString(R.string.mitm_gateway_detected, s.resolvedGatewayAddress)
         }
         binding.mitmGatewayInputLayout.visibility = if (useHotspotMode) View.GONE else View.VISIBLE
         binding.mitmModeDescriptionValue.text = getString(mode.descriptionRes)
-        binding.currentBlockValue.text = if (state.blockedHostAddress.isBlank()) {
+        binding.currentBlockValue.text = if (m.blockedHostAddress.isBlank()) {
             getString(R.string.block_none)
         } else {
-            getString(R.string.block_current_target, state.blockedHostAddress)
+            getString(R.string.block_current_target, m.blockedHostAddress)
         }
-        binding.connectionBlockModeDescriptionValue.text =
-            getString(state.selectedConnectionBlockMode.descriptionRes)
-        binding.connectionBlockModeSummaryValue.text = state.connectionBlockModeSummary
-        binding.connectionBlockSummaryValue.text = state.connectionBlockSummary
-        binding.activeMitmModeValue.text = if (state.mitmSession.mode == null) {
+        binding.connectionBlockModeDescriptionValue.text = getString(m.selectedConnectionBlockMode.descriptionRes)
+        binding.connectionBlockModeSummaryValue.text = m.connectionBlockModeSummary
+        binding.connectionBlockSummaryValue.text = m.connectionBlockSummary
+        binding.activeMitmModeValue.text = if (m.mitmSession.mode == null) {
             getString(R.string.mitm_session_mode_value, getString(R.string.mitm_none))
         } else {
-            getString(R.string.mitm_session_mode_value, getString(state.mitmSession.mode.titleRes))
+            getString(R.string.mitm_session_mode_value, getString(m.mitmSession.mode.titleRes))
         }
-        binding.activeMitmSummaryValue.text = state.mitmSessionSummary
-        binding.activeMitmArtifactValue.text = state.mitmSession.artifactPath.ifBlank {
+        binding.activeMitmSummaryValue.text = m.mitmSessionSummary
+        binding.activeMitmArtifactValue.text = m.mitmSession.artifactPath.ifBlank {
             getString(R.string.mitm_none)
         }
-        binding.activeMitmLogValue.text = state.mitmSession.logPath.ifBlank {
+        binding.activeMitmLogValue.text = m.mitmSession.logPath.ifBlank {
             getString(R.string.mitm_none)
         }
-        binding.mitmDiagnosticsSummaryValue.text = state.mitmDiagnosticsSummary
-        binding.mitmDiagnosticsOutputValue.text = state.mitmDiagnosticsOutput.ifBlank {
+        binding.mitmDiagnosticsSummaryValue.text = m.mitmDiagnosticsSummary
+        binding.mitmDiagnosticsOutputValue.text = m.mitmDiagnosticsOutput.ifBlank {
             getString(R.string.mitm_diagnostics_output_empty)
         }
         binding.startMitmSessionButton.isEnabled =
-            state.rootGranted && state.selectedHostAddress.isNotBlank() && !state.isStartingMitmSession
+            s.rootGranted && s.selectedHostAddress.isNotBlank() && !m.isStartingMitmSession
         binding.stopMitmSessionButton.isEnabled =
-            state.rootGranted && state.mitmSession.active && !state.isStartingMitmSession
+            s.rootGranted && m.mitmSession.active && !m.isStartingMitmSession
         binding.runMitmDiagnosticsButton.isEnabled =
-            state.rootGranted && state.preferredInterfaceName.isNotBlank() && !state.isRunningMitmDiagnostics
+            s.rootGranted && s.preferredInterfaceName.isNotBlank() && !m.isRunningMitmDiagnostics
         binding.blockConnectionButton.isEnabled =
-            state.rootGranted && state.selectedHostAddress.isNotBlank() && !state.isBlockingConnection
+            s.rootGranted && s.selectedHostAddress.isNotBlank() && !m.isBlockingConnection
         binding.unblockConnectionButton.isEnabled =
-            state.rootGranted && state.selectedHostAddress.isNotBlank() && !state.isBlockingConnection
-        val expectedBlockModeButtonId = when (state.selectedConnectionBlockMode) {
+            s.rootGranted && s.selectedHostAddress.isNotBlank() && !m.isBlockingConnection
+        val expectedBlockModeButtonId = when (m.selectedConnectionBlockMode) {
             ConnectionBlockMode.NORMAL -> R.id.blockModeNormalButton
             ConnectionBlockMode.HOTSPOT -> R.id.blockModeHotspotButton
         }
@@ -183,10 +191,9 @@ class MitmFragment : Fragment() {
             binding.connectionBlockModeGroup.check(expectedBlockModeButtonId)
         }
 
-        val targetAdapter = NonFilteringStringAdapter(requireContext(), state.responsiveHosts)
-        binding.targetHostInput.setAdapter(targetAdapter)
-        if (binding.targetHostInput.text?.toString() != state.selectedHostAddress) {
-            binding.targetHostInput.setText(state.selectedHostAddress, false)
+        binding.targetHostInput.setAdapter(NonFilteringStringAdapter(requireContext(), s.responsiveHosts))
+        if (binding.targetHostInput.text?.toString() != s.selectedHostAddress) {
+            binding.targetHostInput.setText(s.selectedHostAddress, false)
         }
 
         val selectedModeLabel = getString(mode.titleRes)
@@ -194,18 +201,9 @@ class MitmFragment : Fragment() {
             binding.mitmModeInput.setText(selectedModeLabel, false)
         }
 
-        syncInput(
-            binding.mitmPrimaryInput,
-            state.mitmPrimaryInput
-        )
-        syncInput(
-            binding.mitmSecondaryInput,
-            state.mitmSecondaryInput
-        )
-        syncInput(
-            binding.mitmPayloadInput,
-            state.mitmPayloadInput
-        )
+        syncInput(binding.mitmPrimaryInput, m.mitmPrimaryInput)
+        syncInput(binding.mitmSecondaryInput, m.mitmSecondaryInput)
+        syncInput(binding.mitmPayloadInput, m.mitmPayloadInput)
 
         renderModeFields(mode)
     }

@@ -23,7 +23,7 @@ import org.fsploit.android.data.mitm.BettercapPackageManager
 import org.fsploit.android.data.mitm.MitmdumpPackageManager
 import org.fsploit.android.databinding.ActivityMainBinding
 import org.fsploit.android.feature.discovery.DiscoveryFragment
-import org.fsploit.android.feature.home.HomeViewModel
+import org.fsploit.android.feature.session.SessionViewModel
 import org.fsploit.android.feature.msf.MsfFragment
 import org.fsploit.android.feature.mitm.MitmFragment
 import org.fsploit.android.feature.overview.OverviewFragment
@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
     private var bettercapPromptHandled = false
     private var mitmdumpPromptHandled = false
 
-    private val viewModel: HomeViewModel by viewModels { viewModelFactory }
+    private val viewModel: SessionViewModel by viewModels { viewModelFactory }
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val appContainer = (application as FSploitApp).appContainer
-        viewModelFactory = appContainer.homeViewModelFactory
+        viewModelFactory = appContainer.viewModelFactory
         bettercapPackageManager = appContainer.bettercapPackageManager
         mitmdumpPackageManager = appContainer.mitmdumpPackageManager
         super.onCreate(savedInstanceState)

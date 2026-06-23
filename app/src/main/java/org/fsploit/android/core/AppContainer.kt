@@ -31,6 +31,7 @@ import org.fsploit.android.domain.usecase.SaveMsfRpcConfigUseCase
 import org.fsploit.android.domain.usecase.StartMitmSessionUseCase
 import org.fsploit.android.domain.usecase.StopMitmSessionUseCase
 import org.fsploit.android.domain.usecase.UnblockHostUseCase
+import org.fsploit.android.feature.session.SessionStateHolder
 
 class AppContainer(
     context: Context
@@ -55,9 +56,11 @@ class AppContainer(
     )
     private val portScanRepository = PortScanRepository(resourceProvider)
     private val msfRepository = MsfRepository(resourceProvider)
+    private val sessionStateHolder = SessionStateHolder()
 
-    val homeViewModelFactory = FSploitViewModelFactory(
+    val viewModelFactory = FSploitViewModelFactory(
         resourceProvider = resourceProvider,
+        sessionStateHolder = sessionStateHolder,
         loadNetworkOverview = LoadNetworkOverviewUseCase(networkRepository),
         getPreferredInterface = GetPreferredInterfaceUseCase(preferencesRepository),
         savePreferredInterface = SavePreferredInterfaceUseCase(preferencesRepository),

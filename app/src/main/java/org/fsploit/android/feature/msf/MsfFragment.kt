@@ -13,8 +13,8 @@ import kotlinx.coroutines.launch
 import org.fsploit.android.MainActivity
 import org.fsploit.android.R
 import org.fsploit.android.databinding.FragmentMsfBinding
-import org.fsploit.android.feature.home.HomeUiState
-import org.fsploit.android.feature.home.HomeViewModel
+import org.fsploit.android.feature.session.SessionState
+import org.fsploit.android.feature.session.SessionViewModel
 import org.fsploit.android.ui.setStatusDot
 
 class MsfFragment : Fragment() {
@@ -22,7 +22,10 @@ class MsfFragment : Fragment() {
     private var _binding: FragmentMsfBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: HomeViewModel by activityViewModels {
+    private val sessionViewModel: SessionViewModel by activityViewModels {
+        (requireActivity() as MainActivity).viewModelFactory
+    }
+    private val viewModel: MsfViewModel by activityViewModels {
         (requireActivity() as MainActivity).viewModelFactory
     }
 
@@ -74,16 +77,26 @@ class MsfFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
-                viewModel.uiState.collect(::render)
+                launch { viewModel.uiState.collect(::render) }
+                launch { sessionViewModel.uiState.collect(::renderSession) }
             }
         }
     }
 
-    private fun render(state: HomeUiState) {
+    override fun onResume() {
+        super.onResume()
+        viewModel.refresh()
+    }
+
+    private fun renderSession(state: SessionState) {
         binding.rootGateValue.text = state.rootGateSummary
         binding.shellSummaryValue.text = state.shellSummary
         binding.dotMsfRoot.setStatusDot(state.rootGranted)
         binding.dotMsfShell.setStatusDot(state.shellAvailable)
+        binding.launchMsfRpcButton.isEnabled = state.rootGranted && !viewModel.uiState.value.isLaunchingMsfRpc
+    }
+
+    private fun render(state: MsfUiState) {
         binding.msfSummaryValue.text = state.msfSummary
         binding.msfVersionValue.text = state.msfFrameworkVersion.ifBlank {
             getString(R.string.msf_value_unknown)
@@ -151,7 +164,7 @@ class MsfFragment : Fragment() {
         }
         binding.saveMsfSettingsButton.isEnabled = !state.isSavingMsfRpcConfig
         binding.refreshMsfButton.isEnabled = !state.isRefreshingMsf
-        binding.launchMsfRpcButton.isEnabled = state.rootGranted && !state.isLaunchingMsfRpc
+        binding.launchMsfRpcButton.isEnabled = sessionViewModel.uiState.value.rootGranted && !state.isLaunchingMsfRpc
     }
 
     private fun syncInput(input: com.google.android.material.textfield.TextInputEditText, value: String) {

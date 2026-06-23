@@ -13,8 +13,8 @@ import org.fsploit.android.MainActivity
 import org.fsploit.android.R
 import org.fsploit.android.databinding.FragmentOverviewBinding
 import org.fsploit.android.domain.model.InterfaceCategory
-import org.fsploit.android.feature.home.HomeUiState
-import org.fsploit.android.feature.home.HomeViewModel
+import org.fsploit.android.feature.session.SessionState
+import org.fsploit.android.feature.session.SessionViewModel
 import org.fsploit.android.ui.setStatusDot
 
 class OverviewFragment : Fragment() {
@@ -22,7 +22,7 @@ class OverviewFragment : Fragment() {
     private var _binding: FragmentOverviewBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: HomeViewModel by activityViewModels {
+    private val viewModel: SessionViewModel by activityViewModels {
         (requireActivity() as MainActivity).viewModelFactory
     }
 
@@ -52,7 +52,7 @@ class OverviewFragment : Fragment() {
         }
     }
 
-    private fun render(state: HomeUiState) {
+    private fun render(state: SessionState) {
         binding.statusMessage.text = state.statusMessage
         binding.rootGateValue.text = state.rootGateSummary
         binding.permissionSummaryValue.text = state.permissionSummary

@@ -15,8 +15,8 @@ import org.fsploit.android.MainScreen
 import org.fsploit.android.R
 import org.fsploit.android.databinding.FragmentDiscoveryBinding
 import org.fsploit.android.databinding.ItemResponsiveTargetBinding
-import org.fsploit.android.feature.home.HomeUiState
-import org.fsploit.android.feature.home.HomeViewModel
+import org.fsploit.android.feature.session.SessionState
+import org.fsploit.android.feature.session.SessionViewModel
 import org.fsploit.android.ui.NonFilteringStringAdapter
 import org.fsploit.android.ui.enableFullDropdown
 
@@ -25,7 +25,7 @@ class DiscoveryFragment : Fragment() {
     private var _binding: FragmentDiscoveryBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: HomeViewModel by activityViewModels {
+    private val viewModel: SessionViewModel by activityViewModels {
         (requireActivity() as MainActivity).viewModelFactory
     }
 
@@ -74,7 +74,7 @@ class DiscoveryFragment : Fragment() {
         (requireActivity() as MainActivity).refreshFromUi()
     }
 
-    private fun render(state: HomeUiState) {
+    private fun render(state: SessionState) {
         binding.discoveryHint.text = getString(R.string.discovery_hint)
         binding.saveInterfaceButton.isEnabled = state.interfaces.isNotEmpty()
         binding.runSweepButton.isEnabled = state.canContinue && state.rootGranted && !state.isScanning
@@ -121,7 +121,7 @@ class DiscoveryFragment : Fragment() {
         binding.targetHostInput.isEnabled = state.rootGranted
     }
 
-    private fun renderResponsiveTargets(state: HomeUiState) {
+    private fun renderResponsiveTargets(state: SessionState) {
         binding.responsiveTargetsContainer.removeAllViews()
         state.responsiveTargetResults.forEach { target ->
             val itemBinding = ItemResponsiveTargetBinding.inflate(layoutInflater, binding.responsiveTargetsContainer, false)
