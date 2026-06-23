@@ -12,18 +12,11 @@
         android:orientation="vertical"
         android:padding="@dimen/fs_screen_margin">
 
-        <TextView
-            style="@style/Widget.FSploit.ScreenTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/nav_mitm" />
-
         <!-- ===== Environment (collapsed to a one-line status) ===== -->
         <com.google.android.material.card.MaterialCardView
             style="@style/Widget.FSploit.Card"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/fs_block_gap">
+            android:layout_height="wrap_content">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -290,34 +283,12 @@
                     android:layout_height="wrap_content"
                     android:text="@string/mitm_mode_config" />
 
-                <TextView
-                    android:id="@+id/selectedTargetValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:textAppearance="@style/TextAppearance.FSploit.Value" />
-
-                <!-- target -->
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.FSploit.TextField"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:hint="@string/target_host">
-
-                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                        android:id="@+id/targetHostInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="textUri" />
-                </com.google.android.material.textfield.TextInputLayout>
-
                 <!-- mode -->
                 <com.google.android.material.textfield.TextInputLayout
                     style="@style/Widget.FSploit.TextField"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="14dp"
                     android:hint="@string/mitm_mode_label">
 
                     <com.google.android.material.textfield.MaterialAutoCompleteTextView

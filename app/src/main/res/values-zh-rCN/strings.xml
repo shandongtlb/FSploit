@@ -7,7 +7,8 @@
     <string name="nav_mitm">MITM</string>
     <string name="nav_msf">MSF</string>
     <string name="nav_discovery">发现</string>
-    <string name="nav_target_detail">目标详情</string>
+    <string name="nav_target_detail">主机</string>
+    <string name="host_tab_ports">端口</string>
     <string name="nav_tools">工具</string>
     <string name="nav_settings">设置</string>
     <string name="drawer_open">打开导航抽屉</string>

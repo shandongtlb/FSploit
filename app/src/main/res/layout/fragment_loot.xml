@@ -11,18 +11,11 @@
         android:orientation="vertical"
         android:padding="@dimen/fs_screen_margin">
 
-        <TextView
-            style="@style/Widget.FSploit.ScreenTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/loot_tab_title" />
-
         <!-- ===== Status ===== -->
         <com.google.android.material.card.MaterialCardView
             style="@style/Widget.FSploit.Card"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/fs_block_gap">
+            android:layout_height="wrap_content">
 
             <LinearLayout
                 android:layout_width="match_parent"

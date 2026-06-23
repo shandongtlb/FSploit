@@ -46,32 +46,20 @@ class MitmFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.targetHostInput.enableFullDropdown()
         binding.mitmModeInput.enableFullDropdown()
-        binding.targetHostInput.setOnItemClickListener { _, _, position, _ ->
-            val selected = binding.targetHostInput.adapter.getItem(position)?.toString().orEmpty()
-            sessionViewModel.selectHost(selected)
-        }
-        binding.targetHostInput.doAfterTextChanged {
-            sessionViewModel.selectHost(it?.toString().orEmpty())
-        }
         binding.startMitmSessionButton.setOnClickListener {
-            sessionViewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
             viewModel.startMitmSession()
         }
         binding.stopMitmSessionButton.setOnClickListener {
             viewModel.stopMitmSession()
         }
         binding.runMitmDiagnosticsButton.setOnClickListener {
-            sessionViewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
             viewModel.runMitmDiagnostics()
         }
         binding.blockConnectionButton.setOnClickListener {
-            sessionViewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
             viewModel.blockSelectedHost()
         }
         binding.unblockConnectionButton.setOnClickListener {
-            sessionViewModel.selectHost(binding.targetHostInput.text?.toString().orEmpty())
             viewModel.unblockSelectedHost()
         }
         binding.connectionBlockModeGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
@@ -144,11 +132,6 @@ class MitmFragment : Fragment() {
         binding.dotReadiness.setStatusDot(envReady)
         binding.readinessStatusValue.text =
             getString(if (envReady) R.string.mitm_env_ready else R.string.mitm_env_not_ready)
-        binding.selectedTargetValue.text = if (s.selectedHostAddress.isBlank()) {
-            getString(R.string.discovery_no_target_selected)
-        } else {
-            getString(R.string.discovery_selected_target, s.selectedHostAddress)
-        }
         syncInput(binding.mitmGatewayInput, m.mitmGatewayInput)
         binding.mitmGatewayResolvedValue.text = if (useHotspotMode) {
             getString(R.string.mitm_gateway_hotspot_mode)
@@ -199,11 +182,6 @@ class MitmFragment : Fragment() {
         }
         if (binding.connectionBlockModeGroup.checkedButtonId != expectedBlockModeButtonId) {
             binding.connectionBlockModeGroup.check(expectedBlockModeButtonId)
-        }
-
-        binding.targetHostInput.setAdapter(NonFilteringStringAdapter(requireContext(), s.responsiveHosts))
-        if (binding.targetHostInput.text?.toString() != s.selectedHostAddress) {
-            binding.targetHostInput.setText(s.selectedHostAddress, false)
         }
 
         val selectedModeLabel = getString(mode.titleRes)

@@ -14,10 +14,6 @@
             android:icon="@drawable/ic_nav_target"
             android:title="@string/nav_target_detail" />
         <item
-            android:id="@+id/nav_mitm"
-            android:icon="@drawable/ic_nav_mitm"
-            android:title="@string/nav_mitm" />
-        <item
             android:id="@+id/nav_msf"
             android:icon="@drawable/ic_nav_msf"
             android:title="@string/nav_msf" />

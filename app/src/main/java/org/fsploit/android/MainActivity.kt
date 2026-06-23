@@ -23,12 +23,11 @@ import org.fsploit.android.data.mitm.BettercapPackageManager
 import org.fsploit.android.data.mitm.MitmdumpPackageManager
 import org.fsploit.android.databinding.ActivityMainBinding
 import org.fsploit.android.feature.discovery.DiscoveryFragment
+import org.fsploit.android.feature.host.HostWorkspaceFragment
 import org.fsploit.android.feature.session.SessionViewModel
 import org.fsploit.android.feature.msf.MsfFragment
-import org.fsploit.android.feature.mitm.MitmFragment
 import org.fsploit.android.feature.overview.OverviewFragment
 import org.fsploit.android.feature.settings.SettingsFragment
-import org.fsploit.android.feature.target.TargetDetailFragment
 import org.fsploit.android.feature.tools.ToolsFragment
 
 class MainActivity : AppCompatActivity() {
@@ -134,10 +133,9 @@ class MainActivity : AppCompatActivity() {
         updateScreenUi(screen)
         val fragment = when (screen) {
             MainScreen.OVERVIEW -> OverviewFragment()
-            MainScreen.MITM -> MitmFragment()
             MainScreen.MSF -> MsfFragment()
             MainScreen.DISCOVERY -> DiscoveryFragment()
-            MainScreen.TARGET_DETAIL -> TargetDetailFragment()
+            MainScreen.TARGET_DETAIL -> HostWorkspaceFragment()
             MainScreen.TOOLS -> ToolsFragment()
             MainScreen.SETTINGS -> SettingsFragment()
         }
