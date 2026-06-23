@@ -55,6 +55,8 @@
                         android:id="@+id/preferredInterfaceInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp"
                         android:inputType="none" />
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -185,6 +187,8 @@
                         android:id="@+id/targetHostInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp"
                         android:inputType="textUri" />
                 </com.google.android.material.textfield.TextInputLayout>
 

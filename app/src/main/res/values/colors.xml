@@ -3,6 +3,7 @@
     <color name="fsploit_background">#05080F</color>
     <color name="fsploit_surface">#0A1322</color>
     <color name="fsploit_surface_alt">#0E1B30</color>
+    <color name="fsploit_popup">#17294A</color>
     <color name="fsploit_terminal_bg">#03060C</color>
 
     <!-- Strokes / dividers -->
