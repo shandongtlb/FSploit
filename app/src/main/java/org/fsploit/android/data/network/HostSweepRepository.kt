@@ -11,6 +11,7 @@ import org.fsploit.android.core.ResourceProvider
 import org.fsploit.android.data.shell.ShellRepository
 import org.fsploit.android.domain.model.HostScanResult
 import org.fsploit.android.domain.model.HostSweepReport
+import org.fsploit.android.domain.model.SweepTarget
 import java.net.ConnectException
 import java.net.InetSocketAddress
 import java.net.Socket
@@ -31,7 +32,7 @@ class HostSweepRepository(
                 summary = resourceProvider.getString(R.string.host_sweep_unavailable)
             )
 
-        val responsiveHosts = probeHosts(target.interfaceName, target.hostCandidates)
+        val responsiveHosts = probeHosts(target)
 
         val subnetLabel = "${target.networkAddress}/${target.prefixLength}"
         val summary = if (responsiveHosts.isEmpty()) {
@@ -53,15 +54,13 @@ class HostSweepRepository(
         )
     }
 
-    private suspend fun probeHosts(
-        interfaceName: String,
-        hosts: List<String>
-    ): List<HostScanResult> = coroutineScope {
+    private suspend fun probeHosts(target: SweepTarget): List<HostScanResult> = coroutineScope {
+        val hosts = target.hostCandidates
         if (hosts.isEmpty()) {
             return@coroutineScope emptyList()
         }
 
-        val neighborResults = runNeighborSweep(interfaceName, hosts)
+        val neighborResults = runNeighborSweep(target)
         val unresolvedHosts = hosts.filterNot { neighborResults.containsKey(it) }
         // TCP supplement is a niche fallback for small subnets; on a large sweep the ARP/neighbor
         // pass already catches every L2-reachable host, so skip the (very slow) per-host TCP probe.
@@ -74,21 +73,24 @@ class HostSweepRepository(
             .sortedBy { it.hostAddress }
     }
 
-    private fun runNeighborSweep(
-        interfaceName: String,
-        hosts: List<String>
-    ): Map<String, HostScanResult> {
+    private fun runNeighborSweep(target: SweepTarget): Map<String, HostScanResult> {
         val shellResult = shellRepository.execute(
-            command = buildProbeCommand(interfaceName, hosts),
+            command = buildProbeCommand(target),
             asRoot = true,
-            timeoutMs = HOST_SWEEP_TIMEOUT_MS
+            timeoutMs = sweepTimeoutMs(target.hostCandidates.size)
         )
 
         return parseProbeOutput(
-            interfaceName = interfaceName,
+            interfaceName = target.interfaceName,
             output = shellResult.output,
-            knownHosts = hosts.toSet()
+            knownHosts = target.hostCandidates.toSet()
         )
+    }
+
+    /** Scale the shell timeout to subnet size so large sweeps aren't cut off mid-run. */
+    private fun sweepTimeoutMs(hostCount: Int): Long {
+        return (SWEEP_TIMEOUT_BASE_MS + hostCount.toLong() * SWEEP_TIMEOUT_PER_HOST_MS)
+            .coerceAtMost(SWEEP_TIMEOUT_MAX_MS)
     }
 
     private suspend fun runTcpSupplement(hosts: List<String>): List<HostScanResult> {
@@ -104,26 +106,48 @@ class HostSweepRepository(
         }
     }
 
-    private fun buildProbeCommand(interfaceName: String, hosts: List<String>): String {
-        // A throttled for-loop keeps the command compact (one IP list, not one statement per host)
-        // and primes the ARP/neighbor cache in parallel waves of PING_BATCH_SIZE. Pinging also
-        // forces ARP resolution, so hosts that drop ICMP still surface in the neighbor table.
-        val hostList = hosts.joinToString(" ") { shellQuote(it) }
+    private fun buildProbeCommand(target: SweepTarget): String {
+        // Generate the ping range numerically inside the shell so the command stays a constant size
+        // no matter how large the subnet (no inlined IP list -> no ARG_MAX ceiling). Pinging in
+        // parallel waves primes the ARP/neighbor cache; it also forces ARP resolution, so hosts
+        // that drop ICMP still surface in the neighbor table. The local address is skipped.
+        val networkInt = ipv4ToLong(target.networkAddress)
+        val hostBits = 32 - target.prefixLength
+        val broadcastInt = networkInt or ((1L shl hostBits) - 1L)
+        val startInt = networkInt + 1
+        val endInt = broadcastInt - 1
+        val localInt = ipv4ToLong(target.localAddress)
+
         return buildString {
-            append("PATH=/system/bin:/system/xbin:\$PATH; c=0; ")
-            append("for ip in ")
-            append(hostList)
-            append("; do ping -c 1 -W 1 \"\$ip\" >/dev/null 2>&1 & ")
-            append("c=\$((c+1)); [ \$((c % ")
-            append(PING_BATCH_SIZE)
-            append(")) -eq 0 ] && wait; done; wait; ")
+            append("PATH=/system/bin:/system/xbin:\$PATH; ")
+            append("s=").append(startInt)
+            append("; e=").append(endInt)
+            append("; l=").append(localInt)
+            append("; c=0; ")
+            append("while [ \$s -le \$e ]; do ")
+            append("if [ \$s -ne \$l ]; then ")
+            append("o=\"\$(( (s>>24) & 255 )).\$(( (s>>16) & 255 )).\$(( (s>>8) & 255 )).\$(( s & 255 ))\"; ")
+            append("ping -c 1 -W 1 \"\$o\" >/dev/null 2>&1 & ")
+            append("c=\$((c+1)); [ \$((c % ").append(PING_BATCH_SIZE).append(")) -eq 0 ] && wait; ")
+            append("fi; s=\$((s+1)); done; wait; ")
             append("echo __FSPLIT_NEIGH__; ")
             append("ip neigh show dev ")
-            append(shellQuote(interfaceName))
+            append(shellQuote(target.interfaceName))
             append(" 2>/dev/null; ")
             append("echo __FSPLIT_ARP__; ")
             append("cat /proc/net/arp 2>/dev/null")
         }
+    }
+
+    private fun ipv4ToLong(address: String): Long {
+        val octets = address.split('.')
+        if (octets.size != 4) {
+            return 0L
+        }
+        return (octets[0].toLong() shl 24) or
+            (octets[1].toLong() shl 16) or
+            (octets[2].toLong() shl 8) or
+            octets[3].toLong()
     }
 
     private fun parseProbeOutput(
@@ -228,7 +252,9 @@ class HostSweepRepository(
     }
 
     companion object {
-        private const val HOST_SWEEP_TIMEOUT_MS = 90_000L
+        private const val SWEEP_TIMEOUT_BASE_MS = 20_000L
+        private const val SWEEP_TIMEOUT_PER_HOST_MS = 15L
+        private const val SWEEP_TIMEOUT_MAX_MS = 180_000L
         private const val PING_BATCH_SIZE = 100
         private const val TCP_SUPPLEMENT_MAX_HOSTS = 256
         private const val TCP_CONNECT_TIMEOUT_MS = 160

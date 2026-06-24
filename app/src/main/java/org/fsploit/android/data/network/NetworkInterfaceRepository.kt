@@ -272,9 +272,10 @@ class NetworkInterfaceRepository(
     }
 
     companion object {
-        // Covers up to a /20 (4094 hosts) so flat large subnets (e.g. a /21 enterprise WiFi
+        // Covers up to a /19 (8190 hosts) so flat large subnets (e.g. a /21 enterprise WiFi
         // spanning several "C segments") are swept whole instead of being clamped to /24.
-        // Anything larger (/19 and up) still falls back to /24 to stay time-bounded.
-        private const val MAX_SWEEP_HOSTS = 4096
+        // Anything larger (/18 and up) still falls back to /24: it would take minutes and is
+        // almost never a single broadcast domain (ARP/ICMP can't reach past it anyway).
+        private const val MAX_SWEEP_HOSTS = 8192
     }
 }
