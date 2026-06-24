@@ -22,7 +22,10 @@ class HostSweepRepository(
     private val resourceProvider: ResourceProvider,
     private val shellRepository: ShellRepository
 ) {
-    suspend fun runSweep(preferredInterfaceName: String): HostSweepReport = coroutineScope {
+    suspend fun runSweep(
+        preferredInterfaceName: String,
+        onProgress: (scanned: Int, total: Int) -> Unit = { _, _ -> }
+    ): HostSweepReport = coroutineScope {
         val target = networkInterfaceRepository.resolveSweepTarget(preferredInterfaceName)
             ?: return@coroutineScope HostSweepReport(
                 interfaceName = "",
@@ -32,7 +35,7 @@ class HostSweepRepository(
                 summary = resourceProvider.getString(R.string.host_sweep_unavailable)
             )
 
-        val responsiveHosts = probeHosts(target)
+        val responsiveHosts = probeHosts(target, onProgress)
 
         val subnetLabel = "${target.networkAddress}/${target.prefixLength}"
         val summary = if (responsiveHosts.isEmpty()) {
@@ -54,13 +57,16 @@ class HostSweepRepository(
         )
     }
 
-    private suspend fun probeHosts(target: SweepTarget): List<HostScanResult> = coroutineScope {
+    private suspend fun probeHosts(
+        target: SweepTarget,
+        onProgress: (scanned: Int, total: Int) -> Unit
+    ): List<HostScanResult> = coroutineScope {
         val hosts = target.hostCandidates
         if (hosts.isEmpty()) {
             return@coroutineScope emptyList()
         }
 
-        val neighborResults = runNeighborSweep(target)
+        val neighborResults = runNeighborSweep(target, onProgress)
         val unresolvedHosts = hosts.filterNot { neighborResults.containsKey(it) }
         // TCP supplement is a niche fallback for small subnets; on a large sweep the ARP/neighbor
         // pass already catches every L2-reachable host, so skip the (very slow) per-host TCP probe.
@@ -73,11 +79,25 @@ class HostSweepRepository(
             .sortedBy { it.hostAddress }
     }
 
-    private fun runNeighborSweep(target: SweepTarget): Map<String, HostScanResult> {
+    private fun runNeighborSweep(
+        target: SweepTarget,
+        onProgress: (scanned: Int, total: Int) -> Unit
+    ): Map<String, HostScanResult> {
+        val total = target.hostCandidates.size
         val shellResult = shellRepository.execute(
             command = buildProbeCommand(target),
             asRoot = true,
-            timeoutMs = sweepTimeoutMs(target.hostCandidates.size)
+            timeoutMs = sweepTimeoutMs(total),
+            onLine = { line ->
+                val trimmed = line.trim()
+                when {
+                    trimmed.startsWith(PROGRESS_MARKER) ->
+                        trimmed.removePrefix(PROGRESS_MARKER).trim().toIntOrNull()?.let { scanned ->
+                            onProgress(scanned.coerceAtMost(total), total)
+                        }
+                    trimmed == NEIGH_MARKER -> onProgress(total, total)
+                }
+            }
         )
 
         return parseProbeOutput(
@@ -128,7 +148,8 @@ class HostSweepRepository(
             append("if [ \$s -ne \$l ]; then ")
             append("o=\"\$(( (s>>24) & 255 )).\$(( (s>>16) & 255 )).\$(( (s>>8) & 255 )).\$(( s & 255 ))\"; ")
             append("ping -c 1 -W 1 \"\$o\" >/dev/null 2>&1 & ")
-            append("c=\$((c+1)); [ \$((c % ").append(PING_BATCH_SIZE).append(")) -eq 0 ] && wait; ")
+            append("c=\$((c+1)); [ \$((c % ").append(PING_BATCH_SIZE)
+            append(")) -eq 0 ] && { wait; echo __FSPLIT_PROG__ \$c; }; ")
             append("fi; s=\$((s+1)); done; wait; ")
             append("echo __FSPLIT_NEIGH__; ")
             append("ip neigh show dev ")
@@ -257,6 +278,8 @@ class HostSweepRepository(
         private const val SWEEP_TIMEOUT_MAX_MS = 180_000L
         private const val PING_BATCH_SIZE = 100
         private const val TCP_SUPPLEMENT_MAX_HOSTS = 256
+        private const val PROGRESS_MARKER = "__FSPLIT_PROG__"
+        private const val NEIGH_MARKER = "__FSPLIT_NEIGH__"
         private const val TCP_CONNECT_TIMEOUT_MS = 160
         private const val TCP_PROBE_PARALLELISM = 24
         private val TCP_SUPPLEMENT_PORTS = intArrayOf(445, 139, 80, 443, 22, 53, 8080, 5555)

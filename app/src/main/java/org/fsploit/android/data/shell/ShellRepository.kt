@@ -35,7 +35,8 @@ class ShellRepository(
     fun execute(
         command: String,
         asRoot: Boolean,
-        timeoutMs: Long
+        timeoutMs: Long,
+        onLine: ((String) -> Unit)? = null
     ): ShellCommandResult {
         val sanitizedCommand = command.trim()
         if (sanitizedCommand.isEmpty()) {
@@ -50,7 +51,7 @@ class ShellRepository(
         }
 
         return try {
-            val result = runProcess(timeoutMs, if (asRoot) "su" else "sh", "-c", sanitizedCommand)
+            val result = runProcess(timeoutMs, onLine, if (asRoot) "su" else "sh", "-c", sanitizedCommand)
             if (result.timedOut) {
                 ShellCommandResult(
                     command = sanitizedCommand,
@@ -105,14 +106,18 @@ class ShellRepository(
 
     private fun runCommand(vararg command: String): String {
         return try {
-            val result = runProcess(2_000L, *command)
+            val result = runProcess(2_000L, null, *command)
             if (result.timedOut) "" else result.output
         } catch (_: Exception) {
             ""
         }
     }
 
-    private fun runProcess(timeoutMs: Long, vararg command: String): ProcessResult {
+    private fun runProcess(
+        timeoutMs: Long,
+        onLine: ((String) -> Unit)?,
+        vararg command: String
+    ): ProcessResult {
         val process = ProcessBuilder(*command)
             .redirectErrorStream(true)
             .start()
@@ -120,15 +125,26 @@ class ShellRepository(
         val outputBuffer = StringBuilder()
         val readerThread = thread(start = true, isDaemon = true) {
             process.inputStream.bufferedReader().use { reader ->
-                val buffer = CharArray(DEFAULT_BUFFER_SIZE)
-                while (true) {
-                    val read = reader.read(buffer)
-                    if (read < 0) {
-                        break
-                    }
-                    if (read > 0) {
+                if (onLine != null) {
+                    // Line-by-line so callers can observe progress as it streams in.
+                    while (true) {
+                        val line = reader.readLine() ?: break
                         synchronized(outputBuffer) {
-                            outputBuffer.append(buffer, 0, read)
+                            outputBuffer.append(line).append('\n')
+                        }
+                        runCatching { onLine(line) }
+                    }
+                } else {
+                    val buffer = CharArray(DEFAULT_BUFFER_SIZE)
+                    while (true) {
+                        val read = reader.read(buffer)
+                        if (read < 0) {
+                            break
+                        }
+                        if (read > 0) {
+                            synchronized(outputBuffer) {
+                                outputBuffer.append(buffer, 0, read)
+                            }
                         }
                     }
                 }

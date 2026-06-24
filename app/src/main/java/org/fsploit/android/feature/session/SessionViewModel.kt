@@ -130,7 +130,15 @@ class SessionViewModel(
             }
 
             val report = withContext(Dispatchers.Default) {
-                runHostSweep(interfaceName)
+                runHostSweep(interfaceName) { scanned, total ->
+                    holder.update {
+                        it.copy(
+                            scanSummary = resourceProvider.getString(
+                                R.string.host_sweep_progress, scanned, total
+                            )
+                        )
+                    }
+                }
             }
 
             val responsiveHosts = report.responsiveHosts.map { it.hostAddress }
