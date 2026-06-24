@@ -34,6 +34,10 @@ class MitmFragment : Fragment() {
         (requireActivity() as MainActivity).viewModelFactory
     }
 
+    // CONNECTION_KILL is hidden: cutting a host off the network is done from the dedicated
+    // "connection block" card (same arp.ban / iptables backend), so it's not a MITM mode here.
+    private val selectableMitmModes = MitmMode.entries.filter { it != MitmMode.CONNECTION_KILL }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -85,10 +89,10 @@ class MitmFragment : Fragment() {
             viewModel.updateMitmPayloadInput(it?.toString().orEmpty())
         }
 
-        val modeLabels = MitmMode.entries.map { getString(it.titleRes) }
+        val modeLabels = selectableMitmModes.map { getString(it.titleRes) }
         binding.mitmModeInput.setAdapter(NonFilteringStringAdapter(requireContext(), modeLabels))
         binding.mitmModeInput.setOnItemClickListener { _, _, position, _ ->
-            viewModel.selectMitmMode(MitmMode.entries[position])
+            viewModel.selectMitmMode(selectableMitmModes[position])
         }
 
         // Low-frequency sections collapse to keep the core controls in focus.
