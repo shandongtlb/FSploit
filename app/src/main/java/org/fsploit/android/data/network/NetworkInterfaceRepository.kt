@@ -272,6 +272,9 @@ class NetworkInterfaceRepository(
     }
 
     companion object {
-        private const val MAX_SWEEP_HOSTS = 1024
+        // Covers up to a /20 (4094 hosts) so flat large subnets (e.g. a /21 enterprise WiFi
+        // spanning several "C segments") are swept whole instead of being clamped to /24.
+        // Anything larger (/19 and up) still falls back to /24 to stay time-bounded.
+        private const val MAX_SWEEP_HOSTS = 4096
     }
 }

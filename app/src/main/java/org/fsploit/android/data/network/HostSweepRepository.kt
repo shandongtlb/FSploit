@@ -63,7 +63,9 @@ class HostSweepRepository(
 
         val neighborResults = runNeighborSweep(interfaceName, hosts)
         val unresolvedHosts = hosts.filterNot { neighborResults.containsKey(it) }
-        if (unresolvedHosts.isEmpty()) {
+        // TCP supplement is a niche fallback for small subnets; on a large sweep the ARP/neighbor
+        // pass already catches every L2-reachable host, so skip the (very slow) per-host TCP probe.
+        if (unresolvedHosts.isEmpty() || unresolvedHosts.size > TCP_SUPPLEMENT_MAX_HOSTS) {
             return@coroutineScope neighborResults.values.sortedBy { it.hostAddress }
         }
 
@@ -103,16 +105,18 @@ class HostSweepRepository(
     }
 
     private fun buildProbeCommand(interfaceName: String, hosts: List<String>): String {
+        // A throttled for-loop keeps the command compact (one IP list, not one statement per host)
+        // and primes the ARP/neighbor cache in parallel waves of PING_BATCH_SIZE. Pinging also
+        // forces ARP resolution, so hosts that drop ICMP still surface in the neighbor table.
+        val hostList = hosts.joinToString(" ") { shellQuote(it) }
         return buildString {
-            append("PATH=/system/bin:/system/xbin:\$PATH; ")
-            hosts.chunked(PING_BATCH_SIZE).forEach { batch ->
-                batch.forEach { host ->
-                    append("(ping -c 1 -W 1 ")
-                    append(shellQuote(host))
-                    append(" >/dev/null 2>&1) & ")
-                }
-                append("wait; ")
-            }
+            append("PATH=/system/bin:/system/xbin:\$PATH; c=0; ")
+            append("for ip in ")
+            append(hostList)
+            append("; do ping -c 1 -W 1 \"\$ip\" >/dev/null 2>&1 & ")
+            append("c=\$((c+1)); [ \$((c % ")
+            append(PING_BATCH_SIZE)
+            append(")) -eq 0 ] && wait; done; wait; ")
             append("echo __FSPLIT_NEIGH__; ")
             append("ip neigh show dev ")
             append(shellQuote(interfaceName))
@@ -224,8 +228,9 @@ class HostSweepRepository(
     }
 
     companion object {
-        private const val HOST_SWEEP_TIMEOUT_MS = 45_000L
-        private const val PING_BATCH_SIZE = 24
+        private const val HOST_SWEEP_TIMEOUT_MS = 90_000L
+        private const val PING_BATCH_SIZE = 100
+        private const val TCP_SUPPLEMENT_MAX_HOSTS = 256
         private const val TCP_CONNECT_TIMEOUT_MS = 160
         private const val TCP_PROBE_PARALLELISM = 24
         private val TCP_SUPPLEMENT_PORTS = intArrayOf(445, 139, 80, 443, 22, 53, 8080, 5555)
