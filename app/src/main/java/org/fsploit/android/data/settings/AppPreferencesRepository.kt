@@ -97,6 +97,25 @@ class AppPreferencesRepository(
             .apply()
     }
 
+    /** Imported TLS keylog (SSLKEYLOGFILE) used to decrypt HTTPS in the pcap viewer; "" if none. */
+    fun getPcapKeylogPath(): String = preferences.getString(KEY_PCAP_KEYLOG_PATH, "").orEmpty()
+
+    fun getPcapKeylogName(): String = preferences.getString(KEY_PCAP_KEYLOG_NAME, "").orEmpty()
+
+    fun setPcapKeylog(path: String, displayName: String) {
+        preferences.edit()
+            .putString(KEY_PCAP_KEYLOG_PATH, path.trim())
+            .putString(KEY_PCAP_KEYLOG_NAME, displayName.trim())
+            .apply()
+    }
+
+    fun clearPcapKeylog() {
+        preferences.edit()
+            .remove(KEY_PCAP_KEYLOG_PATH)
+            .remove(KEY_PCAP_KEYLOG_NAME)
+            .apply()
+    }
+
     fun getMsfRpcConfig(): MsfRpcConfig {
         return MsfRpcConfig(
             host = preferences.getString(KEY_MSF_RPC_HOST, DEFAULT_MSF_RPC_HOST).orEmpty(),
@@ -131,6 +150,8 @@ class AppPreferencesRepository(
         private const val KEY_MITM_TCPDUMP_PATH = "mitm_tcpdump_path"
         private const val KEY_MITM_MITMDUMP_PATH = "mitm_mitmdump_path"
         private const val KEY_MITM_HTTP_REDIRECT_PORT = "mitm_http_redirect_port"
+        private const val KEY_PCAP_KEYLOG_PATH = "pcap_keylog_path"
+        private const val KEY_PCAP_KEYLOG_NAME = "pcap_keylog_name"
         private const val KEY_MSF_RPC_HOST = "msf_rpc_host"
         private const val KEY_MSF_RPC_PORT = "msf_rpc_port"
         private const val KEY_MSF_RPC_USERNAME = "msf_rpc_username"

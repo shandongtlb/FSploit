@@ -34,7 +34,9 @@ class EnsureMsgrpcScriptUseCase(
             append("if [ ! -d \"\$D\" ]; then echo ").append(MARK_NO_CHROOT).append("; else ")
             append("[ -f \"\$F\" ] || { echo ").append(encoded)
             append(" | base64 -d > \"\$F\" && chmod 755 \"\$F\"; }; ")
-            append("if [ -e \"\$D/usr/bin/msfconsole\" ]; then echo ").append(MARK_READY)
+            // msfconsole is usually a symlink to an absolute path; from outside the chroot `-e`
+            // follows it to the Android root and fails. Accept symlink (-L) and the install dir too.
+            append("if [ -e \"\$D/usr/bin/msfconsole\" ] || [ -L \"\$D/usr/bin/msfconsole\" ] || [ -d \"\$D/usr/share/metasploit-framework\" ]; then echo ").append(MARK_READY)
             append("; else echo ").append(MARK_NO_MSF).append("; fi; fi")
         }
         val out = runShellCommand(command = command, asRoot = true, timeoutMs = TIMEOUT_MS).output

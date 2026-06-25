@@ -12,6 +12,8 @@ import org.fsploit.android.data.network.NetworkInterfaceRepository
 import org.fsploit.android.data.network.PortScanRepository
 import org.fsploit.android.data.settings.AppPreferencesRepository
 import org.fsploit.android.data.shell.ShellRepository
+import org.fsploit.android.domain.usecase.AnalyzePcapUseCase
+import org.fsploit.android.domain.usecase.EnsureTsharkUseCase
 import org.fsploit.android.domain.usecase.BlockHostUseCase
 import org.fsploit.android.domain.usecase.GetPreferredInterfaceUseCase
 import org.fsploit.android.domain.usecase.LoadMitmReadinessUseCase
@@ -78,6 +80,12 @@ class AppContainer(
         loadMitmReadiness = LoadMitmReadinessUseCase(mitmRepository),
         loadMitmSession = LoadMitmSessionUseCase(mitmRepository),
         readMitmLoot = ReadMitmLootUseCase(RunShellCommandUseCase(shellRepository), CredentialLogParser()),
+        analyzePcap = AnalyzePcapUseCase(
+            runShellCommand = RunShellCommandUseCase(shellRepository),
+            resourceProvider = resourceProvider,
+            ensureTshark = EnsureTsharkUseCase(RunShellCommandUseCase(shellRepository))
+        ),
+        appPreferences = preferencesRepository,
         loadMitmToolchainConfig = LoadMitmToolchainConfigUseCase(preferencesRepository),
         loadMsfRpcConfig = LoadMsfRpcConfigUseCase(preferencesRepository),
         loadMsfOverview = LoadMsfOverviewUseCase(msfRepository),

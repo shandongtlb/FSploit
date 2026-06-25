@@ -42,6 +42,16 @@
                     android:layout_marginTop="3dp"
                     android:textAppearance="@style/TextAppearance.FSploit.Mono"
                     android:textIsSelectable="true" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/lootClearButton"
+                    style="@style/Widget.FSploit.Button.Outlined"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/loot_clear"
+                    android:visibility="gone" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -68,6 +78,151 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_terminal"
+                    android:padding="14dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Mono"
+                    android:lineSpacingExtra="2dp"
+                    android:textIsSelectable="true" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ===== Capture analysis (SNIFFER pcap viewer) ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/pcapCard"
+            style="@style/Widget.FSploit.Card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/fs_card_gap"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/Widget.FSploit.SectionHeader"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/loot_pcap_title" />
+
+                <TextView
+                    android:id="@+id/pcapSummaryValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Value" />
+
+                <!-- SSL key (TLS keylog) import -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="@string/loot_pcap_key_label"
+                    android:textAppearance="@style/TextAppearance.FSploit.Label" />
+
+                <TextView
+                    android:id="@+id/pcapKeyValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Mono"
+                    android:textIsSelectable="true" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/pcapImportKeyButton"
+                        style="@style/Widget.FSploit.Button"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/loot_pcap_import_key" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/pcapClearKeyButton"
+                        style="@style/Widget.FSploit.Button.Outlined"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="@string/loot_pcap_clear_key" />
+                </LinearLayout>
+
+                <!-- Flows -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="@string/loot_pcap_flows_label"
+                    android:textAppearance="@style/TextAppearance.FSploit.Label" />
+
+                <TextView
+                    android:id="@+id/pcapFlowsValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_terminal"
+                    android:padding="14dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Mono"
+                    android:lineSpacingExtra="2dp"
+                    android:textIsSelectable="true" />
+
+                <!-- HTTP -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="@string/loot_pcap_http_label"
+                    android:textAppearance="@style/TextAppearance.FSploit.Label" />
+
+                <TextView
+                    android:id="@+id/pcapHttpValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_terminal"
+                    android:padding="14dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Mono"
+                    android:lineSpacingExtra="2dp"
+                    android:textIsSelectable="true" />
+
+                <!-- Per-packet list (collapsible) -->
+                <LinearLayout
+                    android:id="@+id/pcapPacketsHeader"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/loot_pcap_packets_label"
+                        android:textAppearance="@style/TextAppearance.FSploit.Label" />
+
+                    <ImageView
+                        android:id="@+id/pcapPacketsChevron"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginStart="8dp"
+                        android:src="@drawable/ic_chevron"
+                        android:contentDescription="@null" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/pcapPacketsValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
                     android:background="@drawable/bg_terminal"
                     android:padding="14dp"
                     android:textAppearance="@style/TextAppearance.FSploit.Mono"

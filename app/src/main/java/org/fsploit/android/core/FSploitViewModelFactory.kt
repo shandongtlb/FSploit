@@ -2,6 +2,8 @@ package org.fsploit.android.core
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import org.fsploit.android.data.settings.AppPreferencesRepository
+import org.fsploit.android.domain.usecase.AnalyzePcapUseCase
 import org.fsploit.android.domain.usecase.BlockHostUseCase
 import org.fsploit.android.domain.usecase.GetPreferredInterfaceUseCase
 import org.fsploit.android.domain.usecase.LoadMitmReadinessUseCase
@@ -54,6 +56,8 @@ class FSploitViewModelFactory(
     private val loadMitmReadiness: LoadMitmReadinessUseCase,
     private val loadMitmSession: LoadMitmSessionUseCase,
     private val readMitmLoot: ReadMitmLootUseCase,
+    private val analyzePcap: AnalyzePcapUseCase,
+    private val appPreferences: AppPreferencesRepository,
     private val loadMitmToolchainConfig: LoadMitmToolchainConfigUseCase,
     private val loadMsfOverview: LoadMsfOverviewUseCase,
     private val loadMsfRpcConfig: LoadMsfRpcConfigUseCase,
@@ -116,7 +120,9 @@ class FSploitViewModelFactory(
             modelClass.isAssignableFrom(LootViewModel::class.java) -> LootViewModel(
                 resourceProvider = resourceProvider,
                 loadMitmSessionUseCase = loadMitmSession,
-                readMitmLootUseCase = readMitmLoot
+                readMitmLootUseCase = readMitmLoot,
+                analyzePcapUseCase = analyzePcap,
+                preferencesRepository = appPreferences
             ) as T
 
             modelClass.isAssignableFrom(ToolsViewModel::class.java) -> ToolsViewModel(
