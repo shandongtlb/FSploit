@@ -320,6 +320,41 @@
                     android:layout_marginTop="14dp"
                     android:text="@string/msf_apply_msgrpc_preset" />
 
+                <!-- Manual endpoint folds away: the preset above fills it for the usual local case. -->
+                <LinearLayout
+                    android:id="@+id/advancedMsfHeader"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/msf_advanced_endpoint"
+                        android:textAppearance="@style/TextAppearance.FSploit.Label" />
+
+                    <ImageView
+                        android:id="@+id/advancedMsfChevron"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginStart="8dp"
+                        android:src="@drawable/ic_chevron"
+                        android:contentDescription="@null" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/advancedMsfBody"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
                 <com.google.android.material.textfield.TextInputLayout
                     style="@style/Widget.FSploit.TextField"
                     android:layout_width="match_parent"
@@ -387,6 +422,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
                     android:text="@string/msf_rpc_ssl" />
+                </LinearLayout>
 
                 <TextView
                     android:layout_width="match_parent"
@@ -498,12 +534,12 @@
                         android:layout_weight="1"
                         android:hint="@string/msf_stop_session_id_hint">
 
-                        <com.google.android.material.textfield.TextInputEditText
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/stopSessionIdInput"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:fontFamily="monospace"
-                            android:inputType="number" />
+                            android:inputType="none" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.button.MaterialButton
@@ -529,12 +565,12 @@
                         android:layout_weight="1"
                         android:hint="@string/msf_stop_job_id_hint">
 
-                        <com.google.android.material.textfield.TextInputEditText
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/stopJobIdInput"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:fontFamily="monospace"
-                            android:inputType="number" />
+                            android:inputType="none" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.button.MaterialButton
@@ -555,7 +591,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- ===== Interactive session console ===== -->
+        <!-- ===== Vuln scan ===== -->
         <com.google.android.material.card.MaterialCardView
             style="@style/Widget.FSploit.Card"
             android:layout_width="match_parent"
@@ -571,13 +607,13 @@
                     style="@style/Widget.FSploit.SectionHeader"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/msf_console_title" />
+                    android:text="@string/msf_scan_title" />
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:text="@string/msf_console_intro"
+                    android:text="@string/msf_scan_intro"
                     android:textAppearance="@style/TextAppearance.FSploit.Body" />
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -585,14 +621,15 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
-                    android:hint="@string/msf_console_session_id_hint">
+                    android:hint="@string/msf_scan_module_hint">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/consoleSessionIdInput"
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/scanModuleInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:fontFamily="monospace"
-                        android:inputType="number" />
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp"
+                        android:inputType="none" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -600,66 +637,40 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:hint="@string/msf_console_command_hint">
+                    android:hint="@string/msf_scan_rhosts_hint">
 
                     <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/consoleCommandInput"
+                        android:id="@+id/scanRhostsInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:fontFamily="monospace"
-                        android:imeOptions="actionSend"
                         android:inputType="text|textNoSuggestions" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <LinearLayout
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/runScanButton"
+                    style="@style/Widget.FSploit.Button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/consoleSendButton"
-                        style="@style/Widget.FSploit.Button"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/msf_console_send" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/consoleReadButton"
-                        style="@style/Widget.FSploit.Button.Outlined"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:layout_weight="1"
-                        android:text="@string/msf_console_read" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/consoleClearButton"
-                        style="@style/Widget.FSploit.Button.Outlined"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:layout_weight="1"
-                        android:text="@string/msf_console_clear" />
-                </LinearLayout>
+                    android:text="@string/msf_run_scan" />
 
                 <TextView
-                    android:id="@+id/consoleOutputValue"
+                    android:id="@+id/scanSummaryValue"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
+                    android:layout_marginTop="12dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Body" />
+
+                <TextView
+                    android:id="@+id/scanOutputValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
                     android:background="@drawable/bg_terminal"
                     android:padding="14dp"
                     android:textAppearance="@style/TextAppearance.FSploit.Mono"
                     android:textIsSelectable="true" />
-
-                <TextView
-                    android:id="@+id/consoleSummaryValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:textAppearance="@style/TextAppearance.FSploit.Body" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -695,12 +706,14 @@
                     android:layout_marginTop="14dp"
                     android:hint="@string/msf_payload_hint">
 
-                    <com.google.android.material.textfield.TextInputEditText
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
                         android:id="@+id/payloadInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:fontFamily="monospace"
-                        android:inputType="text|textNoSuggestions" />
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp"
+                        android:inputType="none" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <LinearLayout
@@ -749,246 +762,14 @@
                     android:layout_marginTop="14dp"
                     android:text="@string/msf_start_handler" />
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="16dp"
-                    android:background="@color/fsploit_stroke" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.FSploit.TextField"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:hint="@string/msf_venom_format_hint">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/venomFormatInput"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="monospace"
-                            android:inputType="text|textNoSuggestions" />
-                    </com.google.android.material.textfield.TextInputLayout>
-                </LinearLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.FSploit.TextField"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:hint="@string/msf_venom_output_hint">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/venomOutputInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="monospace"
-                        android:inputType="textUri" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.FSploit.TextField"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:hint="@string/msf_venom_command_label">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/venomCommandInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="monospace"
-                        android:gravity="top|start"
-                        android:inputType="textMultiLine|textNoSuggestions"
-                        android:minLines="3" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/generatePayloadButton"
-                    style="@style/Widget.FSploit.Button.Outlined"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:text="@string/msf_generate_payload" />
-
                 <TextView
                     android:id="@+id/handlerSummaryValue"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
                     android:textAppearance="@style/TextAppearance.FSploit.Body" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:text="@string/msf_venom_output_title"
-                    android:textAppearance="@style/TextAppearance.FSploit.Label" />
-
-                <TextView
-                    android:id="@+id/venomOutputValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:background="@drawable/bg_terminal"
-                    android:padding="14dp"
-                    android:textAppearance="@style/TextAppearance.FSploit.Mono"
-                    android:textIsSelectable="true" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- ===== Run exploit against host (C) ===== -->
-        <com.google.android.material.card.MaterialCardView
-            style="@style/Widget.FSploit.Card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/fs_card_gap">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    style="@style/Widget.FSploit.SectionHeader"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/msf_exploit_title" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:text="@string/msf_exploit_intro"
-                    android:textAppearance="@style/TextAppearance.FSploit.Body" />
-
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.FSploit.TextField"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:hint="@string/msf_exploit_module_hint">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/exploitModuleInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="monospace"
-                        android:inputType="text|textNoSuggestions" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.FSploit.TextField"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="2"
-                        android:hint="@string/msf_rhosts_hint">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/exploitRhostsInput"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="monospace"
-                            android:inputType="text|textNoSuggestions" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.FSploit.TextField"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:layout_weight="1"
-                        android:hint="@string/msf_rport_hint">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/exploitRportInput"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="monospace"
-                            android:inputType="number" />
-                    </com.google.android.material.textfield.TextInputLayout>
-                </LinearLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.FSploit.TextField"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:hint="@string/msf_payload_hint">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/exploitPayloadInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="monospace"
-                        android:inputType="text|textNoSuggestions" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.FSploit.TextField"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="2"
-                        android:hint="@string/msf_lhost_hint">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/exploitLhostInput"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="monospace"
-                            android:inputType="text|textNoSuggestions" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.FSploit.TextField"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:layout_weight="1"
-                        android:hint="@string/msf_lport_hint">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/exploitLportInput"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="monospace"
-                            android:inputType="number" />
-                    </com.google.android.material.textfield.TextInputLayout>
-                </LinearLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/runExploitButton"
-                    style="@style/Widget.FSploit.Button"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="@string/msf_run_exploit" />
-
-                <TextView
-                    android:id="@+id/exploitSummaryValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:textAppearance="@style/TextAppearance.FSploit.Body" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

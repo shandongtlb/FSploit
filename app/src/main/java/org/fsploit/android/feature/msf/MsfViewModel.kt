@@ -3,7 +3,6 @@ package org.fsploit.android.feature.msf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,22 +10,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.fsploit.android.R
 import org.fsploit.android.core.ResourceProvider
-import org.fsploit.android.data.msf.MsfModuleCommand
+import org.fsploit.android.data.msf.MsfPayloads
+import org.fsploit.android.data.msf.MsfScanners
 import org.fsploit.android.domain.model.MsfJobInfo
 import org.fsploit.android.domain.model.MsfRpcConfig
 import org.fsploit.android.domain.model.MsfSessionInfo
 import org.fsploit.android.domain.usecase.LoadMsfOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadMsfRpcConfigUseCase
-import org.fsploit.android.domain.usecase.ProbeMsfConnectionUseCase
 import org.fsploit.android.domain.usecase.PushMsfTargetUseCase
-import org.fsploit.android.domain.usecase.ReadMsfSessionUseCase
-import org.fsploit.android.domain.usecase.RunMsfExploitUseCase
-import org.fsploit.android.domain.usecase.RunShellCommandUseCase
+import org.fsploit.android.domain.usecase.RunMsfScanUseCase
 import org.fsploit.android.domain.usecase.SaveMsfRpcConfigUseCase
 import org.fsploit.android.domain.usecase.StartMsfHandlerUseCase
 import org.fsploit.android.domain.usecase.StopMsfJobUseCase
 import org.fsploit.android.domain.usecase.StopMsfSessionUseCase
-import org.fsploit.android.domain.usecase.WriteMsfSessionUseCase
 import org.fsploit.android.feature.session.SessionState
 import org.fsploit.android.feature.session.SessionStateHolder
 
@@ -47,46 +43,36 @@ data class MsfUiState(
     val isPushingTarget: Boolean = false,
     val msfActionSummary: String = "",
     val isRunningMsfAction: Boolean = false,
-    val consoleSessionId: String = "",
-    val consoleOutput: String = "",
-    val consoleSummary: String = "",
-    val isConsoleBusy: Boolean = false,
+    // Vuln scan: run a curated auxiliary scanner against the selected host in the shared instance.
+    val scanModulePath: String = MsfScanners.COMMON.first().modulePath,
+    val scanRhosts: String = "",
+    val scanOutput: String = "",
+    val scanSummary: String = "",
+    val isScanning: Boolean = false,
     // Listener + payload (A)
-    val payload: String = "",
+    val payload: String = MsfPayloads.COMMON.first(),
     val lhost: String = "",
     val lport: String = "4444",
-    val venomFormat: String = "",
-    val venomOutput: String = "",
-    val venomCommand: String = "",
     val handlerSummary: String = "",
-    val venomOutputText: String = "",
-    val isStartingHandler: Boolean = false,
-    val isGeneratingPayload: Boolean = false,
-    // Run exploit against host (C)
-    val exploitModule: String = "",
-    val exploitRhosts: String = "",
-    val exploitRport: String = "",
-    val exploitPayload: String = "",
-    val exploitLhost: String = "",
-    val exploitLport: String = "4444",
-    val exploitSummary: String = "",
-    val isRunningExploit: Boolean = false
+    val isStartingHandler: Boolean = false
 )
 
+/**
+ * MSF screen ViewModel — a thin "skin" over the shared msgrpc instance. The app never launches MSF;
+ * it connects to the operator's interactive `load msgrpc` console (direction B) and offers one-tap
+ * actions that push context/work into that same instance: set RHOSTS, run an auxiliary scanner,
+ * start a handler, run an exploit. Heavy interaction stays in the NetHunter terminal.
+ */
 class MsfViewModel(
     private val resourceProvider: ResourceProvider,
     private val session: SessionStateHolder,
     private val loadMsfRpcConfigUseCase: LoadMsfRpcConfigUseCase,
     private val loadMsfOverviewUseCase: LoadMsfOverviewUseCase,
     private val saveMsfRpcConfigUseCase: SaveMsfRpcConfigUseCase,
-    private val runShellCommandUseCase: RunShellCommandUseCase,
-    private val probeMsfConnectionUseCase: ProbeMsfConnectionUseCase,
     private val stopMsfSessionUseCase: StopMsfSessionUseCase,
     private val stopMsfJobUseCase: StopMsfJobUseCase,
-    private val writeMsfSessionUseCase: WriteMsfSessionUseCase,
-    private val readMsfSessionUseCase: ReadMsfSessionUseCase,
     private val startMsfHandlerUseCase: StartMsfHandlerUseCase,
-    private val runMsfExploitUseCase: RunMsfExploitUseCase,
+    private val runMsfScanUseCase: RunMsfScanUseCase,
     private val pushMsfTargetUseCase: PushMsfTargetUseCase
 ) : ViewModel() {
 
@@ -95,10 +81,9 @@ class MsfViewModel(
             msfSummary = resourceProvider.getString(R.string.msf_summary_pending),
             msfSettingsSummary = resourceProvider.getString(R.string.msf_settings_idle),
             msfActionSummary = resourceProvider.getString(R.string.msf_action_idle),
-            consoleSummary = resourceProvider.getString(R.string.msf_console_idle),
             pushTargetSummary = resourceProvider.getString(R.string.msf_push_target_idle),
-            handlerSummary = resourceProvider.getString(R.string.msf_handler_idle),
-            exploitSummary = resourceProvider.getString(R.string.msf_exploit_idle)
+            scanSummary = resourceProvider.getString(R.string.msf_scan_idle),
+            handlerSummary = resourceProvider.getString(R.string.msf_handler_idle)
         )
     )
     val uiState: StateFlow<MsfUiState> = _uiState.asStateFlow()
@@ -108,7 +93,6 @@ class MsfViewModel(
     // Track the last auto-seeded values so we only overwrite fields the user has not edited.
     private var previousLocalIp = ""
     private var previousSelectedHost = ""
-    private var previousComposedVenom = ""
 
     init {
         // Seed LHOST from this device's interface IP and RHOSTS from the host workbench selection,
@@ -116,7 +100,6 @@ class MsfViewModel(
         viewModelScope.launch {
             session.state.collect(::onSessionChanged)
         }
-        recomposeVenom()
     }
 
     private fun onSessionChanged(state: SessionState) {
@@ -128,20 +111,16 @@ class MsfViewModel(
         val current = _uiState.value
 
         val lhost = if (current.lhost.isBlank() || current.lhost == previousLocalIp) localIp else current.lhost
-        val exploitLhost =
-            if (current.exploitLhost.isBlank() || current.exploitLhost == previousLocalIp) localIp else current.exploitLhost
-        val exploitRhosts =
-            if (current.exploitRhosts.isBlank() || current.exploitRhosts == previousSelectedHost) selectedHost else current.exploitRhosts
+        val scanRhosts =
+            if (current.scanRhosts.isBlank() || current.scanRhosts == previousSelectedHost) selectedHost else current.scanRhosts
 
         if (localIp.isNotBlank()) previousLocalIp = localIp
         if (selectedHost.isNotBlank()) previousSelectedHost = selectedHost
 
         _uiState.value = current.copy(
             lhost = lhost,
-            exploitLhost = exploitLhost,
-            exploitRhosts = exploitRhosts
+            scanRhosts = scanRhosts
         )
-        recomposeVenom()
     }
 
     /** Loads the persisted RPC endpoint the first time the screen is shown, without clobbering edits. */
@@ -301,6 +280,49 @@ class MsfViewModel(
         }
     }
 
+    // ---- Vuln scan ----
+
+    fun updateScanModule(modulePath: String) {
+        _uiState.value = _uiState.value.copy(scanModulePath = modulePath.trim())
+    }
+
+    fun updateScanRhosts(value: String) {
+        _uiState.value = _uiState.value.copy(scanRhosts = value.trim())
+    }
+
+    fun runVulnScan() {
+        val state = _uiState.value
+        val rhosts = state.scanRhosts.ifBlank { session.value.selectedHostAddress.trim() }
+        if (rhosts.isBlank()) {
+            _uiState.value = state.copy(scanSummary = resourceProvider.getString(R.string.msf_scan_no_host))
+            return
+        }
+        if (state.scanModulePath.isBlank()) {
+            _uiState.value = state.copy(scanSummary = resourceProvider.getString(R.string.msf_scan_module_required))
+            return
+        }
+        if (!validateConfig { _uiState.value.copy(scanSummary = it) }) {
+            return
+        }
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isScanning = true,
+                scanSummary = resourceProvider.getString(R.string.msf_scan_running, state.scanModulePath),
+                scanOutput = ""
+            )
+            val result = withContext(Dispatchers.Default) {
+                runMsfScanUseCase(_uiState.value.msfRpcConfig, state.scanModulePath, rhosts)
+            }
+            _uiState.value = _uiState.value.copy(
+                isScanning = false,
+                scanSummary = result.message,
+                scanOutput = result.data
+            )
+            // A scanner can open a session/job in the shared instance; surface it in the list.
+            refreshMsfOverview()
+        }
+    }
+
     fun stopSession(sessionId: String) {
         val id = sessionId.trim()
         if (id.isEmpty()) {
@@ -337,142 +359,18 @@ class MsfViewModel(
         }
     }
 
-    fun updateConsoleSessionId(value: String) {
-        _uiState.value = _uiState.value.copy(consoleSessionId = value.trim())
-    }
-
-    fun sendConsoleCommand(command: String) {
-        val id = _uiState.value.consoleSessionId.trim()
-        if (id.isEmpty()) {
-            _uiState.value = _uiState.value.copy(consoleSummary = resourceProvider.getString(R.string.msf_action_id_required))
-            return
-        }
-        if (command.trim().isEmpty()) {
-            _uiState.value = _uiState.value.copy(consoleSummary = resourceProvider.getString(R.string.msf_console_command_required))
-            return
-        }
-        if (!validateConfigForConsole()) {
-            return
-        }
-
-        val type = sessionTypeFor(id)
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isConsoleBusy = true,
-                consoleSummary = resourceProvider.getString(R.string.msf_console_sending),
-                consoleOutput = appendConsole(_uiState.value.consoleOutput, "> ${command.trim()}")
-            )
-
-            val summary = withContext(Dispatchers.Default) {
-                val config = _uiState.value.msfRpcConfig
-                val write = writeMsfSessionUseCase(config, id, type, command.trim())
-                if (!write.success) {
-                    return@withContext write.message
-                }
-                // Give the session a moment to produce output before the first read.
-                delay(MSF_CONSOLE_READ_DELAY_MS)
-                val read = readMsfSessionUseCase(config, id, type)
-                if (read.success) {
-                    if (read.data.isNotBlank()) {
-                        appendOutput(read.data)
-                    }
-                    resourceProvider.getString(R.string.msf_console_sent)
-                } else {
-                    read.message
-                }
-            }
-
-            _uiState.value = _uiState.value.copy(isConsoleBusy = false, consoleSummary = summary)
-        }
-    }
-
-    fun readConsole() {
-        val id = _uiState.value.consoleSessionId.trim()
-        if (id.isEmpty()) {
-            _uiState.value = _uiState.value.copy(consoleSummary = resourceProvider.getString(R.string.msf_action_id_required))
-            return
-        }
-        if (!validateConfigForConsole()) {
-            return
-        }
-
-        val type = sessionTypeFor(id)
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isConsoleBusy = true,
-                consoleSummary = resourceProvider.getString(R.string.msf_console_reading)
-            )
-            val summary = withContext(Dispatchers.Default) {
-                val read = readMsfSessionUseCase(_uiState.value.msfRpcConfig, id, type)
-                if (read.success) {
-                    if (read.data.isNotBlank()) {
-                        appendOutput(read.data)
-                        resourceProvider.getString(R.string.msf_console_read_ok)
-                    } else {
-                        resourceProvider.getString(R.string.msf_console_read_empty)
-                    }
-                } else {
-                    read.message
-                }
-            }
-            _uiState.value = _uiState.value.copy(isConsoleBusy = false, consoleSummary = summary)
-        }
-    }
-
-    fun clearConsole() {
-        _uiState.value = _uiState.value.copy(
-            consoleOutput = "",
-            consoleSummary = resourceProvider.getString(R.string.msf_console_cleared)
-        )
-    }
-
     // ---- Listener + payload (A) ----
 
     fun updatePayload(value: String) {
         _uiState.value = _uiState.value.copy(payload = value)
-        recomposeVenom()
     }
 
     fun updateLhost(value: String) {
         _uiState.value = _uiState.value.copy(lhost = value.trim())
-        recomposeVenom()
     }
 
     fun updateLport(value: String) {
         _uiState.value = _uiState.value.copy(lport = value.trim())
-        recomposeVenom()
-    }
-
-    fun updateVenomFormat(value: String) {
-        _uiState.value = _uiState.value.copy(venomFormat = value.trim())
-        recomposeVenom()
-    }
-
-    fun updateVenomOutput(value: String) {
-        _uiState.value = _uiState.value.copy(venomOutput = value.trim())
-        recomposeVenom()
-    }
-
-    /** Manual edit of the composed command; from here on we stop auto-overwriting it. */
-    fun updateVenomCommand(value: String) {
-        _uiState.value = _uiState.value.copy(venomCommand = value)
-    }
-
-    private fun recomposeVenom() {
-        val state = _uiState.value
-        // Leave the command alone once the user has hand-edited it.
-        if (state.venomCommand.isNotEmpty() && state.venomCommand != previousComposedVenom) {
-            return
-        }
-        val composed = MsfModuleCommand.composeVenomCommand(
-            payload = state.payload,
-            lhost = state.lhost,
-            lport = state.lport,
-            format = state.venomFormat,
-            output = state.venomOutput
-        )
-        previousComposedVenom = composed
-        _uiState.value = state.copy(venomCommand = composed)
     }
 
     fun startHandler() {
@@ -497,111 +395,7 @@ class MsfViewModel(
         }
     }
 
-    fun generatePayload() {
-        if (!session.value.rootGranted) {
-            _uiState.value = _uiState.value.copy(handlerSummary = resourceProvider.getString(R.string.root_gate_blocked))
-            return
-        }
-        val command = _uiState.value.venomCommand.trim()
-        if (command.isEmpty()) {
-            _uiState.value = _uiState.value.copy(handlerSummary = resourceProvider.getString(R.string.msf_venom_command_required))
-            return
-        }
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isGeneratingPayload = true,
-                handlerSummary = resourceProvider.getString(R.string.msf_venom_generating)
-            )
-            val result = withContext(Dispatchers.Default) {
-                runShellCommandUseCase(command = command, asRoot = true, timeoutMs = MSF_VENOM_TIMEOUT_MS)
-            }
-            _uiState.value = _uiState.value.copy(
-                isGeneratingPayload = false,
-                handlerSummary = result.summary,
-                venomOutputText = result.output.ifBlank {
-                    resourceProvider.getString(R.string.shell_command_no_output)
-                }
-            )
-        }
-    }
-
-    // ---- Run exploit against host (C) ----
-
-    fun updateExploitModule(value: String) {
-        _uiState.value = _uiState.value.copy(exploitModule = value.trim())
-    }
-
-    fun updateExploitRhosts(value: String) {
-        _uiState.value = _uiState.value.copy(exploitRhosts = value.trim())
-    }
-
-    fun updateExploitRport(value: String) {
-        _uiState.value = _uiState.value.copy(exploitRport = value.trim())
-    }
-
-    fun updateExploitPayload(value: String) {
-        _uiState.value = _uiState.value.copy(exploitPayload = value)
-    }
-
-    fun updateExploitLhost(value: String) {
-        _uiState.value = _uiState.value.copy(exploitLhost = value.trim())
-    }
-
-    fun updateExploitLport(value: String) {
-        _uiState.value = _uiState.value.copy(exploitLport = value.trim())
-    }
-
-    fun runExploit() {
-        val state = _uiState.value
-        if (state.exploitModule.isBlank()) {
-            _uiState.value = state.copy(exploitSummary = resourceProvider.getString(R.string.msf_exploit_module_required))
-            return
-        }
-        if (!validateConfig { _uiState.value.copy(exploitSummary = it) }) {
-            return
-        }
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isRunningExploit = true,
-                exploitSummary = resourceProvider.getString(R.string.msf_exploit_running)
-            )
-            val message = withContext(Dispatchers.Default) {
-                runMsfExploitUseCase(
-                    config = _uiState.value.msfRpcConfig,
-                    modulePath = state.exploitModule,
-                    rhosts = state.exploitRhosts,
-                    rport = state.exploitRport,
-                    payload = state.exploitPayload,
-                    lhost = state.exploitLhost,
-                    lport = state.exploitLport
-                ).message
-            }
-            _uiState.value = _uiState.value.copy(isRunningExploit = false, exploitSummary = message)
-            refreshMsfOverview()
-        }
-    }
-
-    private fun appendOutput(data: String) {
-        _uiState.value = _uiState.value.copy(
-            consoleOutput = appendConsole(_uiState.value.consoleOutput, data.trimEnd('\n'))
-        )
-    }
-
-    private fun appendConsole(current: String, addition: String): String {
-        val combined = if (current.isEmpty()) addition else "$current\n$addition"
-        return if (combined.length > MSF_CONSOLE_MAX_CHARS) {
-            combined.takeLast(MSF_CONSOLE_MAX_CHARS)
-        } else {
-            combined
-        }
-    }
-
-    private fun sessionTypeFor(id: String): String =
-        _uiState.value.msfSessions.firstOrNull { it.id == id }?.type.orEmpty()
-
     private fun validateConfigForCall(): Boolean = validateConfig { _uiState.value.copy(msfActionSummary = it) }
-
-    private fun validateConfigForConsole(): Boolean = validateConfig { _uiState.value.copy(consoleSummary = it) }
 
     private inline fun validateConfig(onError: (String) -> MsfUiState): Boolean {
         val config = _uiState.value.msfRpcConfig
@@ -622,22 +416,12 @@ class MsfViewModel(
 
     private fun buildMsfSummary(config: MsfRpcConfig): String {
         return resourceProvider.getString(
-            if (config.launchCommand.isBlank()) {
-                R.string.msf_summary_remote
-            } else {
-                R.string.msf_summary_local_launch
-            },
+            R.string.msf_summary_remote,
             config.host,
             config.port,
             resourceProvider.getString(
                 if (config.useSsl) R.string.msf_ssl_enabled else R.string.msf_ssl_disabled
             )
         )
-    }
-
-    companion object {
-        private const val MSF_CONSOLE_READ_DELAY_MS = 600L
-        private const val MSF_CONSOLE_MAX_CHARS = 20_000
-        private const val MSF_VENOM_TIMEOUT_MS = 90_000L
     }
 }

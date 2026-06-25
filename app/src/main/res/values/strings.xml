@@ -244,6 +244,18 @@
     <string name="msf_help_command">msfconsole -q -x \"load msgrpc ServerHost=127.0.0.1 ServerPort=55552 User=msf Pass=msf SSL=false\"</string>
     <string name="msf_help_copy">Copy command</string>
     <string name="msf_help_copied">Copied to clipboard</string>
+    <string name="msf_scan_title">Vuln scan</string>
+    <string name="msf_scan_intro">Run a common auxiliary scanner against the selected host inside the shared instance. Output is read back below; any session it spawns also shows in the terminal.</string>
+    <string name="msf_scan_module_hint">Scanner module</string>
+    <string name="msf_scan_rhosts_hint">Target RHOSTS</string>
+    <string name="msf_run_scan">Run scan</string>
+    <string name="msf_scan_idle">Pick a scanner and run it against the selected host.</string>
+    <string name="msf_scan_running">Running %1$s…</string>
+    <string name="msf_scan_done">Scan finished: %1$s</string>
+    <string name="msf_scan_no_host">Select a host on the workbench first.</string>
+    <string name="msf_scan_module_required">Pick a scanner module first.</string>
+    <string name="msf_scan_output_empty">No scan output yet.</string>
+    <string name="msf_advanced_endpoint">Advanced: manual endpoint</string>
     <string name="msf_launch_status_title">Launch status</string>
     <string name="msf_launch_output_title">Launch output</string>
     <string name="msf_launch_output_empty">No MSF launch output is available yet.</string>

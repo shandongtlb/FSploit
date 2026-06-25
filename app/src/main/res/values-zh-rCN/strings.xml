@@ -244,6 +244,18 @@
     <string name="msf_help_command">msfconsole -q -x \"load msgrpc ServerHost=127.0.0.1 ServerPort=55552 User=msf Pass=msf SSL=false\"</string>
     <string name="msf_help_copy">复制命令</string>
     <string name="msf_help_copied">已复制到剪贴板</string>
+    <string name="msf_scan_title">漏洞扫描</string>
+    <string name="msf_scan_intro">对选中主机在共享实例里跑一个常用扫描模块。输出回显在下方;若产生 session 也会出现在终端。</string>
+    <string name="msf_scan_module_hint">扫描模块</string>
+    <string name="msf_scan_rhosts_hint">目标 RHOSTS</string>
+    <string name="msf_run_scan">扫描</string>
+    <string name="msf_scan_idle">选一个扫描模块,对选中主机开扫。</string>
+    <string name="msf_scan_running">正在扫描 %1$s…</string>
+    <string name="msf_scan_done">扫描完成:%1$s</string>
+    <string name="msf_scan_no_host">请先在工作台选中一台主机。</string>
+    <string name="msf_scan_module_required">请先选一个扫描模块。</string>
+    <string name="msf_scan_output_empty">还没有扫描输出。</string>
+    <string name="msf_advanced_endpoint">高级:手填端点</string>
     <string name="msf_launch_status_title">启动状态</string>
     <string name="msf_launch_output_title">启动输出</string>
     <string name="msf_launch_output_empty">当前还没有 MSF 启动输出。</string>

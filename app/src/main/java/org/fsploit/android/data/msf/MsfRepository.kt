@@ -50,19 +50,6 @@ class MsfRepository(
         }
     }
 
-    /** Cheap liveness check used to poll a freshly launched RPC daemon until it answers. */
-    fun isReachable(config: MsfRpcConfig): Boolean {
-        val client = MsfRpcClient(config)
-        return try {
-            val version = client.call("core.version")
-            version is Map<*, *> && version["version"] != null
-        } catch (_: Exception) {
-            false
-        } finally {
-            client.logout()
-        }
-    }
-
     fun stopSession(config: MsfRpcConfig, sessionId: String): MsfActionResult {
         return runAction {
             val client = MsfRpcClient(config)
@@ -87,47 +74,44 @@ class MsfRepository(
         }
     }
 
-    fun writeSession(
-        config: MsfRpcConfig,
-        sessionId: String,
-        sessionType: String,
-        data: String
-    ): MsfActionResult {
-        val method = if (MsfSessionType.isMeterpreter(sessionType)) {
-            "session.meterpreter_write"
-        } else {
-            "session.shell_write"
-        }
-        // Both transports execute on newline, so append one if the caller did not.
-        val payload = if (data.endsWith("\n")) data else "$data\n"
-        return runAction {
-            val client = MsfRpcClient(config)
-            try {
-                client.call(method, sessionArg(sessionId), payload)
-            } finally {
-                client.logout()
-            }
-            resourceProvider.getString(R.string.msf_console_write_success, sessionId)
-        }
-    }
-
-    fun readSession(
-        config: MsfRpcConfig,
-        sessionId: String,
-        sessionType: String
-    ): MsfConsoleResult {
-        val method = if (MsfSessionType.isMeterpreter(sessionType)) {
-            "session.meterpreter_read"
-        } else {
-            "session.shell_read"
-        }
+    /**
+     * Runs an auxiliary scanner module inside the shared msgrpc instance through a throwaway RPC
+     * console (`use <module>; set RHOSTS; run`) and returns its captured output. We use a console
+     * rather than `module.execute` because, with no database, scanner findings only exist as printed
+     * output — a console is the one place that output is readable back. Any session/job the run
+     * spawns still lands in the shared instance, so the terminal sees it too.
+     */
+    fun runScan(config: MsfRpcConfig, modulePath: String, rhosts: String): MsfConsoleResult {
         val client = MsfRpcClient(config)
         return try {
-            val response = client.call(method, sessionArg(sessionId)) as? Map<*, *>
+            val created = client.call("console.create") as? Map<*, *>
+                ?: throw IllegalStateException("console.create returned no console")
+            val consoleId = created["id"]?.toString()
+                ?: throw IllegalStateException("console.create returned no id")
+
+            client.call("console.write", consoleId, "use $modulePath\nset RHOSTS $rhosts\nrun\n")
+
+            val output = StringBuilder()
+            // Let the module start, then drain the console until it stops being busy.
+            Thread.sleep(SCAN_INITIAL_DELAY_MS)
+            var idleReads = 0
+            for (attempt in 0 until SCAN_READ_ATTEMPTS) {
+                val read = client.call("console.read", consoleId) as? Map<*, *> ?: break
+                output.append(read["data"]?.toString().orEmpty())
+                if (read["busy"] == true) {
+                    idleReads = 0
+                } else if (++idleReads >= 2) {
+                    // Two consecutive non-busy reads ⇒ the run has settled.
+                    break
+                }
+                Thread.sleep(SCAN_READ_INTERVAL_MS)
+            }
+            runCatching { client.call("console.destroy", consoleId) }
+
             MsfConsoleResult(
                 success = true,
-                data = response?.get("data")?.toString().orEmpty(),
-                message = ""
+                data = output.toString().trim(),
+                message = resourceProvider.getString(R.string.msf_scan_done, modulePath)
             )
         } catch (exception: Exception) {
             MsfConsoleResult(
@@ -169,14 +153,6 @@ class MsfRepository(
     ): MsfActionResult {
         val options = MsfModuleCommand.buildHandlerOptions(payload, lhost, lport)
         return executeModule(config, "exploit", "multi/handler", options)
-    }
-
-    fun runExploit(
-        config: MsfRpcConfig,
-        modulePath: String,
-        options: Map<String, Any>
-    ): MsfActionResult {
-        return executeModule(config, "exploit", modulePath, options)
     }
 
     /** Generic `module.execute`; surfaces the resulting job id (sessions appear asynchronously). */
@@ -240,5 +216,11 @@ class MsfRepository(
                 description = "${entry.key}: ${entry.value}"
             )
         }.sortedBy { it.id.toIntOrNull() ?: Int.MAX_VALUE }
+    }
+
+    private companion object {
+        private const val SCAN_INITIAL_DELAY_MS = 1_200L
+        private const val SCAN_READ_ATTEMPTS = 40
+        private const val SCAN_READ_INTERVAL_MS = 700L
     }
 }

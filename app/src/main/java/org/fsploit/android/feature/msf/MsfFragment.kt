@@ -12,10 +12,14 @@ import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import org.fsploit.android.MainActivity
 import org.fsploit.android.R
+import org.fsploit.android.data.msf.MsfPayloads
+import org.fsploit.android.data.msf.MsfScanners
 import org.fsploit.android.databinding.FragmentMsfBinding
 import org.fsploit.android.feature.session.SessionState
 import org.fsploit.android.feature.session.SessionViewModel
+import org.fsploit.android.ui.NonFilteringStringAdapter
 import org.fsploit.android.ui.bindCollapsible
+import org.fsploit.android.ui.enableFullDropdown
 import org.fsploit.android.ui.setStatusDot
 import org.fsploit.android.ui.showInfoBubble
 
@@ -23,6 +27,8 @@ class MsfFragment : Fragment() {
 
     private var _binding: FragmentMsfBinding? = null
     private val binding get() = _binding!!
+
+    private val scannerLabels: List<String> = MsfScanners.COMMON.map { it.label }
 
     private val sessionViewModel: SessionViewModel by activityViewModels {
         (requireActivity() as MainActivity).viewModelFactory
@@ -83,41 +89,32 @@ class MsfFragment : Fragment() {
         binding.stopJobButton.setOnClickListener {
             viewModel.stopJob(binding.stopJobIdInput.text?.toString().orEmpty())
         }
-        binding.consoleSessionIdInput.doAfterTextChanged {
-            viewModel.updateConsoleSessionId(it?.toString().orEmpty())
-        }
-        binding.consoleSendButton.setOnClickListener { sendConsoleCommand() }
-        binding.consoleCommandInput.setOnEditorActionListener { _, _, _ ->
-            sendConsoleCommand()
-            true
-        }
-        binding.consoleReadButton.setOnClickListener {
-            viewModel.readConsole()
-        }
-        binding.consoleClearButton.setOnClickListener {
-            viewModel.clearConsole()
-        }
 
-        // Listener + payload (A)
-        binding.payloadInput.doAfterTextChanged { viewModel.updatePayload(it?.toString().orEmpty()) }
+        // Stop a session/job by picking its id from the live list — no hand-typed ids.
+        binding.stopSessionIdInput.enableFullDropdown()
+        binding.stopJobIdInput.enableFullDropdown()
+
+        // Vuln scan — curated auxiliary scanner dropdown pushed into the shared instance.
+        binding.scanModuleInput.enableFullDropdown()
+        binding.scanModuleInput.setAdapter(NonFilteringStringAdapter(requireContext(), scannerLabels))
+        binding.scanModuleInput.setOnItemClickListener { _, _, position, _ ->
+            viewModel.updateScanModule(MsfScanners.COMMON[position].modulePath)
+        }
+        binding.scanRhostsInput.doAfterTextChanged { viewModel.updateScanRhosts(it?.toString().orEmpty()) }
+        binding.runScanButton.setOnClickListener { viewModel.runVulnScan() }
+
+        // Listener + payload (A) — payload picked from a curated dropdown, not typed.
+        binding.payloadInput.enableFullDropdown()
+        binding.payloadInput.setAdapter(NonFilteringStringAdapter(requireContext(), MsfPayloads.COMMON))
+        binding.payloadInput.setOnItemClickListener { _, _, position, _ ->
+            viewModel.updatePayload(MsfPayloads.COMMON[position])
+        }
         binding.lhostInput.doAfterTextChanged { viewModel.updateLhost(it?.toString().orEmpty()) }
         binding.lportInput.doAfterTextChanged { viewModel.updateLport(it?.toString().orEmpty()) }
-        binding.venomFormatInput.doAfterTextChanged { viewModel.updateVenomFormat(it?.toString().orEmpty()) }
-        binding.venomOutputInput.doAfterTextChanged { viewModel.updateVenomOutput(it?.toString().orEmpty()) }
-        binding.venomCommandInput.doAfterTextChanged { viewModel.updateVenomCommand(it?.toString().orEmpty()) }
         binding.startHandlerButton.setOnClickListener { viewModel.startHandler() }
-        binding.generatePayloadButton.setOnClickListener { viewModel.generatePayload() }
-
-        // Run exploit against host (C)
-        binding.exploitModuleInput.doAfterTextChanged { viewModel.updateExploitModule(it?.toString().orEmpty()) }
-        binding.exploitRhostsInput.doAfterTextChanged { viewModel.updateExploitRhosts(it?.toString().orEmpty()) }
-        binding.exploitRportInput.doAfterTextChanged { viewModel.updateExploitRport(it?.toString().orEmpty()) }
-        binding.exploitPayloadInput.doAfterTextChanged { viewModel.updateExploitPayload(it?.toString().orEmpty()) }
-        binding.exploitLhostInput.doAfterTextChanged { viewModel.updateExploitLhost(it?.toString().orEmpty()) }
-        binding.exploitLportInput.doAfterTextChanged { viewModel.updateExploitLport(it?.toString().orEmpty()) }
-        binding.runExploitButton.setOnClickListener { viewModel.runExploit() }
 
         bindCollapsible(binding.msfVersionsHeader, binding.msfVersionsBody, binding.msfVersionsChevron)
+        bindCollapsible(binding.advancedMsfHeader, binding.advancedMsfBody, binding.advancedMsfChevron)
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
@@ -130,15 +127,6 @@ class MsfFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         viewModel.refresh()
-    }
-
-    private fun sendConsoleCommand() {
-        val command = binding.consoleCommandInput.text?.toString().orEmpty()
-        if (command.isBlank()) {
-            return
-        }
-        viewModel.sendConsoleCommand(command)
-        binding.consoleCommandInput.setText("")
     }
 
     private fun renderSession(state: SessionState) {
@@ -218,32 +206,29 @@ class MsfFragment : Fragment() {
             }
         }
         binding.msfActionSummaryValue.text = state.msfActionSummary
-        syncInput(binding.consoleSessionIdInput, state.consoleSessionId)
-        binding.consoleOutputValue.text = state.consoleOutput.ifBlank {
-            getString(R.string.msf_console_output_empty)
+        // Stop dropdowns list the live session/job ids — selection over hand-typed numbers.
+        binding.stopSessionIdInput.setSimpleItems(state.msfSessions.map { it.id }.toTypedArray())
+        binding.stopJobIdInput.setSimpleItems(state.msfJobs.map { it.id }.toTypedArray())
+
+        // Vuln scan
+        val scanLabel = MsfScanners.COMMON.firstOrNull { it.modulePath == state.scanModulePath }?.label
+            ?: state.scanModulePath
+        if (binding.scanModuleInput.text?.toString() != scanLabel) {
+            binding.scanModuleInput.setText(scanLabel, false)
         }
-        binding.consoleSummaryValue.text = state.consoleSummary
+        syncInput(binding.scanRhostsInput, state.scanRhosts)
+        binding.scanSummaryValue.text = state.scanSummary
+        binding.scanOutputValue.text = state.scanOutput.ifBlank {
+            getString(R.string.msf_scan_output_empty)
+        }
 
         // Listener + payload (A)
-        syncInput(binding.payloadInput, state.payload)
+        if (binding.payloadInput.text?.toString() != state.payload) {
+            binding.payloadInput.setText(state.payload, false)
+        }
         syncInput(binding.lhostInput, state.lhost)
         syncInput(binding.lportInput, state.lport)
-        syncInput(binding.venomFormatInput, state.venomFormat)
-        syncInput(binding.venomOutputInput, state.venomOutput)
-        syncInput(binding.venomCommandInput, state.venomCommand)
         binding.handlerSummaryValue.text = state.handlerSummary
-        binding.venomOutputValue.text = state.venomOutputText.ifBlank {
-            getString(R.string.msf_venom_output_title)
-        }
-
-        // Run exploit against host (C)
-        syncInput(binding.exploitModuleInput, state.exploitModule)
-        syncInput(binding.exploitRhostsInput, state.exploitRhosts)
-        syncInput(binding.exploitRportInput, state.exploitRport)
-        syncInput(binding.exploitPayloadInput, state.exploitPayload)
-        syncInput(binding.exploitLhostInput, state.exploitLhost)
-        syncInput(binding.exploitLportInput, state.exploitLport)
-        binding.exploitSummaryValue.text = state.exploitSummary
 
         binding.saveMsfSettingsButton.isEnabled = !state.isSavingMsfRpcConfig
         binding.refreshMsfButton.isEnabled = !state.isRefreshingMsf
@@ -251,12 +236,8 @@ class MsfFragment : Fragment() {
             state.msfConnected && sessionViewModel.uiState.value.selectedHostAddress.isNotBlank() && !state.isPushingTarget
         binding.stopSessionButton.isEnabled = !state.isRunningMsfAction
         binding.stopJobButton.isEnabled = !state.isRunningMsfAction
-        binding.consoleSendButton.isEnabled = !state.isConsoleBusy
-        binding.consoleReadButton.isEnabled = !state.isConsoleBusy
-        binding.startHandlerButton.isEnabled = !state.isStartingHandler
-        binding.generatePayloadButton.isEnabled =
-            sessionViewModel.uiState.value.rootGranted && !state.isGeneratingPayload
-        binding.runExploitButton.isEnabled = !state.isRunningExploit
+        binding.runScanButton.isEnabled = state.msfConnected && !state.isScanning
+        binding.startHandlerButton.isEnabled = state.msfConnected && !state.isStartingHandler
     }
 
     private fun syncInput(input: com.google.android.material.textfield.TextInputEditText, value: String) {

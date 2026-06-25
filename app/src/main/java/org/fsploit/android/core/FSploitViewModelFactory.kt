@@ -11,13 +11,11 @@ import org.fsploit.android.domain.usecase.LoadMsfOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadMsfRpcConfigUseCase
 import org.fsploit.android.domain.usecase.LoadNetworkOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadPortScanConfigUseCase
-import org.fsploit.android.domain.usecase.ProbeMsfConnectionUseCase
 import org.fsploit.android.domain.usecase.ProbeShellUseCase
 import org.fsploit.android.domain.usecase.ReadMitmLootUseCase
-import org.fsploit.android.domain.usecase.ReadMsfSessionUseCase
 import org.fsploit.android.domain.usecase.RunHostSweepUseCase
 import org.fsploit.android.domain.usecase.PushMsfTargetUseCase
-import org.fsploit.android.domain.usecase.RunMsfExploitUseCase
+import org.fsploit.android.domain.usecase.RunMsfScanUseCase
 import org.fsploit.android.domain.usecase.RunPortScanUseCase
 import org.fsploit.android.domain.usecase.RunShellCommandUseCase
 import org.fsploit.android.domain.usecase.StartMsfHandlerUseCase
@@ -30,7 +28,6 @@ import org.fsploit.android.domain.usecase.StopMitmSessionUseCase
 import org.fsploit.android.domain.usecase.StopMsfJobUseCase
 import org.fsploit.android.domain.usecase.StopMsfSessionUseCase
 import org.fsploit.android.domain.usecase.UnblockHostUseCase
-import org.fsploit.android.domain.usecase.WriteMsfSessionUseCase
 import org.fsploit.android.feature.loot.LootViewModel
 import org.fsploit.android.feature.mitm.MitmViewModel
 import org.fsploit.android.feature.msf.MsfViewModel
@@ -59,13 +56,10 @@ class FSploitViewModelFactory(
     private val loadMitmToolchainConfig: LoadMitmToolchainConfigUseCase,
     private val loadMsfOverview: LoadMsfOverviewUseCase,
     private val loadMsfRpcConfig: LoadMsfRpcConfigUseCase,
-    private val probeMsfConnection: ProbeMsfConnectionUseCase,
     private val stopMsfSession: StopMsfSessionUseCase,
     private val stopMsfJob: StopMsfJobUseCase,
-    private val writeMsfSession: WriteMsfSessionUseCase,
-    private val readMsfSession: ReadMsfSessionUseCase,
     private val startMsfHandler: StartMsfHandlerUseCase,
-    private val runMsfExploit: RunMsfExploitUseCase,
+    private val runMsfScan: RunMsfScanUseCase,
     private val pushMsfTarget: PushMsfTargetUseCase,
     private val runHostSweep: RunHostSweepUseCase,
     private val runPortScan: RunPortScanUseCase,
@@ -109,14 +103,10 @@ class FSploitViewModelFactory(
                 loadMsfRpcConfigUseCase = loadMsfRpcConfig,
                 loadMsfOverviewUseCase = loadMsfOverview,
                 saveMsfRpcConfigUseCase = saveMsfRpcConfig,
-                runShellCommandUseCase = runShellCommand,
-                probeMsfConnectionUseCase = probeMsfConnection,
                 stopMsfSessionUseCase = stopMsfSession,
                 stopMsfJobUseCase = stopMsfJob,
-                writeMsfSessionUseCase = writeMsfSession,
-                readMsfSessionUseCase = readMsfSession,
                 startMsfHandlerUseCase = startMsfHandler,
-                runMsfExploitUseCase = runMsfExploit,
+                runMsfScanUseCase = runMsfScan,
                 pushMsfTargetUseCase = pushMsfTarget
             ) as T
 

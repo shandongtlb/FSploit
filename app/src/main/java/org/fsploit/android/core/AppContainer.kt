@@ -21,13 +21,11 @@ import org.fsploit.android.domain.usecase.LoadMsfRpcConfigUseCase
 import org.fsploit.android.domain.usecase.LoadMsfOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadNetworkOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadPortScanConfigUseCase
-import org.fsploit.android.domain.usecase.ProbeMsfConnectionUseCase
 import org.fsploit.android.domain.usecase.PushMsfTargetUseCase
 import org.fsploit.android.domain.usecase.ProbeShellUseCase
 import org.fsploit.android.domain.usecase.ReadMitmLootUseCase
-import org.fsploit.android.domain.usecase.ReadMsfSessionUseCase
 import org.fsploit.android.domain.usecase.RunHostSweepUseCase
-import org.fsploit.android.domain.usecase.RunMsfExploitUseCase
+import org.fsploit.android.domain.usecase.RunMsfScanUseCase
 import org.fsploit.android.domain.usecase.RunPortScanUseCase
 import org.fsploit.android.domain.usecase.RunShellCommandUseCase
 import org.fsploit.android.domain.usecase.StartMsfHandlerUseCase
@@ -40,7 +38,6 @@ import org.fsploit.android.domain.usecase.StopMitmSessionUseCase
 import org.fsploit.android.domain.usecase.StopMsfJobUseCase
 import org.fsploit.android.domain.usecase.StopMsfSessionUseCase
 import org.fsploit.android.domain.usecase.UnblockHostUseCase
-import org.fsploit.android.domain.usecase.WriteMsfSessionUseCase
 import org.fsploit.android.feature.session.SessionStateHolder
 
 class AppContainer(
@@ -83,13 +80,10 @@ class AppContainer(
         loadMitmToolchainConfig = LoadMitmToolchainConfigUseCase(preferencesRepository),
         loadMsfRpcConfig = LoadMsfRpcConfigUseCase(preferencesRepository),
         loadMsfOverview = LoadMsfOverviewUseCase(msfRepository),
-        probeMsfConnection = ProbeMsfConnectionUseCase(msfRepository),
         stopMsfSession = StopMsfSessionUseCase(msfRepository),
         stopMsfJob = StopMsfJobUseCase(msfRepository),
-        writeMsfSession = WriteMsfSessionUseCase(msfRepository),
-        readMsfSession = ReadMsfSessionUseCase(msfRepository),
         startMsfHandler = StartMsfHandlerUseCase(msfRepository),
-        runMsfExploit = RunMsfExploitUseCase(msfRepository),
+        runMsfScan = RunMsfScanUseCase(msfRepository),
         pushMsfTarget = PushMsfTargetUseCase(msfRepository),
         runHostSweep = RunHostSweepUseCase(hostSweepRepository),
         runPortScan = RunPortScanUseCase(portScanRepository),
