@@ -15,6 +15,7 @@ import org.fsploit.android.data.msf.MsfScanners
 import org.fsploit.android.domain.model.MsfJobInfo
 import org.fsploit.android.domain.model.MsfRpcConfig
 import org.fsploit.android.domain.model.MsfSessionInfo
+import org.fsploit.android.domain.usecase.EnsureMsgrpcScriptUseCase
 import org.fsploit.android.domain.usecase.LoadMsfOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadMsfRpcConfigUseCase
 import org.fsploit.android.domain.usecase.PushMsfTargetUseCase
@@ -73,7 +74,8 @@ class MsfViewModel(
     private val stopMsfJobUseCase: StopMsfJobUseCase,
     private val startMsfHandlerUseCase: StartMsfHandlerUseCase,
     private val runMsfScanUseCase: RunMsfScanUseCase,
-    private val pushMsfTargetUseCase: PushMsfTargetUseCase
+    private val pushMsfTargetUseCase: PushMsfTargetUseCase,
+    private val ensureMsgrpcScriptUseCase: EnsureMsgrpcScriptUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -89,6 +91,7 @@ class MsfViewModel(
     val uiState: StateFlow<MsfUiState> = _uiState.asStateFlow()
 
     private var configLoaded = false
+    private var helperEnsured = false
 
     // Track the last auto-seeded values so we only overwrite fields the user has not edited.
     private var previousLocalIp = ""
@@ -134,6 +137,26 @@ class MsfViewModel(
             )
         } else {
             _uiState.value = _uiState.value.copy(msfSummary = buildMsfSummary(_uiState.value.msfRpcConfig))
+        }
+        ensureHelperScript()
+    }
+
+    /**
+     * Re-drop the `msfstart` helper into the Kali chroot if it is missing (a kalifs reinstall wipes
+     * it). Best-effort and silent unless we actually had to install it; needs root to write.
+     */
+    private fun ensureHelperScript() {
+        if (helperEnsured || !session.value.rootGranted) {
+            return
+        }
+        helperEnsured = true
+        viewModelScope.launch {
+            val installed = withContext(Dispatchers.Default) { ensureMsgrpcScriptUseCase() }
+            if (installed) {
+                _uiState.value = _uiState.value.copy(
+                    msfSettingsSummary = resourceProvider.getString(R.string.msf_helper_installed)
+                )
+            }
         }
     }
 

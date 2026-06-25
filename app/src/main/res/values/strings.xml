@@ -240,8 +240,9 @@
     <string name="msf_push_target_success">RHOSTS=%1$s set. In the terminal, `use` a module — it inherits the target.</string>
     <string name="msf_push_target_no_host">Select a host on the workbench first.</string>
     <string name="msf_help_title">How to bring up msgrpc</string>
-    <string name="msf_help_body">Direction B: FSploit connects, you operate in the terminal — one shared instance. In the NetHunter (Kali) terminal run:</string>
-    <string name="msf_help_command">msfconsole -q -x \"load msgrpc ServerHost=127.0.0.1 ServerPort=55552 User=msf Pass=msf SSL=false\"</string>
+    <string name="msf_help_body">Direction B: FSploit connects, you operate in the terminal — one shared instance. The app keeps the msfstart helper installed in Kali; just run it in the NetHunter terminal:</string>
+    <string name="msf_help_command">msfstart</string>
+    <string name="msf_helper_installed">Installed the msfstart helper into Kali.</string>
     <string name="msf_help_copy">Copy command</string>
     <string name="msf_help_copied">Copied to clipboard</string>
     <string name="msf_scan_title">Vuln scan</string>

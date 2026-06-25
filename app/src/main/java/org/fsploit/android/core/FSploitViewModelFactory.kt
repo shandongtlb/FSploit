@@ -10,6 +10,7 @@ import org.fsploit.android.domain.usecase.LoadMitmToolchainConfigUseCase
 import org.fsploit.android.domain.usecase.LoadMsfOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadMsfRpcConfigUseCase
 import org.fsploit.android.domain.usecase.LoadNetworkOverviewUseCase
+import org.fsploit.android.domain.usecase.EnsureMsgrpcScriptUseCase
 import org.fsploit.android.domain.usecase.LoadPortScanConfigUseCase
 import org.fsploit.android.domain.usecase.ProbeShellUseCase
 import org.fsploit.android.domain.usecase.ReadMitmLootUseCase
@@ -61,6 +62,7 @@ class FSploitViewModelFactory(
     private val startMsfHandler: StartMsfHandlerUseCase,
     private val runMsfScan: RunMsfScanUseCase,
     private val pushMsfTarget: PushMsfTargetUseCase,
+    private val ensureMsgrpcScript: EnsureMsgrpcScriptUseCase,
     private val runHostSweep: RunHostSweepUseCase,
     private val runPortScan: RunPortScanUseCase,
     private val runShellCommand: RunShellCommandUseCase,
@@ -107,7 +109,8 @@ class FSploitViewModelFactory(
                 stopMsfJobUseCase = stopMsfJob,
                 startMsfHandlerUseCase = startMsfHandler,
                 runMsfScanUseCase = runMsfScan,
-                pushMsfTargetUseCase = pushMsfTarget
+                pushMsfTargetUseCase = pushMsfTarget,
+                ensureMsgrpcScriptUseCase = ensureMsgrpcScript
             ) as T
 
             modelClass.isAssignableFrom(LootViewModel::class.java) -> LootViewModel(

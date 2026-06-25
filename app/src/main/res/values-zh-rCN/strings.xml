@@ -240,8 +240,9 @@
     <string name="msf_push_target_success">已设 RHOSTS=%1$s。回终端 use 模块即可继承该目标。</string>
     <string name="msf_push_target_no_host">请先在工作台选中一台主机。</string>
     <string name="msf_help_title">如何起 msgrpc</string>
-    <string name="msf_help_body">B 模式:FSploit 负责连接,你在终端操作 —— 同一个共享实例。在 NetHunter(Kali)终端运行:</string>
-    <string name="msf_help_command">msfconsole -q -x \"load msgrpc ServerHost=127.0.0.1 ServerPort=55552 User=msf Pass=msf SSL=false\"</string>
+    <string name="msf_help_body">B 模式:FSploit 负责连接,你在终端操作 —— 同一个共享实例。app 已自动在 Kali 里装好 msfstart,在 NetHunter 终端运行它即可:</string>
+    <string name="msf_help_command">msfstart</string>
+    <string name="msf_helper_installed">已自动把 msfstart 脚本写入 Kali。</string>
     <string name="msf_help_copy">复制命令</string>
     <string name="msf_help_copied">已复制到剪贴板</string>
     <string name="msf_scan_title">漏洞扫描</string>
