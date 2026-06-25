@@ -17,6 +17,7 @@ import org.fsploit.android.feature.session.SessionState
 import org.fsploit.android.feature.session.SessionViewModel
 import org.fsploit.android.ui.bindCollapsible
 import org.fsploit.android.ui.setStatusDot
+import org.fsploit.android.ui.showInfoBubble
 
 class MsfFragment : Fragment() {
 
@@ -57,14 +58,8 @@ class MsfFragment : Fragment() {
         binding.msfUseSslSwitch.setOnCheckedChangeListener { _, isChecked ->
             viewModel.updateMsfRpcUseSsl(isChecked)
         }
-        binding.msfLaunchCommandInput.doAfterTextChanged {
-            viewModel.updateMsfRpcLaunchCommand(it?.toString().orEmpty())
-        }
         binding.applyMsgrpcPresetButton.setOnClickListener {
             viewModel.applyMsfMsgrpcPreset()
-        }
-        binding.applyMsfrpcdPresetButton.setOnClickListener {
-            viewModel.applyMsfMsfrpcdPreset()
         }
         binding.saveMsfSettingsButton.setOnClickListener {
             viewModel.saveMsfRpcConfig()
@@ -72,8 +67,15 @@ class MsfFragment : Fragment() {
         binding.refreshMsfButton.setOnClickListener {
             viewModel.refreshMsfOverview()
         }
-        binding.launchMsfRpcButton.setOnClickListener {
-            viewModel.launchMsfRpcCommand()
+        binding.pushTargetButton.setOnClickListener {
+            viewModel.pushSelectedHostToMsf()
+        }
+        binding.msfHelpInfo.setOnClickListener {
+            showInfoBubble(
+                anchor = it,
+                body = getString(R.string.msf_help_body),
+                copyText = getString(R.string.msf_help_command)
+            )
         }
         binding.stopSessionButton.setOnClickListener {
             viewModel.stopSession(binding.stopSessionIdInput.text?.toString().orEmpty())
@@ -116,7 +118,6 @@ class MsfFragment : Fragment() {
         binding.runExploitButton.setOnClickListener { viewModel.runExploit() }
 
         bindCollapsible(binding.msfVersionsHeader, binding.msfVersionsBody, binding.msfVersionsChevron)
-        bindCollapsible(binding.msfLaunchHeader, binding.msfLaunchOutputValue, binding.msfLaunchChevron)
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
@@ -145,7 +146,9 @@ class MsfFragment : Fragment() {
         binding.shellSummaryValue.text = state.shellSummary
         binding.dotMsfRoot.setStatusDot(state.rootGranted)
         binding.dotMsfShell.setStatusDot(state.shellAvailable)
-        binding.launchMsfRpcButton.isEnabled = state.rootGranted && !viewModel.uiState.value.isLaunchingMsfRpc
+        val msf = viewModel.uiState.value
+        binding.pushTargetButton.isEnabled =
+            msf.msfConnected && state.selectedHostAddress.isNotBlank() && !msf.isPushingTarget
     }
 
     private fun render(state: MsfUiState) {
@@ -180,15 +183,11 @@ class MsfFragment : Fragment() {
         syncInput(binding.msfPortInput, state.msfRpcConfig.port.toString())
         syncInput(binding.msfUsernameInput, state.msfRpcConfig.username)
         syncInput(binding.msfPasswordInput, state.msfRpcConfig.password)
-        syncInput(binding.msfLaunchCommandInput, state.msfRpcConfig.launchCommand)
         if (binding.msfUseSslSwitch.isChecked != state.msfRpcConfig.useSsl) {
             binding.msfUseSslSwitch.isChecked = state.msfRpcConfig.useSsl
         }
         binding.msfSettingsSummaryValue.text = state.msfSettingsSummary
-        binding.msfLaunchSummaryValue.text = state.msfLaunchSummary
-        binding.msfLaunchOutputValue.text = state.msfLaunchOutput.ifBlank {
-            getString(R.string.msf_launch_output_empty)
-        }
+        binding.pushTargetSummaryValue.text = state.pushTargetSummary
         binding.msfSessionsValue.text = if (state.msfSessions.isEmpty()) {
             getString(R.string.msf_sessions_empty)
         } else {
@@ -248,7 +247,8 @@ class MsfFragment : Fragment() {
 
         binding.saveMsfSettingsButton.isEnabled = !state.isSavingMsfRpcConfig
         binding.refreshMsfButton.isEnabled = !state.isRefreshingMsf
-        binding.launchMsfRpcButton.isEnabled = sessionViewModel.uiState.value.rootGranted && !state.isLaunchingMsfRpc
+        binding.pushTargetButton.isEnabled =
+            state.msfConnected && sessionViewModel.uiState.value.selectedHostAddress.isNotBlank() && !state.isPushingTarget
         binding.stopSessionButton.isEnabled = !state.isRunningMsfAction
         binding.stopJobButton.isEnabled = !state.isRunningMsfAction
         binding.consoleSendButton.isEnabled = !state.isConsoleBusy

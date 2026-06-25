@@ -143,6 +143,24 @@ class MsfRepository(
         }
     }
 
+    /**
+     * Sets the global RHOSTS/RHOST datastore on the shared msgrpc instance. Because the operator's
+     * interactive console and this RPC client are the same framework instance, a later `use <module>`
+     * in the terminal inherits the target with no manual re-typing.
+     */
+    fun pushTarget(config: MsfRpcConfig, host: String): MsfActionResult {
+        return runAction {
+            val client = MsfRpcClient(config)
+            try {
+                client.call("core.setg", "RHOSTS", host)
+                client.call("core.setg", "RHOST", host)
+            } finally {
+                client.logout()
+            }
+            resourceProvider.getString(R.string.msf_push_target_success, host)
+        }
+    }
+
     fun startHandler(
         config: MsfRpcConfig,
         payload: String,

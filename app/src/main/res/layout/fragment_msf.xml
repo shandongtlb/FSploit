@@ -132,6 +132,17 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textAppearance="@style/TextAppearance.FSploit.Value" />
+
+                    <ImageView
+                        android:id="@+id/msfHelpInfo"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_marginStart="10dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:src="@drawable/ic_info"
+                        android:contentDescription="@string/msf_help_title" />
                 </LinearLayout>
 
                 <TextView
@@ -139,6 +150,21 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Body" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/pushTargetButton"
+                    style="@style/Widget.FSploit.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="@string/msf_push_target" />
+
+                <TextView
+                    android:id="@+id/pushTargetSummaryValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
                     android:textAppearance="@style/TextAppearance.FSploit.Body" />
 
                 <com.google.android.material.button.MaterialButton
@@ -286,29 +312,13 @@
                     android:layout_height="wrap_content"
                     android:text="@string/msf_rpc_config_title" />
 
-                <LinearLayout
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/applyMsgrpcPresetButton"
+                    style="@style/Widget.FSploit.Chip"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/applyMsgrpcPresetButton"
-                        style="@style/Widget.FSploit.Chip"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/msf_apply_msgrpc_preset" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/applyMsfrpcdPresetButton"
-                        style="@style/Widget.FSploit.Chip"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:layout_weight="1"
-                        android:text="@string/msf_apply_msfrpcd_preset" />
-                </LinearLayout>
+                    android:text="@string/msf_apply_msgrpc_preset" />
 
                 <com.google.android.material.textfield.TextInputLayout
                     style="@style/Widget.FSploit.TextField"
@@ -378,53 +388,20 @@
                     android:layout_marginTop="14dp"
                     android:text="@string/msf_rpc_ssl" />
 
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.FSploit.TextField"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:hint="@string/msf_rpc_launch_command">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/msfLaunchCommandInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="monospace"
-                        android:gravity="top|start"
-                        android:inputType="textMultiLine|textNoSuggestions"
-                        android:minLines="4" />
-                </com.google.android.material.textfield.TextInputLayout>
-
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/msf_rpc_launch_command_hint"
+                    android:layout_marginTop="14dp"
+                    android:text="@string/msf_connect_hint"
                     android:textAppearance="@style/TextAppearance.FSploit.Body" />
 
-                <LinearLayout
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/saveMsfSettingsButton"
+                    style="@style/Widget.FSploit.Button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/saveMsfSettingsButton"
-                        style="@style/Widget.FSploit.Button"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/msf_save_settings" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/launchMsfRpcButton"
-                        style="@style/Widget.FSploit.Button.Outlined"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:text="@string/msf_launch_rpc" />
-                </LinearLayout>
+                    android:text="@string/msf_save_settings" />
 
                 <TextView
                     android:id="@+id/msfSettingsSummaryValue"
@@ -451,57 +428,12 @@
                     style="@style/Widget.FSploit.SectionHeader"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/msf_launch_status_title" />
-
-                <TextView
-                    android:id="@+id/msfLaunchSummaryValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:textAppearance="@style/TextAppearance.FSploit.Value" />
-
-                <LinearLayout
-                    android:id="@+id/msfLaunchHeader"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:background="?attr/selectableItemBackground"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/msf_launch_output_title"
-                        android:textAppearance="@style/TextAppearance.FSploit.Label" />
-
-                    <ImageView
-                        android:id="@+id/msfLaunchChevron"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_marginStart="8dp"
-                        android:src="@drawable/ic_chevron"
-                        android:contentDescription="@null" />
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/msfLaunchOutputValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:background="@drawable/bg_terminal"
-                    android:padding="14dp"
-                    android:textAppearance="@style/TextAppearance.FSploit.Mono"
-                    android:textIsSelectable="true"
-                    android:visibility="gone" />
+                    android:text="@string/msf_sessions_jobs_title" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="14dp"
                     android:text="@string/msf_sessions_title"
                     android:textAppearance="@style/TextAppearance.FSploit.Label" />
 

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The MSF msgrpc plugin serves its MessagePack RPC over plaintext HTTP on loopback
+  (http://127.0.0.1:55552). targetSdk >= 28 blocks cleartext by default, so we permit it
+  ONLY for loopback addresses — everything else stays cleartext-forbidden.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+</network-security-config>

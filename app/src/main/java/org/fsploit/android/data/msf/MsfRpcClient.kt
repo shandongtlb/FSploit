@@ -151,7 +151,10 @@ class MsfRpcClient(
 
             value.isFloatValue -> value.asFloatValue().toDouble()
             value.isStringValue -> value.asStringValue().asString()
-            value.isBinaryValue -> value.asBinaryValue().asByteArray()
+            // MSF (Ruby MessagePack) packs every string — map keys, tokens, version fields — as the
+            // msgpack `bin` type, not `str`. Decode it as UTF-8 text so map keys like "token" match;
+            // returning a ByteArray here makes response["token"] silently miss and throws "Missing token".
+            value.isBinaryValue -> value.asBinaryValue().asByteArray().decodeToString()
             value.isArrayValue -> value.asArrayValue().map(::decodeValue)
             value.isMapValue -> value.asMapValue().map().entries.associate { entry ->
                 decodeValue(entry.key).toString() to decodeValue(entry.value)

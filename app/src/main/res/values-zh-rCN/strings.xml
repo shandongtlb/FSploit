@@ -228,10 +228,22 @@
     <string name="msf_rpc_ssl">RPC 使用 SSL/TLS</string>
     <string name="msf_rpc_launch_command">本地启动命令</string>
     <string name="msf_rpc_launch_command_hint">如果你希望 FSploit 直接启动 NetHunter 里的 msgrpc 或 msfrpcd，就在这里放一个会自行后台化的命令。留空则表示只做远端或手动 RPC 配置。</string>
-    <string name="msf_apply_msgrpc_preset">NetHunter msgrpc</string>
+    <string name="msf_apply_msgrpc_preset">本地 msgrpc 预设(127.0.0.1:55552)</string>
     <string name="msf_apply_msfrpcd_preset">NetHunter msfrpcd</string>
     <string name="msf_save_settings">保存 MSF 设置</string>
     <string name="msf_launch_rpc">执行启动命令</string>
+    <string name="msf_connect_hint">FSploit 只负责连接 —— 控制台由你自己起:在 NetHunter 终端跑 msgrpc(点上方 ⓘ 看命令),再「探测 RPC 概览」。</string>
+    <string name="msf_sessions_jobs_title">会话 / 任务</string>
+    <string name="msf_push_target">把选中主机送给 MSF(set RHOSTS)</string>
+    <string name="msf_push_target_idle">连上后,把工作台选中的主机推进共享 msgrpc 实例。</string>
+    <string name="msf_push_target_running">正在设置 RHOSTS=%1$s…</string>
+    <string name="msf_push_target_success">已设 RHOSTS=%1$s。回终端 use 模块即可继承该目标。</string>
+    <string name="msf_push_target_no_host">请先在工作台选中一台主机。</string>
+    <string name="msf_help_title">如何起 msgrpc</string>
+    <string name="msf_help_body">B 模式:FSploit 负责连接,你在终端操作 —— 同一个共享实例。在 NetHunter(Kali)终端运行:</string>
+    <string name="msf_help_command">msfconsole -q -x \"load msgrpc ServerHost=127.0.0.1 ServerPort=55552 User=msf Pass=msf SSL=false\"</string>
+    <string name="msf_help_copy">复制命令</string>
+    <string name="msf_help_copied">已复制到剪贴板</string>
     <string name="msf_launch_status_title">启动状态</string>
     <string name="msf_launch_output_title">启动输出</string>
     <string name="msf_launch_output_empty">当前还没有 MSF 启动输出。</string>
