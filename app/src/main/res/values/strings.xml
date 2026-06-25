@@ -425,6 +425,7 @@
     <string name="host_sweep_unavailable">No usable IPv4 interface is available for host sweep.</string>
     <string name="host_sweep_running">Running host sweep...</string>
     <string name="host_sweep_progress">Scanning… %1$d / %2$d hosts</string>
+    <string name="host_sweep_scanning_elapsed">Discovering hosts… %1$ds elapsed</string>
     <string name="host_sweep_none">Sweep completed on %1$s. No responsive hosts were identified in the scanned range.</string>
     <string name="host_sweep_found">Sweep completed on %1$s. %2$d responsive host(s) found.</string>
     <string name="host_result_open_tcp">open tcp/%1$d</string>

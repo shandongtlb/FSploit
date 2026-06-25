@@ -41,8 +41,11 @@ class HostSweepRepository(
         // Prefer nmap's host discovery when the managed package is present (steadier timing, fewer
         // missed hosts); otherwise fall back to the zero-dependency builtin ARP/neighbor sweep so
         // discovery always works.
+        // The builtin probe path streams real per-batch host counts; nmap can't (it block-buffers
+        // its piped output), so the nmap branch reports no granular progress and the caller falls
+        // back to an elapsed-time readout for it.
         val responsiveHosts = if (nmapScanner.isAvailable()) {
-            nmapScanner.discoverHosts(target, onProgress)
+            nmapScanner.discoverHosts(target)
         } else {
             probeHosts(target, onProgress)
         }

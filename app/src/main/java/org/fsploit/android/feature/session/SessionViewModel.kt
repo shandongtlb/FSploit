@@ -1,8 +1,10 @@
 package org.fsploit.android.feature.session
 
+import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -16,6 +18,7 @@ import org.fsploit.android.domain.usecase.ProbeShellUseCase
 import org.fsploit.android.domain.usecase.RunHostSweepUseCase
 import org.fsploit.android.domain.usecase.SaveLastSweepUseCase
 import org.fsploit.android.domain.usecase.SavePreferredInterfaceUseCase
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Activity-scoped ViewModel that owns the shared cross-screen [SessionState] (via [SessionStateHolder])
@@ -139,16 +142,36 @@ class SessionViewModel(
                 )
             }
 
-            val report = withContext(Dispatchers.Default) {
-                runHostSweep(interfaceName) { scanned, total ->
-                    holder.update {
-                        it.copy(
-                            scanSummary = resourceProvider.getString(
-                                R.string.host_sweep_progress, scanned, total
-                            )
+            // The scan engines can't stream a reliable percentage on every path (nmap block-buffers
+            // its piped stdout, so its own progress never arrives until the run is over). Drive an
+            // engine-independent elapsed-time ticker so the user always sees live feedback; when an
+            // engine *does* report granular host counts (the builtin sweep), show those instead.
+            val scanStartedAt = SystemClock.elapsedRealtime()
+            val granularProgress = AtomicReference<Pair<Int, Int>?>(null)
+            val tickerJob = launch {
+                while (true) {
+                    val elapsedSeconds = (SystemClock.elapsedRealtime() - scanStartedAt) / 1000
+                    val granular = granularProgress.get()
+                    val text = if (granular != null) {
+                        resourceProvider.getString(
+                            R.string.host_sweep_progress, granular.first, granular.second
                         )
+                    } else {
+                        resourceProvider.getString(R.string.host_sweep_scanning_elapsed, elapsedSeconds)
+                    }
+                    holder.update { it.copy(scanSummary = text) }
+                    delay(SCAN_TICK_INTERVAL_MS)
+                }
+            }
+
+            val report = try {
+                withContext(Dispatchers.Default) {
+                    runHostSweep(interfaceName) { scanned, total ->
+                        granularProgress.set(scanned to total)
                     }
                 }
+            } finally {
+                tickerJob.cancel()
             }
 
             val responsiveHosts = report.responsiveHosts.map { it.hostAddress }
@@ -168,5 +191,10 @@ class SessionViewModel(
             }
             saveLastSweep(report.scannedHosts, report.responsiveHosts)
         }
+    }
+
+    companion object {
+        // Cadence of the live scan-progress readout; tight enough to feel responsive without churning.
+        private const val SCAN_TICK_INTERVAL_MS = 500L
     }
 }

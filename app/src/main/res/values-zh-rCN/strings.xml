@@ -358,6 +358,7 @@
     <string name="host_sweep_unavailable">当前没有可用于主机探测的 IPv4 网卡。</string>
     <string name="host_sweep_running">正在执行主机探测...</string>
     <string name="host_sweep_progress">扫描中… %1$d / %2$d 台</string>
+    <string name="host_sweep_scanning_elapsed">正在探测主机… 已用 %1$ds</string>
     <string name="host_sweep_none">已在 %1$s 上完成探测，扫描范围内未发现响应主机。</string>
     <string name="host_sweep_found">已在 %1$s 上完成探测，发现 %2$d 台响应主机。</string>
     <string name="host_result_open_tcp">开放 tcp/%1$d</string>
