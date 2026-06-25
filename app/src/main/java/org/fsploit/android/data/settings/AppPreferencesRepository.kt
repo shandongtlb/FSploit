@@ -2,8 +2,6 @@ package org.fsploit.android.data.settings
 
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import org.fsploit.android.domain.model.MsfRpcConfig
 import org.fsploit.android.domain.model.MitmToolchainConfig
 import org.fsploit.android.domain.model.PortScanConfig
@@ -11,50 +9,62 @@ import org.fsploit.android.domain.model.PortScanConfig
 class AppPreferencesRepository(
     context: Context
 ) {
+    private val cipher = CredentialCipher()
     private val preferences: SharedPreferences = buildPreferences(context.applicationContext)
 
     /**
-     * Prefer an AES-256 [EncryptedSharedPreferences] store so the saved RPC password is not left as
-     * plaintext on disk. The Android keystore can fail on unusual ROMs or after a key corruption, so
-     * we degrade gracefully to a plain private store rather than crash the app on launch.
+     * Settings live in a standard app-private [SharedPreferences] store. The only secret — the
+     * MSF-RPC password — is encrypted per-value with an Android Keystore AES-256/GCM key (see
+     * [CredentialCipher]) so it is never written to disk in plaintext. This replaces the deprecated
+     * `androidx.security` EncryptedSharedPreferences; [migrateFromLegacyStore] carries forward any
+     * settings saved by older builds on first launch.
      */
     private fun buildPreferences(context: Context): SharedPreferences {
-        return try {
-            val masterKey = MasterKey.Builder(context)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
-            val secure = EncryptedSharedPreferences.create(
-                context,
-                SECURE_PREFS_NAME,
-                masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            )
-            migrateLegacyIfNeeded(context, secure)
-            secure
-        } catch (_: Exception) {
-            context.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
+        val store = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        if (!store.getBoolean(KEY_MIGRATED, false)) {
+            migrateFromLegacyStore(context, store)
+            store.edit().putBoolean(KEY_MIGRATED, true).apply()
         }
+        return store
     }
 
-    /** One-time copy of any previously saved plaintext settings into the encrypted store. */
-    private fun migrateLegacyIfNeeded(context: Context, secure: SharedPreferences) {
-        if (secure.getBoolean(KEY_MIGRATED, false)) {
-            return
+    /**
+     * One-time import of settings written by older builds: first the AES-256 EncryptedSharedPreferences
+     * store, falling back to the original plaintext store if the keystore is unavailable. The saved
+     * password is re-encrypted with [CredentialCipher] as it is copied. Reads the legacy encrypted
+     * store via the deprecated API exactly once and is safe to delete once all installs have launched
+     * on this build.
+     */
+    @Suppress("DEPRECATION")
+    private fun migrateFromLegacyStore(context: Context, target: SharedPreferences) {
+        val legacy: SharedPreferences = try {
+            val masterKey = androidx.security.crypto.MasterKey.Builder(context)
+                .setKeyScheme(androidx.security.crypto.MasterKey.KeyScheme.AES256_GCM)
+                .build()
+            androidx.security.crypto.EncryptedSharedPreferences.create(
+                context,
+                LEGACY_ENCRYPTED_PREFS_NAME,
+                masterKey,
+                androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        } catch (_: Exception) {
+            context.getSharedPreferences(LEGACY_PLAINTEXT_PREFS_NAME, Context.MODE_PRIVATE)
         }
-        val legacy = context.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
-        val editor = secure.edit()
+
+        val editor = target.edit()
         for ((key, value) in legacy.all) {
+            if (key == KEY_MIGRATED || key == LEGACY_MIGRATED_FLAG) continue
             when (value) {
-                is String -> editor.putString(key, value)
+                is String -> editor.putString(key, if (key == KEY_MSF_RPC_PASSWORD) cipher.encrypt(value) else value)
                 is Int -> editor.putInt(key, value)
                 is Boolean -> editor.putBoolean(key, value)
                 is Long -> editor.putLong(key, value)
                 is Float -> editor.putFloat(key, value)
             }
         }
-        editor.putBoolean(KEY_MIGRATED, true).apply()
-        legacy.edit().clear().apply()
+        editor.apply()
+        runCatching { legacy.edit().clear().apply() }
     }
 
     fun getPreferredInterfaceName(): String = preferences.getString(KEY_PREFERRED_INTERFACE, "").orEmpty()
@@ -121,7 +131,7 @@ class AppPreferencesRepository(
             host = preferences.getString(KEY_MSF_RPC_HOST, DEFAULT_MSF_RPC_HOST).orEmpty(),
             port = preferences.getInt(KEY_MSF_RPC_PORT, DEFAULT_MSF_RPC_PORT),
             username = preferences.getString(KEY_MSF_RPC_USERNAME, DEFAULT_MSF_RPC_USERNAME).orEmpty(),
-            password = preferences.getString(KEY_MSF_RPC_PASSWORD, DEFAULT_MSF_RPC_PASSWORD).orEmpty(),
+            password = cipher.decrypt(preferences.getString(KEY_MSF_RPC_PASSWORD, DEFAULT_MSF_RPC_PASSWORD).orEmpty()),
             useSsl = preferences.getBoolean(KEY_MSF_RPC_USE_SSL, DEFAULT_MSF_RPC_USE_SSL),
             launchCommand = preferences.getString(KEY_MSF_RPC_LAUNCH_COMMAND, DEFAULT_MSF_RPC_LAUNCH_COMMAND).orEmpty()
         )
@@ -132,16 +142,18 @@ class AppPreferencesRepository(
             .putString(KEY_MSF_RPC_HOST, config.host.trim())
             .putInt(KEY_MSF_RPC_PORT, config.port)
             .putString(KEY_MSF_RPC_USERNAME, config.username.trim())
-            .putString(KEY_MSF_RPC_PASSWORD, config.password)
+            .putString(KEY_MSF_RPC_PASSWORD, cipher.encrypt(config.password))
             .putBoolean(KEY_MSF_RPC_USE_SSL, config.useSsl)
             .putString(KEY_MSF_RPC_LAUNCH_COMMAND, config.launchCommand.trim())
             .apply()
     }
 
     companion object {
-        private const val SECURE_PREFS_NAME = "fsploit_secure_preferences"
-        private const val LEGACY_PREFS_NAME = "fsploit_preferences"
-        private const val KEY_MIGRATED = "prefs_migrated_to_encrypted"
+        private const val PREFS_NAME = "fsploit_settings"
+        private const val LEGACY_ENCRYPTED_PREFS_NAME = "fsploit_secure_preferences"
+        private const val LEGACY_PLAINTEXT_PREFS_NAME = "fsploit_preferences"
+        private const val KEY_MIGRATED = "prefs_migrated_to_keystore"
+        private const val LEGACY_MIGRATED_FLAG = "prefs_migrated_to_encrypted"
         private const val KEY_PREFERRED_INTERFACE = "preferred_interface"
         private const val KEY_PORT_SPEC = "port_spec"
         private const val KEY_CONNECT_TIMEOUT_MS = "connect_timeout_ms"
