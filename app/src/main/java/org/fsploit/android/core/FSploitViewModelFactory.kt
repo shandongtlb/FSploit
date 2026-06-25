@@ -16,7 +16,9 @@ import org.fsploit.android.domain.usecase.EnsureMsgrpcScriptUseCase
 import org.fsploit.android.domain.usecase.LoadPortScanConfigUseCase
 import org.fsploit.android.domain.usecase.ProbeShellUseCase
 import org.fsploit.android.domain.usecase.ReadMitmLootUseCase
+import org.fsploit.android.domain.usecase.LoadLastSweepUseCase
 import org.fsploit.android.domain.usecase.RunHostSweepUseCase
+import org.fsploit.android.domain.usecase.SaveLastSweepUseCase
 import org.fsploit.android.domain.usecase.PushMsfTargetUseCase
 import org.fsploit.android.domain.usecase.RunMsfScanUseCase
 import org.fsploit.android.domain.usecase.RunPortScanUseCase
@@ -68,6 +70,8 @@ class FSploitViewModelFactory(
     private val pushMsfTarget: PushMsfTargetUseCase,
     private val ensureMsgrpcScript: EnsureMsgrpcScriptUseCase,
     private val runHostSweep: RunHostSweepUseCase,
+    private val loadLastSweep: LoadLastSweepUseCase,
+    private val saveLastSweep: SaveLastSweepUseCase,
     private val runPortScan: RunPortScanUseCase,
     private val runShellCommand: RunShellCommandUseCase,
     private val blockHost: BlockHostUseCase,
@@ -88,7 +92,9 @@ class FSploitViewModelFactory(
                 getPreferredInterface = getPreferredInterface,
                 savePreferredInterfaceUseCase = savePreferredInterface,
                 probeShell = probeShell,
-                runHostSweep = runHostSweep
+                runHostSweep = runHostSweep,
+                loadLastSweep = loadLastSweep,
+                saveLastSweep = saveLastSweep
             ) as T
 
             modelClass.isAssignableFrom(MitmViewModel::class.java) -> MitmViewModel(

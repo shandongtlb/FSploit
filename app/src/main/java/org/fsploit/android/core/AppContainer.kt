@@ -29,7 +29,9 @@ import org.fsploit.android.domain.usecase.LoadPortScanConfigUseCase
 import org.fsploit.android.domain.usecase.PushMsfTargetUseCase
 import org.fsploit.android.domain.usecase.ProbeShellUseCase
 import org.fsploit.android.domain.usecase.ReadMitmLootUseCase
+import org.fsploit.android.domain.usecase.LoadLastSweepUseCase
 import org.fsploit.android.domain.usecase.RunHostSweepUseCase
+import org.fsploit.android.domain.usecase.SaveLastSweepUseCase
 import org.fsploit.android.domain.usecase.RunMsfScanUseCase
 import org.fsploit.android.domain.usecase.RunPortScanUseCase
 import org.fsploit.android.domain.usecase.RunShellCommandUseCase
@@ -108,6 +110,8 @@ class AppContainer(
         pushMsfTarget = PushMsfTargetUseCase(msfRepository),
         ensureMsgrpcScript = EnsureMsgrpcScriptUseCase(RunShellCommandUseCase(shellRepository)),
         runHostSweep = RunHostSweepUseCase(hostSweepRepository),
+        loadLastSweep = LoadLastSweepUseCase(preferencesRepository),
+        saveLastSweep = SaveLastSweepUseCase(preferencesRepository),
         runPortScan = RunPortScanUseCase(portScanRepository),
         runShellCommand = RunShellCommandUseCase(shellRepository),
         blockHost = BlockHostUseCase(mitmRepository),

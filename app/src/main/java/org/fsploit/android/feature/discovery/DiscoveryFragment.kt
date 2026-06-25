@@ -96,12 +96,19 @@ class DiscoveryFragment : Fragment() {
             binding.preferredInterfaceInput.setText(state.preferredInterfaceName, false)
         }
 
-        binding.scanSummaryValue.text = state.scanSummary
-        binding.scanResultsValue.text = if (state.scanResults.isEmpty()) {
-            getString(R.string.no_scan_results)
-        } else {
-            state.scanResults.joinToString(separator = "\n")
+        // Live progress while scanning; afterwards (and on a persisted restore) the scanned/found
+        // tally. Hidden until the first sweep has produced a count.
+        val statsText = when {
+            state.isScanning -> state.scanSummary
+            state.scannedHostCount > 0 -> getString(
+                R.string.discovery_scan_stats,
+                state.scannedHostCount,
+                state.responsiveTargetResults.size
+            )
+            else -> ""
         }
+        binding.sweepStatsValue.visibility = if (statsText.isBlank()) View.GONE else View.VISIBLE
+        binding.sweepStatsValue.text = statsText
         binding.targetsEmptyValue.text = if (state.responsiveTargetResults.isEmpty()) {
             getString(R.string.discovery_no_targets)
         } else {

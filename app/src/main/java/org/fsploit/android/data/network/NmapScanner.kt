@@ -41,25 +41,39 @@ class NmapScanner(
         return result.exitCode == 0 && result.output.isNotBlank()
     }
 
-    suspend fun discoverHosts(target: SweepTarget): List<HostScanResult> = withContext(Dispatchers.IO) {
+    suspend fun discoverHosts(
+        target: SweepTarget,
+        onProgress: (scanned: Int, total: Int) -> Unit = { _, _ -> }
+    ): List<HostScanResult> = withContext(Dispatchers.IO) {
         val subnet = "${target.networkAddress}/${target.prefixLength}"
         // Host discovery only (no port/OS scan) — fast (seconds for a /24), still richer than the
         // builtin sweep: nmap's own ARP scan + vendor DB, and it catches hosts the ping sweep misses.
         // OS/system info is intentionally left to the per-host advanced port scan (-A), so the whole
         // subnet isn't paying the OS-fingerprint cost.
+        // `--stats-every` makes nmap emit periodic <taskprogress percent="…"/> elements into the
+        // -oX - stream so the UI keeps a live progress readout (the builtin sweep reports per ping
+        // batch; without this the nmap path would sit on a frozen "scanning…" line until it finished).
         val command = buildString {
             append(commandPrefix())
-            append(" -sn -n --max-retries 2")
+            append(" -sn -n --max-retries 2 --stats-every ").append(STATS_INTERVAL)
             if (target.interfaceName.isNotBlank()) {
                 append(" -e ").append(shellQuote(target.interfaceName))
             }
             append(" -oX - ").append(shellQuote(subnet))
         }
 
+        val total = target.hostCandidates.size
         val output = shellRepository.execute(
             command = command,
             asRoot = true,
-            timeoutMs = discoveryTimeoutMs(target.hostCandidates.size)
+            timeoutMs = discoveryTimeoutMs(total),
+            onLine = if (total <= 0) null else { line ->
+                val percent = TASK_PROGRESS_PERCENT.find(line)?.groupValues?.getOrNull(1)?.toDoubleOrNull()
+                if (percent != null) {
+                    val scanned = (percent / 100.0 * total).toInt().coerceIn(0, total)
+                    onProgress(scanned, total)
+                }
+            }
         ).output
 
         NmapXmlParser.parse(output)
@@ -196,6 +210,9 @@ class NmapScanner(
     }
 
     companion object {
+        // How often nmap reports scan progress; short so a fast /24 still emits a few updates.
+        private const val STATS_INTERVAL = "1s"
+        private val TASK_PROGRESS_PERCENT = Regex("""<taskprogress[^>]*\spercent="([0-9.]+)"""")
         private const val PROBE_TIMEOUT_MS = 2000L
         // `-sn` host discovery is seconds-fast even on a /24; keep a modest, host-count-scaled budget.
         private const val DISCOVERY_TIMEOUT_BASE_MS = 30_000L

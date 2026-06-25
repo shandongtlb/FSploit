@@ -2,9 +2,12 @@ package org.fsploit.android.data.settings
 
 import android.content.Context
 import android.content.SharedPreferences
+import org.fsploit.android.domain.model.HostScanResult
 import org.fsploit.android.domain.model.MsfRpcConfig
 import org.fsploit.android.domain.model.MitmToolchainConfig
 import org.fsploit.android.domain.model.PortScanConfig
+import org.json.JSONArray
+import org.json.JSONObject
 
 class AppPreferencesRepository(
     context: Context
@@ -81,6 +84,56 @@ class AppPreferencesRepository(
             .apply()
     }
 
+    /**
+     * Last host-sweep result, persisted so the discovered-target list survives process death (the
+     * in-memory [org.fsploit.android.feature.session.SessionStateHolder] only survives config
+     * changes). Stored as a small JSON array — zero third-party dependency via Android's org.json.
+     */
+    fun setLastSweep(scannedHosts: Int, hosts: List<HostScanResult>) {
+        val array = JSONArray()
+        hosts.forEach { host ->
+            array.put(
+                JSONObject().apply {
+                    put(LAST_SWEEP_ADDRESS, host.hostAddress)
+                    put(LAST_SWEEP_FINDING, host.finding)
+                    host.macAddress?.let { put(LAST_SWEEP_MAC, it) }
+                    host.vendor?.let { put(LAST_SWEEP_VENDOR, it) }
+                    host.osInfo?.let { put(LAST_SWEEP_OS, it) }
+                }
+            )
+        }
+        preferences.edit()
+            .putInt(KEY_LAST_SWEEP_SCANNED, scannedHosts)
+            .putString(KEY_LAST_SWEEP_HOSTS, array.toString())
+            .apply()
+    }
+
+    fun getLastSweepScannedHosts(): Int = preferences.getInt(KEY_LAST_SWEEP_SCANNED, 0)
+
+    fun getLastSweepResults(): List<HostScanResult> {
+        val raw = preferences.getString(KEY_LAST_SWEEP_HOSTS, "").orEmpty()
+        if (raw.isBlank()) {
+            return emptyList()
+        }
+        return try {
+            val array = JSONArray(raw)
+            (0 until array.length()).mapNotNull { index ->
+                val obj = array.optJSONObject(index) ?: return@mapNotNull null
+                val address = obj.optString(LAST_SWEEP_ADDRESS).takeIf { it.isNotBlank() }
+                    ?: return@mapNotNull null
+                HostScanResult(
+                    hostAddress = address,
+                    finding = obj.optString(LAST_SWEEP_FINDING),
+                    macAddress = obj.optString(LAST_SWEEP_MAC).takeIf { it.isNotBlank() },
+                    vendor = obj.optString(LAST_SWEEP_VENDOR).takeIf { it.isNotBlank() },
+                    osInfo = obj.optString(LAST_SWEEP_OS).takeIf { it.isNotBlank() }
+                )
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
     fun getMsfRpcConfig(): MsfRpcConfig {
         return MsfRpcConfig(
             host = preferences.getString(KEY_MSF_RPC_HOST, DEFAULT_MSF_RPC_HOST).orEmpty(),
@@ -122,6 +175,13 @@ class AppPreferencesRepository(
         private const val KEY_MSF_RPC_PASSWORD = "msf_rpc_password"
         private const val KEY_MSF_RPC_USE_SSL = "msf_rpc_use_ssl"
         private const val KEY_MSF_RPC_LAUNCH_COMMAND = "msf_rpc_launch_command"
+        private const val KEY_LAST_SWEEP_SCANNED = "last_sweep_scanned"
+        private const val KEY_LAST_SWEEP_HOSTS = "last_sweep_hosts"
+        private const val LAST_SWEEP_ADDRESS = "addr"
+        private const val LAST_SWEEP_FINDING = "finding"
+        private const val LAST_SWEEP_MAC = "mac"
+        private const val LAST_SWEEP_VENDOR = "vendor"
+        private const val LAST_SWEEP_OS = "os"
         private const val DEFAULT_PORT_SPEC =
             "21-23,53,80,110,139,143,443,445,3306,3389,5432,5900,8080,8443"
         private const val DEFAULT_CONNECT_TIMEOUT_MS = 250

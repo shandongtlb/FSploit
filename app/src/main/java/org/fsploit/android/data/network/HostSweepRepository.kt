@@ -42,7 +42,7 @@ class HostSweepRepository(
         // missed hosts); otherwise fall back to the zero-dependency builtin ARP/neighbor sweep so
         // discovery always works.
         val responsiveHosts = if (nmapScanner.isAvailable()) {
-            nmapScanner.discoverHosts(target)
+            nmapScanner.discoverHosts(target, onProgress)
         } else {
             probeHosts(target, onProgress)
         }

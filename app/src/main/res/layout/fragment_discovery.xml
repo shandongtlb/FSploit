@@ -86,44 +86,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- ===== Scan output ===== -->
-        <com.google.android.material.card.MaterialCardView
-            style="@style/Widget.FSploit.Card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/fs_card_gap">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    style="@style/Widget.FSploit.SectionHeader"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/scan_summary" />
-
-                <TextView
-                    android:id="@+id/scanSummaryValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:textAppearance="@style/TextAppearance.FSploit.Value" />
-
-                <TextView
-                    android:id="@+id/scanResultsValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:background="@drawable/bg_terminal"
-                    android:padding="14dp"
-                    android:textAppearance="@style/TextAppearance.FSploit.Mono"
-                    android:textIsSelectable="true"
-                    android:lineSpacingExtra="3dp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
         <!-- ===== Targets ===== -->
         <com.google.android.material.card.MaterialCardView
             style="@style/Widget.FSploit.Card"
@@ -141,6 +103,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/discovered_targets" />
+
+                <TextView
+                    android:id="@+id/sweepStatsValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Value" />
 
                 <TextView
                     android:id="@+id/selectedTargetValue"

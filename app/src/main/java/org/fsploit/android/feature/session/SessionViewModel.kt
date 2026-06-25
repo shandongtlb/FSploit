@@ -10,9 +10,11 @@ import org.fsploit.android.R
 import org.fsploit.android.core.IpUtils
 import org.fsploit.android.core.ResourceProvider
 import org.fsploit.android.domain.usecase.GetPreferredInterfaceUseCase
+import org.fsploit.android.domain.usecase.LoadLastSweepUseCase
 import org.fsploit.android.domain.usecase.LoadNetworkOverviewUseCase
 import org.fsploit.android.domain.usecase.ProbeShellUseCase
 import org.fsploit.android.domain.usecase.RunHostSweepUseCase
+import org.fsploit.android.domain.usecase.SaveLastSweepUseCase
 import org.fsploit.android.domain.usecase.SavePreferredInterfaceUseCase
 
 /**
@@ -28,20 +30,28 @@ class SessionViewModel(
     private val getPreferredInterface: GetPreferredInterfaceUseCase,
     private val savePreferredInterfaceUseCase: SavePreferredInterfaceUseCase,
     private val probeShell: ProbeShellUseCase,
-    private val runHostSweep: RunHostSweepUseCase
+    private val runHostSweep: RunHostSweepUseCase,
+    private val loadLastSweep: LoadLastSweepUseCase,
+    private val saveLastSweep: SaveLastSweepUseCase
 ) : ViewModel() {
 
     val uiState: StateFlow<SessionState> = holder.state
 
     init {
         if (holder.value.permissionSummary.isEmpty()) {
+            // Restore the last sweep so the discovered-target list survives process death.
+            val (scannedHosts, persistedHosts) = loadLastSweep()
             holder.update {
                 it.copy(
                     permissionSummary = resourceProvider.getString(R.string.permission_summary_pending),
                     activeTransportLabel = resourceProvider.getString(R.string.transport_unknown),
                     shellSummary = resourceProvider.getString(R.string.shell_status_pending),
                     rootGateSummary = resourceProvider.getString(R.string.root_gate_pending),
-                    scanSummary = resourceProvider.getString(R.string.host_sweep_not_run)
+                    scanSummary = resourceProvider.getString(R.string.host_sweep_not_run),
+                    responsiveTargetResults = persistedHosts,
+                    responsiveHosts = persistedHosts.map { host -> host.hostAddress },
+                    scannedHostCount = scannedHosts,
+                    selectedHostAddress = persistedHosts.firstOrNull()?.hostAddress.orEmpty()
                 )
             }
         }
@@ -150,19 +160,13 @@ class SessionViewModel(
                 it.copy(
                     isScanning = false,
                     scanSummary = report.summary,
-                    scanResults = report.responsiveHosts.map { host ->
-                        buildString {
-                            append(host.hostAddress)
-                            host.macAddress?.let { append("  ").append(it) }
-                            host.vendor?.let { append("  ").append(it) }
-                            append("  ").append(host.finding)
-                        }
-                    },
+                    scannedHostCount = report.scannedHosts,
                     responsiveTargetResults = report.responsiveHosts,
                     responsiveHosts = responsiveHosts,
                     selectedHostAddress = selectedHostAddress
                 )
             }
+            saveLastSweep(report.scannedHosts, report.responsiveHosts)
         }
     }
 }

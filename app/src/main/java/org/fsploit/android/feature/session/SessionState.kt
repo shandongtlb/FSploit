@@ -31,7 +31,7 @@ data class SessionState(
     val responsiveHosts: List<String> = emptyList(),
     val selectedHostAddress: String = "",
     val scanSummary: String = "",
-    val scanResults: List<String> = emptyList(),
+    val scannedHostCount: Int = 0,
     val isScanning: Boolean = false
 ) {
     /** Reconstructs the [ShellStatus] snapshot so feature ViewModels can derive their own readiness. */
