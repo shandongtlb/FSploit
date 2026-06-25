@@ -1,5 +1,6 @@
 ﻿<resources>
     <string name="app_name" translatable="false">FSploit</string>
+    <string name="exit_confirm_prompt">Press back again to exit</string>
     <string name="app_subtitle">Modern Android network operations foundation</string>
     <string name="nav_header_subtitle">Drawer-based workspace for discovery, targets, and shell tooling.</string>
 

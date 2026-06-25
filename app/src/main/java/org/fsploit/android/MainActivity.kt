@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -45,6 +46,8 @@ class MainActivity : AppCompatActivity() {
     private var bettercapPromptHandled = false
     private var mitmdumpPromptHandled = false
     private var nmapPromptHandled = false
+    private var lastBackPressedAt = 0L
+    private var exitToast: Toast? = null
 
     private val viewModel: SessionViewModel by viewModels { viewModelFactory }
 
@@ -93,10 +96,24 @@ class MainActivity : AppCompatActivity() {
             override fun handleOnBackPressed() {
                 if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
                     binding.drawerLayout.closeDrawer(GravityCompat.START)
-                } else {
+                    return
+                }
+                // Require a second back (key or edge-swipe gesture) within the window to actually
+                // exit — guards against accidental exits mid-engagement.
+                val now = SystemClock.elapsedRealtime()
+                if (now - lastBackPressedAt <= EXIT_CONFIRM_WINDOW_MS) {
+                    exitToast?.cancel()
                     isEnabled = false
                     onBackPressedDispatcher.onBackPressed()
                     isEnabled = true
+                } else {
+                    lastBackPressedAt = now
+                    exitToast?.cancel()
+                    exitToast = Toast.makeText(
+                        this@MainActivity,
+                        R.string.exit_confirm_prompt,
+                        Toast.LENGTH_SHORT
+                    ).also { it.show() }
                 }
             }
         })
@@ -398,5 +415,6 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val KEY_SCREEN = "screen"
+        private const val EXIT_CONFIRM_WINDOW_MS = 2000L
     }
 }

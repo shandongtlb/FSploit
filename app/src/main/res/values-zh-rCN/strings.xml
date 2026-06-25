@@ -1,5 +1,6 @@
 ﻿<resources>
     <string name="app_name" translatable="false">FSploit</string>
+    <string name="exit_confirm_prompt">再按一次返回键退出</string>
     <string name="app_subtitle">面向现代 Android 的网络操作基础框架</string>
     <string name="nav_header_subtitle">基于抽屉导航的工作区，承载发现、目标和 shell 工具能力。</string>
 
