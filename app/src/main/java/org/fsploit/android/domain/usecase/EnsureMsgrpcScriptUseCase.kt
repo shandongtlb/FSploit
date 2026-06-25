@@ -2,35 +2,56 @@ package org.fsploit.android.domain.usecase
 
 import java.util.Base64
 
+/** Outcome of probing the Kali chroot for the bits msgrpc needs. */
+enum class MsgrpcHelperStatus {
+    /** No NetHunter chroot found at the expected path — nothing the app can do. */
+    NO_CHROOT,
+
+    /** Chroot present but metasploit isn't installed in it; `msfstart` would fail at runtime. */
+    NO_MSF,
+
+    /** Chroot + metasploit present and the `msfstart` helper is in place. */
+    READY
+}
+
 /**
- * Makes sure the `msfstart` helper exists inside the NetHunter Kali chroot. The operator runs it in
- * the terminal to bring up the interactive `msgrpc` console the app connects to; a kalifs reinstall
- * wipes it, so we re-drop it (and set the exec bit) whenever the MSF screen opens.
+ * Makes sure the `msfstart` helper exists inside the NetHunter Kali chroot, and reports whether the
+ * chroot/metasploit are actually there so the screen can explain why a connection won't come up.
+ * The operator runs `msfstart` in the terminal to bring up the interactive `msgrpc` console the app
+ * connects to; a kalifs reinstall wipes it, so we re-drop it (and set the exec bit) on demand.
  *
- * Written from the Android side straight to the chroot's host path as root. The body is base64'd to
- * dodge all shell-quoting/newline pitfalls when piping it through `su`.
+ * All checks are plain path tests from the Android side as root (no chroot needed); the script body
+ * is base64'd to dodge shell-quoting/newline pitfalls when piping it through `su`.
  */
 class EnsureMsgrpcScriptUseCase(
     private val runShellCommand: RunShellCommandUseCase
 ) {
-    /** Returns true if the script was newly installed this call (already-present is a no-op). */
-    suspend operator fun invoke(): Boolean {
+    suspend operator fun invoke(): MsgrpcHelperStatus {
         val encoded = Base64.getEncoder().encodeToString(SCRIPT_BODY.toByteArray(Charsets.UTF_8))
         val command = buildString {
-            append("D=").append(BIN_DIR).append("; F=\"\$D/").append(SCRIPT_NAME).append("\"; ")
-            append("if [ -d \"\$D\" ] && [ ! -f \"\$F\" ]; then ")
-            append("echo ").append(encoded).append(" | base64 -d > \"\$F\" && chmod 755 \"\$F\" && echo ")
-            append(INSTALLED_MARKER)
-            append("; fi")
+            append("D=").append(CHROOT_DIR).append("; ")
+            append("F=\"\$D/usr/bin/").append(SCRIPT_NAME).append("\"; ")
+            append("if [ ! -d \"\$D\" ]; then echo ").append(MARK_NO_CHROOT).append("; else ")
+            append("[ -f \"\$F\" ] || { echo ").append(encoded)
+            append(" | base64 -d > \"\$F\" && chmod 755 \"\$F\"; }; ")
+            append("if [ -e \"\$D/usr/bin/msfconsole\" ]; then echo ").append(MARK_READY)
+            append("; else echo ").append(MARK_NO_MSF).append("; fi; fi")
         }
-        val result = runShellCommand(command = command, asRoot = true, timeoutMs = TIMEOUT_MS)
-        return result.output.contains(INSTALLED_MARKER)
+        val out = runShellCommand(command = command, asRoot = true, timeoutMs = TIMEOUT_MS).output
+        return when {
+            out.contains(MARK_NO_CHROOT) -> MsgrpcHelperStatus.NO_CHROOT
+            out.contains(MARK_NO_MSF) -> MsgrpcHelperStatus.NO_MSF
+            out.contains(MARK_READY) -> MsgrpcHelperStatus.READY
+            else -> MsgrpcHelperStatus.NO_CHROOT
+        }
     }
 
     companion object {
         const val SCRIPT_NAME = "msfstart"
-        private const val BIN_DIR = "/data/local/nhsystem/kalifs/usr/bin"
-        private const val INSTALLED_MARKER = "__FSPLOIT_MSFSTART_INSTALLED__"
+        private const val CHROOT_DIR = "/data/local/nhsystem/kalifs"
+        private const val MARK_NO_CHROOT = "__FSPLOIT_NO_CHROOT__"
+        private const val MARK_NO_MSF = "__FSPLOIT_NO_MSF__"
+        private const val MARK_READY = "__FSPLOIT_READY__"
         private const val TIMEOUT_MS = 8_000L
         private val SCRIPT_BODY = """
             #!/bin/bash

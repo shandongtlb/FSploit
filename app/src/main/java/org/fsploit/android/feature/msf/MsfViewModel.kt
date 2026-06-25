@@ -16,6 +16,7 @@ import org.fsploit.android.domain.model.MsfJobInfo
 import org.fsploit.android.domain.model.MsfRpcConfig
 import org.fsploit.android.domain.model.MsfSessionInfo
 import org.fsploit.android.domain.usecase.EnsureMsgrpcScriptUseCase
+import org.fsploit.android.domain.usecase.MsgrpcHelperStatus
 import org.fsploit.android.domain.usecase.LoadMsfOverviewUseCase
 import org.fsploit.android.domain.usecase.LoadMsfRpcConfigUseCase
 import org.fsploit.android.domain.usecase.PushMsfTargetUseCase
@@ -39,6 +40,8 @@ data class MsfUiState(
     val msfSessions: List<MsfSessionInfo> = emptyList(),
     val msfJobs: List<MsfJobInfo> = emptyList(),
     val isRefreshingMsf: Boolean = false,
+    // Helper/chroot diagnostic shown on the connection card (why msgrpc may not come up).
+    val helperStatusSummary: String = "",
     // Handoff (B): push selected host to the shared msgrpc instance via core.setg RHOSTS.
     val pushTargetSummary: String = "",
     val isPushingTarget: Boolean = false,
@@ -142,8 +145,9 @@ class MsfViewModel(
     }
 
     /**
-     * Re-drop the `msfstart` helper into the Kali chroot if it is missing (a kalifs reinstall wipes
-     * it). Best-effort and silent unless we actually had to install it; needs root to write.
+     * Re-drop the `msfstart` helper into the Kali chroot if missing (a kalifs reinstall wipes it),
+     * and surface why msgrpc can't come up: no chroot, chroot-without-metasploit, or ready. Needs
+     * root to inspect/write; retries on a later refresh if root is not yet granted.
      */
     private fun ensureHelperScript() {
         if (helperEnsured || !session.value.rootGranted) {
@@ -151,12 +155,13 @@ class MsfViewModel(
         }
         helperEnsured = true
         viewModelScope.launch {
-            val installed = withContext(Dispatchers.Default) { ensureMsgrpcScriptUseCase() }
-            if (installed) {
-                _uiState.value = _uiState.value.copy(
-                    msfSettingsSummary = resourceProvider.getString(R.string.msf_helper_installed)
-                )
+            val status = withContext(Dispatchers.Default) { ensureMsgrpcScriptUseCase() }
+            val message = when (status) {
+                MsgrpcHelperStatus.NO_CHROOT -> resourceProvider.getString(R.string.msf_helper_no_chroot)
+                MsgrpcHelperStatus.NO_MSF -> resourceProvider.getString(R.string.msf_helper_no_msf)
+                MsgrpcHelperStatus.READY -> resourceProvider.getString(R.string.msf_helper_ready)
             }
+            _uiState.value = _uiState.value.copy(helperStatusSummary = message)
         }
     }
 

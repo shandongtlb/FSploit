@@ -175,6 +175,7 @@ class MsfFragment : Fragment() {
             binding.msfUseSslSwitch.isChecked = state.msfRpcConfig.useSsl
         }
         binding.msfSettingsSummaryValue.text = state.msfSettingsSummary
+        binding.msfHelperStatusValue.text = state.helperStatusSummary
         binding.pushTargetSummaryValue.text = state.pushTargetSummary
         binding.msfSessionsValue.text = if (state.msfSessions.isEmpty()) {
             getString(R.string.msf_sessions_empty)

@@ -243,6 +243,9 @@
     <string name="msf_help_body">Direction B: FSploit connects, you operate in the terminal — one shared instance. The app keeps the msfstart helper installed in Kali; just run it in the NetHunter terminal:</string>
     <string name="msf_help_command">msfstart</string>
     <string name="msf_helper_installed">Installed the msfstart helper into Kali.</string>
+    <string name="msf_helper_ready">Kali chroot + Metasploit detected; msfstart is ready. Run it in the terminal.</string>
+    <string name="msf_helper_no_chroot">No Kali chroot found at /data/local/nhsystem/kalifs — install NetHunter first.</string>
+    <string name="msf_helper_no_msf">Kali chroot found but Metasploit is missing. In the Kali terminal: apt install metasploit-framework</string>
     <string name="msf_help_copy">Copy command</string>
     <string name="msf_help_copied">Copied to clipboard</string>
     <string name="msf_scan_title">Vuln scan</string>

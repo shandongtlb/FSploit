@@ -243,6 +243,9 @@
     <string name="msf_help_body">B 模式:FSploit 负责连接,你在终端操作 —— 同一个共享实例。app 已自动在 Kali 里装好 msfstart,在 NetHunter 终端运行它即可:</string>
     <string name="msf_help_command">msfstart</string>
     <string name="msf_helper_installed">已自动把 msfstart 脚本写入 Kali。</string>
+    <string name="msf_helper_ready">已检测到 Kali chroot + Metasploit,msfstart 就绪,在终端运行它即可。</string>
+    <string name="msf_helper_no_chroot">未在 /data/local/nhsystem/kalifs 检测到 Kali chroot —— 请先装 NetHunter。</string>
+    <string name="msf_helper_no_msf">检测到 Kali chroot 但没装 Metasploit。在 Kali 终端执行:apt install metasploit-framework</string>
     <string name="msf_help_copy">复制命令</string>
     <string name="msf_help_copied">已复制到剪贴板</string>
     <string name="msf_scan_title">漏洞扫描</string>

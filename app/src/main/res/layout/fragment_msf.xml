@@ -152,6 +152,13 @@
                     android:layout_marginTop="14dp"
                     android:textAppearance="@style/TextAppearance.FSploit.Body" />
 
+                <TextView
+                    android:id="@+id/msfHelperStatusValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Body" />
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/pushTargetButton"
                     style="@style/Widget.FSploit.Button"
