@@ -1,11 +1,10 @@
 plugins {
     id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
 }
 
 android {
     namespace 'org.fsploit.android'
-    compileSdk 36
+    compileSdk 37
 
     defaultConfig {
         applicationId "org.fsploit.android"
@@ -33,25 +32,27 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = '17'
-    }
-
     buildFeatures {
         viewBinding true
     }
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+    }
+}
+
 dependencies {
-    implementation 'androidx.core:core-ktx:1.16.0'
+    implementation 'androidx.core:core-ktx:1.19.0'
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'androidx.drawerlayout:drawerlayout:1.2.0'
     implementation 'androidx.fragment:fragment-ktx:1.8.9'
     implementation 'androidx.viewpager2:viewpager2:1.1.0'
-    implementation 'com.google.android.material:material:1.13.0'
-    implementation 'androidx.activity:activity-ktx:1.12.4'
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.9.4'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.4'
+    implementation 'com.google.android.material:material:1.14.0'
+    implementation 'androidx.activity:activity-ktx:1.13.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.11.0'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.11.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0'
     implementation 'org.apache.commons:commons-compress:1.28.0'
     implementation 'org.msgpack:msgpack-core:0.9.12'
