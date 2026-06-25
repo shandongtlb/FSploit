@@ -20,6 +20,7 @@ class ToolchainProbe(
                 tcpdumpAvailable = false,
                 bettercapAvailable = false,
                 mitmdumpAvailable = false,
+                nmapAvailable = false,
                 certificateStoreAccessible = false,
                 summary = resourceProvider.getString(R.string.mitm_root_required)
             )
@@ -32,6 +33,7 @@ class ToolchainProbe(
         val tcpdumpAvailable = executableExists(config.tcpdumpPath)
         val bettercapAvailable = executableExists(config.bettercapPath)
         val mitmdumpAvailable = executableExists(config.mitmdumpPath)
+        val nmapAvailable = executableExists(config.nmapPath)
         val certificateStoreAccessible = directoryAccessible("/system/etc/security/cacerts") ||
             directoryAccessible("/apex/com.android.conscrypt/cacerts")
 
@@ -49,6 +51,7 @@ class ToolchainProbe(
             tcpdumpAvailable = tcpdumpAvailable,
             bettercapAvailable = bettercapAvailable,
             mitmdumpAvailable = mitmdumpAvailable,
+            nmapAvailable = nmapAvailable,
             certificateStoreAccessible = certificateStoreAccessible,
             summary = summary
         )

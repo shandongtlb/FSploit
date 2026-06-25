@@ -9,6 +9,7 @@ import kotlinx.coroutines.sync.withPermit
 import org.fsploit.android.R
 import org.fsploit.android.core.ResourceProvider
 import org.fsploit.android.domain.model.PortScanConfig
+import org.fsploit.android.domain.model.PortScanMode
 import org.fsploit.android.domain.model.PortScanReport
 import org.fsploit.android.domain.model.PortScanResult
 import org.fsploit.android.domain.model.PortState
@@ -18,13 +19,44 @@ import java.net.Socket
 import java.net.SocketTimeoutException
 
 class PortScanRepository(
-    private val resourceProvider: ResourceProvider
+    private val resourceProvider: ResourceProvider,
+    private val nmapScanner: NmapScanner
 ) {
     suspend fun scan(
         hostAddress: String,
-        config: PortScanConfig
+        config: PortScanConfig,
+        mode: PortScanMode = PortScanMode.NORMAL,
+        interfaceName: String? = null
     ): PortScanReport = coroutineScope {
+        // UDP uses its own curated high-value port set (not the TCP spec) and is nmap-only — a UDP
+        // connect-scan over sockets can't tell open from filtered, so there's no useful fallback.
+        if (mode == PortScanMode.UDP) {
+            return@coroutineScope if (nmapScanner.isAvailable()) {
+                nmapScanner.scanPorts(hostAddress, UDP_PORTS, mode, interfaceName)
+            } else {
+                PortScanReport(
+                    hostAddress = hostAddress,
+                    requestedPorts = UDP_PORTS,
+                    scannedPorts = emptyList(),
+                    summary = resourceProvider.getString(R.string.port_scan_udp_requires_nmap)
+                )
+            }
+        }
+
         val ports = parsePortSpec(config.portSpec)
+
+        // Prefer nmap (service/version/OS) when the managed package is present; otherwise fall back
+        // to the builtin socket connect-scan so port scanning always works.
+        if (nmapScanner.isAvailable()) {
+            val report = nmapScanner.scanPorts(
+                hostAddress = hostAddress,
+                ports = ports,
+                mode = mode,
+                interfaceName = interfaceName
+            )
+            return@coroutineScope report
+        }
+
         val semaphore = Semaphore(config.parallelism.coerceIn(1, 64))
         val results = ports.map { port ->
             async(Dispatchers.IO) {
@@ -35,7 +67,7 @@ class PortScanRepository(
         }.awaitAll().sortedBy { it.port }
 
         val openPorts = results.filter { it.state == PortState.OPEN }
-        val summary = if (openPorts.isEmpty()) {
+        val baseSummary = if (openPorts.isEmpty()) {
             resourceProvider.getString(R.string.port_scan_no_open, hostAddress, ports.size)
         } else {
             resourceProvider.getString(
@@ -44,6 +76,12 @@ class PortScanRepository(
                 hostAddress,
                 ports.size
             )
+        }
+        // The advanced profile is nmap-only; note the downgrade so results aren't misread.
+        val summary = if (mode == PortScanMode.ADVANCED) {
+            baseSummary + " " + resourceProvider.getString(R.string.port_scan_nmap_fallback)
+        } else {
+            baseSummary
         }
 
         PortScanReport(
@@ -174,5 +212,14 @@ class PortScanRepository(
             8443 -> "https-alt"
             else -> "tcp"
         }
+    }
+
+    companion object {
+        // Curated high-value UDP ports — keeps the (inherently slow) UDP scan fast while still
+        // catching the services that matter on a LAN: DNS, DHCP, TFTP, NTP, NetBIOS, SNMP, IKE/VPN,
+        // syslog, RIP, MS-SQL browser, SSDP/UPnP, SIP, mDNS.
+        private val UDP_PORTS = listOf(
+            53, 67, 69, 123, 137, 138, 161, 162, 500, 514, 520, 1434, 1900, 5060, 5353
+        )
     }
 }

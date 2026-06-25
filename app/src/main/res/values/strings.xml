@@ -432,7 +432,30 @@
     <string name="host_result_icmp">reachable via ICMP/echo</string>
     <string name="host_result_neighbor">reachable via neighbor table</string>
     <string name="host_result_arp">present in ARP cache</string>
+    <string name="host_result_nmap">nmap host discovery</string>
+    <string name="host_mac_label">MAC %1$s</string>
+    <string name="host_os_label">OS %1$s</string>
+    <string name="nmap_os_label">%1$s (%2$d%%)</string>
+    <string name="fingerprint_os_nmap">OS: %1$s</string>
     <string name="no_scan_results">No responsive hosts have been found yet.</string>
+
+    <!-- Port scan depth -->
+    <string name="port_scan_mode_normal">Normal</string>
+    <string name="port_scan_mode_advanced">Advanced</string>
+    <string name="port_scan_mode_udp">UDP</string>
+    <string name="port_scan_nmap_fallback">(nmap not installed; used builtin scan)</string>
+    <string name="port_scan_udp_requires_nmap">UDP scan requires the nmap package. Install it to use this mode.</string>
+
+    <!-- Managed nmap package download -->
+    <string name="nmap_download_title">Download nmap?</string>
+    <string name="nmap_download_message">The native nmap package enables advanced host discovery and service/version/OS port scanning. Download it now?</string>
+    <string name="nmap_download_action">Download</string>
+    <string name="nmap_download_progress_title">Downloading nmap</string>
+    <string name="nmap_download_progress_message">Fetching and installing the nmap package…</string>
+    <string name="nmap_download_success">nmap installed.</string>
+    <string name="nmap_download_failed_title">nmap download failed</string>
+    <string name="nmap_download_failed_message">Could not install nmap: %1$s</string>
+    <string name="nmap_download_retry">Retry</string>
 
     <string name="port_scan_not_run">No port scan has been run yet.</string>
     <string name="port_scan_no_selected_host">No responsive host is selected for port scanning.</string>

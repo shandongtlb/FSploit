@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import org.fsploit.android.MainActivity
 import org.fsploit.android.R
 import org.fsploit.android.databinding.FragmentPortsBinding
+import org.fsploit.android.domain.model.PortScanMode
 import org.fsploit.android.feature.session.SessionState
 import org.fsploit.android.feature.session.SessionViewModel
 
@@ -66,6 +67,17 @@ class PortScanFragment : Fragment() {
             }
             viewModel.selectPortResultFilter(filter)
         }
+        binding.portModeGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) {
+                return@addOnButtonCheckedListener
+            }
+            val mode = when (checkedId) {
+                R.id.modeAdvancedButton -> PortScanMode.ADVANCED
+                R.id.modeUdpButton -> PortScanMode.UDP
+                else -> PortScanMode.NORMAL
+            }
+            viewModel.selectPortScanMode(mode)
+        }
         binding.runPortScanButton.setOnClickListener {
             viewModel.runPortScan()
         }
@@ -105,6 +117,14 @@ class PortScanFragment : Fragment() {
         }
         if (binding.portFilterGroup.checkedButtonId != checkedFilterButton) {
             binding.portFilterGroup.check(checkedFilterButton)
+        }
+        val checkedModeButton = when (state.portScanMode) {
+            PortScanMode.NORMAL -> R.id.modeNormalButton
+            PortScanMode.ADVANCED -> R.id.modeAdvancedButton
+            PortScanMode.UDP -> R.id.modeUdpButton
+        }
+        if (binding.portModeGroup.checkedButtonId != checkedModeButton) {
+            binding.portModeGroup.check(checkedModeButton)
         }
         binding.runPortScanButton.isEnabled =
             sessionViewModel.uiState.value.rootGranted &&

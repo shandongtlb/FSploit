@@ -21,6 +21,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 import org.fsploit.android.data.mitm.BettercapPackageManager
 import org.fsploit.android.data.mitm.MitmdumpPackageManager
+import org.fsploit.android.data.mitm.NmapPackageManager
 import org.fsploit.android.databinding.ActivityMainBinding
 import org.fsploit.android.feature.discovery.DiscoveryFragment
 import org.fsploit.android.feature.host.HostWorkspaceFragment
@@ -37,11 +38,13 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var bettercapPackageManager: BettercapPackageManager
     private lateinit var mitmdumpPackageManager: MitmdumpPackageManager
+    private lateinit var nmapPackageManager: NmapPackageManager
     private lateinit var binding: ActivityMainBinding
     private lateinit var drawerToggle: ActionBarDrawerToggle
     private var currentScreen: MainScreen = MainScreen.OVERVIEW
     private var bettercapPromptHandled = false
     private var mitmdumpPromptHandled = false
+    private var nmapPromptHandled = false
 
     private val viewModel: SessionViewModel by viewModels { viewModelFactory }
 
@@ -56,6 +59,7 @@ class MainActivity : AppCompatActivity() {
         viewModelFactory = appContainer.viewModelFactory
         bettercapPackageManager = appContainer.bettercapPackageManager
         mitmdumpPackageManager = appContainer.mitmdumpPackageManager
+        nmapPackageManager = appContainer.nmapPackageManager
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
@@ -112,7 +116,10 @@ class MainActivity : AppCompatActivity() {
         } else {
             refreshFromUi()
         }
-        if (bettercapPackageManager.syncInstalledBinaryPath() || mitmdumpPackageManager.syncInstalledBinaryPath()) {
+        if (bettercapPackageManager.syncInstalledBinaryPath() ||
+            mitmdumpPackageManager.syncInstalledBinaryPath() ||
+            nmapPackageManager.syncInstalledBinaryPath()
+        ) {
             refreshFromUi()
         }
         maybePromptManagedDownloads()
@@ -215,6 +222,10 @@ class MainActivity : AppCompatActivity() {
             !mitmdumpPromptHandled && mitmdumpPackageManager.shouldOfferManagedDownload() -> {
                 maybePromptMitmdumpDownload()
             }
+
+            !nmapPromptHandled && nmapPackageManager.shouldOfferManagedDownload() -> {
+                maybePromptNmapDownload()
+            }
         }
     }
 
@@ -287,7 +298,9 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton(R.string.mitmdump_download_action) { _, _ ->
                 downloadManagedMitmdump()
             }
-            .setNegativeButton(android.R.string.cancel, null)
+            .setNegativeButton(android.R.string.cancel) { _, _ ->
+                maybePromptManagedDownloads()
+            }
             .show()
     }
 
@@ -309,6 +322,7 @@ class MainActivity : AppCompatActivity() {
                     getString(R.string.mitmdump_download_success),
                     Toast.LENGTH_LONG
                 ).show()
+                maybePromptManagedDownloads()
             }.onFailure { exception ->
                 mitmdumpPromptHandled = false
                 MaterialAlertDialogBuilder(this@MainActivity)
@@ -322,6 +336,59 @@ class MainActivity : AppCompatActivity() {
                     .setPositiveButton(R.string.mitmdump_download_retry) { _, _ ->
                         mitmdumpPromptHandled = true
                         downloadManagedMitmdump()
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+            }
+        }
+    }
+
+    private fun maybePromptNmapDownload() {
+        if (nmapPromptHandled || !nmapPackageManager.shouldOfferManagedDownload()) {
+            return
+        }
+        nmapPromptHandled = true
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.nmap_download_title)
+            .setMessage(R.string.nmap_download_message)
+            .setPositiveButton(R.string.nmap_download_action) { _, _ ->
+                downloadManagedNmap()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun downloadManagedNmap() {
+        val progressDialog = MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.nmap_download_progress_title)
+            .setMessage(R.string.nmap_download_progress_message)
+            .setCancelable(false)
+            .create()
+        progressDialog.show()
+
+        lifecycleScope.launch {
+            val result = nmapPackageManager.downloadManagedPackage()
+            progressDialog.dismiss()
+            result.onSuccess {
+                refreshFromUi()
+                Toast.makeText(
+                    this@MainActivity,
+                    getString(R.string.nmap_download_success),
+                    Toast.LENGTH_LONG
+                ).show()
+            }.onFailure { exception ->
+                nmapPromptHandled = false
+                MaterialAlertDialogBuilder(this@MainActivity)
+                    .setTitle(R.string.nmap_download_failed_title)
+                    .setMessage(
+                        getString(
+                            R.string.nmap_download_failed_message,
+                            exception.message ?: exception.javaClass.simpleName
+                        )
+                    )
+                    .setPositiveButton(R.string.nmap_download_retry) { _, _ ->
+                        nmapPromptHandled = true
+                        downloadManagedNmap()
                     }
                     .setNegativeButton(android.R.string.cancel, null)
                     .show()

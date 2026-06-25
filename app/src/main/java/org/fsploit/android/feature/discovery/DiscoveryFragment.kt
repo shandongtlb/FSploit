@@ -127,6 +127,19 @@ class DiscoveryFragment : Fragment() {
             val itemBinding = ItemResponsiveTargetBinding.inflate(layoutInflater, binding.responsiveTargetsContainer, false)
             itemBinding.hostAddressValue.text = target.hostAddress
             itemBinding.hostFindingValue.text = target.finding
+
+            val vendor = target.vendor
+            itemBinding.hostVendorValue.visibility = if (vendor.isNullOrBlank()) View.GONE else View.VISIBLE
+            itemBinding.hostVendorValue.text = vendor.orEmpty()
+
+            val mac = target.macAddress
+            itemBinding.hostMacValue.visibility = if (mac.isNullOrBlank()) View.GONE else View.VISIBLE
+            itemBinding.hostMacValue.text = if (mac.isNullOrBlank()) "" else getString(R.string.host_mac_label, mac)
+
+            val osInfo = target.osInfo
+            itemBinding.hostOsValue.visibility = if (osInfo.isNullOrBlank()) View.GONE else View.VISIBLE
+            itemBinding.hostOsValue.text = if (osInfo.isNullOrBlank()) "" else getString(R.string.host_os_label, osInfo)
+
             val isSelected = target.hostAddress == state.selectedHostAddress
             itemBinding.root.strokeWidth = if (isSelected) {
                 resources.getDimensionPixelSize(R.dimen.discovery_target_selected_stroke)

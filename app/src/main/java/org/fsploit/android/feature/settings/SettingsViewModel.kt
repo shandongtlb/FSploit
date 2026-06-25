@@ -97,11 +97,10 @@ class SettingsViewModel(
 
             withContext(Dispatchers.Default) {
                 saveMitmToolchainConfigUseCase(
-                    MitmToolchainConfig(
+                    config.copy(
                         bettercapPath = config.bettercapPath.trim(),
                         tcpdumpPath = config.tcpdumpPath.trim(),
-                        mitmdumpPath = config.mitmdumpPath.trim(),
-                        httpRedirectPort = config.httpRedirectPort
+                        mitmdumpPath = config.mitmdumpPath.trim()
                     )
                 )
             }

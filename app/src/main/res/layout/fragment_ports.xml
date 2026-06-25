@@ -90,6 +90,39 @@
                     android:text="@string/port_spec_hint"
                     android:textAppearance="@style/TextAppearance.FSploit.Body" />
 
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/portModeGroup"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    app:singleSelection="true"
+                    app:selectionRequired="true">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/modeNormalButton"
+                        style="@style/Widget.FSploit.Toggle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/port_scan_mode_normal" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/modeAdvancedButton"
+                        style="@style/Widget.FSploit.Toggle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/port_scan_mode_advanced" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/modeUdpButton"
+                        style="@style/Widget.FSploit.Toggle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/port_scan_mode_udp" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/runPortScanButton"
                     style="@style/Widget.FSploit.Button"

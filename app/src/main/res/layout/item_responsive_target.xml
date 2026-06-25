@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginTop="10dp"
@@ -42,6 +43,36 @@
                 android:textColor="@color/fsploit_mono"
                 android:textSize="16sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/hostVendorValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:textColor="@color/fsploit_primary"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:text="Xiaomi Communications Co Ltd" />
+
+            <TextView
+                android:id="@+id/hostMacValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:fontFamily="monospace"
+                android:textColor="@color/fsploit_mono"
+                android:textSize="12sp"
+                android:visibility="gone"
+                tools:text="MAC f8:a4:5f:11:22:33" />
+
+            <TextView
+                android:id="@+id/hostOsValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textAppearance="@style/TextAppearance.FSploit.Body"
+                android:visibility="gone"
+                tools:text="OS Linux 5.x (95%)" />
 
             <TextView
                 android:id="@+id/hostFindingValue"

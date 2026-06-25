@@ -7,8 +7,10 @@ import org.fsploit.android.data.mitm.CredentialLogParser
 import org.fsploit.android.data.mitm.ExternalToolMitmBackend
 import org.fsploit.android.data.mitm.MitmdumpPackageManager
 import org.fsploit.android.data.mitm.MitmRepository
+import org.fsploit.android.data.mitm.NmapPackageManager
 import org.fsploit.android.data.network.HostSweepRepository
 import org.fsploit.android.data.network.NetworkInterfaceRepository
+import org.fsploit.android.data.network.NmapScanner
 import org.fsploit.android.data.network.PortScanRepository
 import org.fsploit.android.data.settings.AppPreferencesRepository
 import org.fsploit.android.data.shell.ShellRepository
@@ -50,8 +52,15 @@ class AppContainer(
     private val preferencesRepository = AppPreferencesRepository(context)
     val bettercapPackageManager = BettercapPackageManager(context, preferencesRepository)
     val mitmdumpPackageManager = MitmdumpPackageManager(context, preferencesRepository)
+    val nmapPackageManager = NmapPackageManager(context, preferencesRepository)
     private val networkRepository = NetworkInterfaceRepository(context, resourceProvider)
     private val shellRepository = ShellRepository(resourceProvider)
+    private val nmapScanner = NmapScanner(
+        resourceProvider = resourceProvider,
+        shellRepository = shellRepository,
+        preferencesRepository = preferencesRepository,
+        nmapPackageManager = nmapPackageManager
+    )
     private val mitmBackend = ExternalToolMitmBackend(
         context = context,
         resourceProvider = resourceProvider,
@@ -59,12 +68,15 @@ class AppContainer(
         preferencesRepository = preferencesRepository
     )
     private val mitmRepository = MitmRepository(resourceProvider, mitmBackend)
+    private val ouiLookup = OuiLookup(context)
     private val hostSweepRepository = HostSweepRepository(
         networkRepository,
         resourceProvider,
-        shellRepository
+        shellRepository,
+        ouiLookup,
+        nmapScanner
     )
-    private val portScanRepository = PortScanRepository(resourceProvider)
+    private val portScanRepository = PortScanRepository(resourceProvider, nmapScanner)
     private val msfRepository = MsfRepository(resourceProvider)
     private val sessionStateHolder = SessionStateHolder()
 

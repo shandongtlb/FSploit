@@ -15,6 +15,7 @@ import org.fsploit.android.domain.model.DeviceRole
 import org.fsploit.android.domain.model.HostFingerprint
 import org.fsploit.android.domain.model.OsFamily
 import org.fsploit.android.domain.model.PortScanConfig
+import org.fsploit.android.domain.model.PortScanMode
 import org.fsploit.android.domain.model.PortScanResult
 import org.fsploit.android.domain.model.PortState
 import org.fsploit.android.domain.usecase.LoadPortScanConfigUseCase
@@ -32,7 +33,8 @@ data class TargetDetailUiState(
     val portScanResults: List<String> = emptyList(),
     val selectedPortResultFilter: PortResultFilter = PortResultFilter.ALL,
     val isPortScanning: Boolean = false,
-    val hostFingerprint: String = ""
+    val hostFingerprint: String = "",
+    val portScanMode: PortScanMode = PortScanMode.NORMAL
 )
 
 class TargetDetailViewModel(
@@ -103,6 +105,10 @@ class TargetDetailViewModel(
         _uiState.value = _uiState.value.copy(selectedPortResultFilter = filter)
     }
 
+    fun selectPortScanMode(mode: PortScanMode) {
+        _uiState.value = _uiState.value.copy(portScanMode = mode)
+    }
+
     fun runPortScan() {
         if (!session.value.rootGranted) {
             _uiState.value = _uiState.value.copy(portScanSummary = resourceProvider.getString(R.string.root_gate_blocked))
@@ -121,6 +127,9 @@ class TargetDetailViewModel(
         val config = validatePortScanConfig() ?: return
         savePortScanConfig(config)
 
+        val mode = _uiState.value.portScanMode
+        val interfaceName = session.value.preferredInterfaceName
+
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
                 isPortScanning = true,
@@ -129,7 +138,7 @@ class TargetDetailViewModel(
 
             try {
                 val report = withContext(Dispatchers.Default) {
-                    runPortScanUseCase(hostAddress, config)
+                    runPortScanUseCase(hostAddress, config, mode, interfaceName)
                 }
 
                 _uiState.value = _uiState.value.copy(
@@ -153,14 +162,24 @@ class TargetDetailViewModel(
                     hostFingerprint = resourceProvider.getString(R.string.fingerprint_running)
                 )
 
-                val openPorts = report.scannedPorts
-                    .filter { it.state == PortState.OPEN }
-                    .map { it.port }
-                val ttl = withContext(Dispatchers.Default) { probeTtl(hostAddress) }
-                val fingerprint = HostFingerprinter.fingerprint(openPorts, ttl)
-                _uiState.value = _uiState.value.copy(
-                    hostFingerprint = buildFingerprintSummary(fingerprint)
-                )
+                // nmap's own OS detection (when present) beats the TTL/port heuristic; use it directly.
+                if (!report.osInfo.isNullOrBlank()) {
+                    _uiState.value = _uiState.value.copy(
+                        hostFingerprint = resourceProvider.getString(R.string.fingerprint_os_nmap, report.osInfo)
+                    )
+                } else if (mode == PortScanMode.UDP) {
+                    // The fingerprint heuristic maps TCP port roles; UDP results don't feed it.
+                    _uiState.value = _uiState.value.copy(hostFingerprint = "")
+                } else {
+                    val openPorts = report.scannedPorts
+                        .filter { it.state == PortState.OPEN }
+                        .map { it.port }
+                    val ttl = withContext(Dispatchers.Default) { probeTtl(hostAddress) }
+                    val fingerprint = HostFingerprinter.fingerprint(openPorts, ttl)
+                    _uiState.value = _uiState.value.copy(
+                        hostFingerprint = buildFingerprintSummary(fingerprint)
+                    )
+                }
             } catch (exception: IllegalArgumentException) {
                 _uiState.value = _uiState.value.copy(
                     isPortScanning = false,

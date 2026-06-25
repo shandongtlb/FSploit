@@ -47,6 +47,7 @@ class AppPreferencesRepository(
             bettercapPath = preferences.getString(KEY_MITM_BETTERCAP_PATH, DEFAULT_BETTERCAP_PATH).orEmpty(),
             tcpdumpPath = preferences.getString(KEY_MITM_TCPDUMP_PATH, DEFAULT_TCPDUMP_PATH).orEmpty(),
             mitmdumpPath = preferences.getString(KEY_MITM_MITMDUMP_PATH, DEFAULT_MITMDUMP_PATH).orEmpty(),
+            nmapPath = preferences.getString(KEY_MITM_NMAP_PATH, DEFAULT_NMAP_PATH).orEmpty(),
             httpRedirectPort = preferences.getInt(KEY_MITM_HTTP_REDIRECT_PORT, DEFAULT_MITM_HTTP_REDIRECT_PORT)
         )
     }
@@ -56,6 +57,7 @@ class AppPreferencesRepository(
             .putString(KEY_MITM_BETTERCAP_PATH, config.bettercapPath.trim())
             .putString(KEY_MITM_TCPDUMP_PATH, config.tcpdumpPath.trim())
             .putString(KEY_MITM_MITMDUMP_PATH, config.mitmdumpPath.trim())
+            .putString(KEY_MITM_NMAP_PATH, config.nmapPath.trim())
             .putInt(KEY_MITM_HTTP_REDIRECT_PORT, config.httpRedirectPort)
             .apply()
     }
@@ -110,6 +112,7 @@ class AppPreferencesRepository(
         private const val KEY_MITM_BETTERCAP_PATH = "mitm_bettercap_path"
         private const val KEY_MITM_TCPDUMP_PATH = "mitm_tcpdump_path"
         private const val KEY_MITM_MITMDUMP_PATH = "mitm_mitmdump_path"
+        private const val KEY_MITM_NMAP_PATH = "mitm_nmap_path"
         private const val KEY_MITM_HTTP_REDIRECT_PORT = "mitm_http_redirect_port"
         private const val KEY_PCAP_KEYLOG_PATH = "pcap_keylog_path"
         private const val KEY_PCAP_KEYLOG_NAME = "pcap_keylog_name"
@@ -126,6 +129,7 @@ class AppPreferencesRepository(
         private const val DEFAULT_BETTERCAP_PATH = "bettercap"
         private const val DEFAULT_TCPDUMP_PATH = "tcpdump"
         private const val DEFAULT_MITMDUMP_PATH = "mitmdump"
+        private const val DEFAULT_NMAP_PATH = "nmap"
         private const val DEFAULT_MITM_HTTP_REDIRECT_PORT = 18080
         private const val DEFAULT_MSF_RPC_HOST = "127.0.0.1"
         private const val DEFAULT_MSF_RPC_PORT = 55552

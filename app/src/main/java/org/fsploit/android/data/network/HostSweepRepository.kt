@@ -7,6 +7,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import org.fsploit.android.R
+import org.fsploit.android.core.OuiLookup
 import org.fsploit.android.core.ResourceProvider
 import org.fsploit.android.data.shell.ShellRepository
 import org.fsploit.android.domain.model.HostScanResult
@@ -20,7 +21,9 @@ import java.net.SocketTimeoutException
 class HostSweepRepository(
     private val networkInterfaceRepository: NetworkInterfaceRepository,
     private val resourceProvider: ResourceProvider,
-    private val shellRepository: ShellRepository
+    private val shellRepository: ShellRepository,
+    private val ouiLookup: OuiLookup,
+    private val nmapScanner: NmapScanner
 ) {
     suspend fun runSweep(
         preferredInterfaceName: String,
@@ -35,7 +38,14 @@ class HostSweepRepository(
                 summary = resourceProvider.getString(R.string.host_sweep_unavailable)
             )
 
-        val responsiveHosts = probeHosts(target, onProgress)
+        // Prefer nmap's host discovery when the managed package is present (steadier timing, fewer
+        // missed hosts); otherwise fall back to the zero-dependency builtin ARP/neighbor sweep so
+        // discovery always works.
+        val responsiveHosts = if (nmapScanner.isAvailable()) {
+            nmapScanner.discoverHosts(target)
+        } else {
+            probeHosts(target, onProgress)
+        }
 
         val subnetLabel = "${target.networkAddress}/${target.prefixLength}"
         val summary = if (responsiveHosts.isEmpty()) {
@@ -209,9 +219,13 @@ class HostSweepRepository(
             return null
         }
 
+        // `ip neigh` lines look like: "192.168.1.1 lladdr 00:11:22:33:44:55 REACHABLE"
+        val mac = LLADDR_REGEX.find(line)?.groupValues?.getOrNull(1)?.let(::normalizeMac)
         return HostScanResult(
             hostAddress = host,
-            finding = resourceProvider.getString(R.string.host_result_neighbor)
+            finding = resourceProvider.getString(R.string.host_result_neighbor),
+            macAddress = mac,
+            vendor = ouiLookup.vendorFor(mac)
         )
     }
 
@@ -240,10 +254,22 @@ class HostSweepRepository(
             return null
         }
 
+        val normalizedMac = normalizeMac(mac)
         return HostScanResult(
             hostAddress = host,
-            finding = resourceProvider.getString(R.string.host_result_arp)
+            finding = resourceProvider.getString(R.string.host_result_arp),
+            macAddress = normalizedMac,
+            vendor = ouiLookup.vendorFor(normalizedMac)
         )
+    }
+
+    /** Normalize to lowercase colon-separated form, or null if it isn't a usable MAC. */
+    private fun normalizeMac(raw: String?): String? {
+        val value = raw?.trim()?.lowercase() ?: return null
+        if (!MAC_REGEX.matches(value) || value == "00:00:00:00:00:00") {
+            return null
+        }
+        return value
     }
 
     private fun probeTcpReachability(host: String): HostScanResult? {
@@ -285,5 +311,7 @@ class HostSweepRepository(
         private val TCP_SUPPLEMENT_PORTS = intArrayOf(445, 139, 80, 443, 22, 53, 8080, 5555)
         private val IPV4_AT_START = Regex("""^\d{1,3}(?:\.\d{1,3}){3}""")
         private val WHITESPACE_REGEX = Regex("""\s+""")
+        private val LLADDR_REGEX = Regex("""lladdr\s+([0-9a-fA-F:]{17})""")
+        private val MAC_REGEX = Regex("""^[0-9a-f]{2}(?::[0-9a-f]{2}){5}$""")
     }
 }

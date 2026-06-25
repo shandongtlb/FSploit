@@ -150,7 +150,14 @@ class SessionViewModel(
                 it.copy(
                     isScanning = false,
                     scanSummary = report.summary,
-                    scanResults = report.responsiveHosts.map { host -> "${host.hostAddress}  ${host.finding}" },
+                    scanResults = report.responsiveHosts.map { host ->
+                        buildString {
+                            append(host.hostAddress)
+                            host.macAddress?.let { append("  ").append(it) }
+                            host.vendor?.let { append("  ").append(it) }
+                            append("  ").append(host.finding)
+                        }
+                    },
                     responsiveTargetResults = report.responsiveHosts,
                     responsiveHosts = responsiveHosts,
                     selectedHostAddress = selectedHostAddress

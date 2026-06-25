@@ -5,6 +5,7 @@ data class MitmReadiness(
     val tcpdumpAvailable: Boolean,
     val bettercapAvailable: Boolean,
     val mitmdumpAvailable: Boolean,
+    val nmapAvailable: Boolean,
     val certificateStoreAccessible: Boolean,
     val summary: String
 )
