@@ -88,7 +88,7 @@ class ToolsViewModel(
                 shellExecutionSummary = resourceProvider.getString(R.string.shell_command_running)
             )
 
-            val result = withContext(Dispatchers.Default) {
+            val result = withContext(Dispatchers.IO) {
                 runShellCommandUseCase(
                     command = command,
                     asRoot = state.shellRunAsRoot,

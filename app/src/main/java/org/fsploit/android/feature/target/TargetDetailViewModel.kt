@@ -106,7 +106,18 @@ class TargetDetailViewModel(
     }
 
     fun selectPortScanMode(mode: PortScanMode) {
-        _uiState.value = _uiState.value.copy(portScanMode = mode)
+        if (_uiState.value.portScanMode == mode) {
+            return
+        }
+        // Drop the previous mode's results so a TCP run's rows don't linger after switching to UDP
+        // (and vice versa) — stale cross-protocol results read as "UDP scan still showing TCP".
+        _uiState.value = _uiState.value.copy(
+            portScanMode = mode,
+            scannedPortResults = emptyList(),
+            portScanResults = emptyList(),
+            hostFingerprint = "",
+            portScanSummary = resourceProvider.getString(R.string.port_scan_mode_changed)
+        )
     }
 
     fun runPortScan() {
@@ -137,7 +148,7 @@ class TargetDetailViewModel(
             )
 
             try {
-                val report = withContext(Dispatchers.Default) {
+                val report = withContext(Dispatchers.IO) {
                     runPortScanUseCase(hostAddress, config, mode, interfaceName)
                 }
 
@@ -174,7 +185,7 @@ class TargetDetailViewModel(
                     val openPorts = report.scannedPorts
                         .filter { it.state == PortState.OPEN }
                         .map { it.port }
-                    val ttl = withContext(Dispatchers.Default) { probeTtl(hostAddress) }
+                    val ttl = withContext(Dispatchers.IO) { probeTtl(hostAddress) }
                     val fingerprint = HostFingerprinter.fingerprint(openPorts, ttl)
                     _uiState.value = _uiState.value.copy(
                         hostFingerprint = buildFingerprintSummary(fingerprint)

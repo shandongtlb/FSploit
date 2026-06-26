@@ -61,7 +61,7 @@ class SessionViewModel(
     }
 
     fun refresh(permissionSummary: String, permissionsGranted: Boolean) {
-        viewModelScope.launch(Dispatchers.Default) {
+        viewModelScope.launch(Dispatchers.IO) {
             val overview = loadNetworkOverview()
             val shellStatus = probeShell()
             val current = holder.value
@@ -165,7 +165,7 @@ class SessionViewModel(
             }
 
             val report = try {
-                withContext(Dispatchers.Default) {
+                withContext(Dispatchers.IO) {
                     runHostSweep(interfaceName) { scanned, total ->
                         granularProgress.set(scanned to total)
                     }

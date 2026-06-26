@@ -18,6 +18,7 @@ import org.fsploit.android.domain.usecase.AnalyzePcapUseCase
 import org.fsploit.android.domain.usecase.EnsureTsharkUseCase
 import org.fsploit.android.domain.usecase.BlockHostUseCase
 import org.fsploit.android.domain.usecase.GetPreferredInterfaceUseCase
+import org.fsploit.android.domain.usecase.LoadActiveBlockUseCase
 import org.fsploit.android.domain.usecase.LoadMitmReadinessUseCase
 import org.fsploit.android.domain.usecase.LoadMitmSessionUseCase
 import org.fsploit.android.domain.usecase.LoadMitmToolchainConfigUseCase
@@ -29,6 +30,7 @@ import org.fsploit.android.domain.usecase.LoadPortScanConfigUseCase
 import org.fsploit.android.domain.usecase.PushMsfTargetUseCase
 import org.fsploit.android.domain.usecase.ProbeShellUseCase
 import org.fsploit.android.domain.usecase.ReadMitmLootUseCase
+import org.fsploit.android.domain.usecase.RestoreNetworkUseCase
 import org.fsploit.android.domain.usecase.LoadLastSweepUseCase
 import org.fsploit.android.domain.usecase.RunHostSweepUseCase
 import org.fsploit.android.domain.usecase.SaveLastSweepUseCase
@@ -82,6 +84,9 @@ class AppContainer(
     private val msfRepository = MsfRepository(resourceProvider)
     private val sessionStateHolder = SessionStateHolder()
 
+    /** Used by [org.fsploit.android.feature.mitm.MitmGuardService] to tear down a left-on MITM. */
+    val restoreNetworkUseCase = RestoreNetworkUseCase(mitmRepository)
+
     val viewModelFactory = FSploitViewModelFactory(
         resourceProvider = resourceProvider,
         sessionStateHolder = sessionStateHolder,
@@ -116,6 +121,7 @@ class AppContainer(
         runShellCommand = RunShellCommandUseCase(shellRepository),
         blockHost = BlockHostUseCase(mitmRepository),
         unblockHost = UnblockHostUseCase(mitmRepository),
+        loadActiveBlock = LoadActiveBlockUseCase(mitmRepository),
         saveMitmToolchainConfig = SaveMitmToolchainConfigUseCase(preferencesRepository),
         saveMsfRpcConfig = SaveMsfRpcConfigUseCase(preferencesRepository),
         startMitmSession = StartMitmSessionUseCase(mitmRepository),

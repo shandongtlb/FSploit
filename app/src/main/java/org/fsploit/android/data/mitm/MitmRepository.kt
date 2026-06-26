@@ -24,6 +24,10 @@ class MitmRepository(
 
     fun stopSession(): MitmActionResult = backend.stopSession()
 
+    fun stopAll(): MitmActionResult = backend.stopAll()
+
+    fun loadActiveBlock(): String = backend.loadActiveBlock()
+
     fun blockHost(
         hostAddress: String,
         interfaceName: String,

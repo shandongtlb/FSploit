@@ -17,6 +17,7 @@ import org.fsploit.android.domain.model.MitmMode
 import org.fsploit.android.domain.model.MitmSession
 import org.fsploit.android.domain.model.NetworkInterfaceInfo
 import org.fsploit.android.domain.usecase.BlockHostUseCase
+import org.fsploit.android.domain.usecase.LoadActiveBlockUseCase
 import org.fsploit.android.domain.usecase.LoadMitmReadinessUseCase
 import org.fsploit.android.domain.usecase.LoadMitmSessionUseCase
 import org.fsploit.android.domain.usecase.RunShellCommandUseCase
@@ -60,6 +61,7 @@ class MitmViewModel(
     private val loadMitmSessionUseCase: LoadMitmSessionUseCase,
     private val blockHostUseCase: BlockHostUseCase,
     private val unblockHostUseCase: UnblockHostUseCase,
+    private val loadActiveBlockUseCase: LoadActiveBlockUseCase,
     private val startMitmSessionUseCase: StartMitmSessionUseCase,
     private val stopMitmSessionUseCase: StopMitmSessionUseCase,
     private val runShellCommandUseCase: RunShellCommandUseCase
@@ -120,9 +122,13 @@ class MitmViewModel(
 
     /** Loads MITM tool readiness + the active session record. Driven from the fragment on refresh. */
     fun refresh() {
-        viewModelScope.launch(Dispatchers.Default) {
+        viewModelScope.launch(Dispatchers.IO) {
             val readiness = loadMitmReadinessUseCase(session.value.shellStatus())
             val mitmSession = loadMitmSessionUseCase()
+            // Reconcile the block flag against the backend's authoritative state so a block left on
+            // from a previous launch (or torn down via the notification's "stop all") is reflected
+            // correctly — this is what drives the active-MITM foreground notification too.
+            val activeBlock = loadActiveBlockUseCase()
             _uiState.value = _uiState.value.copy(
                 mitmSummary = readiness.summary,
                 iptablesAvailable = readiness.iptablesAvailable,
@@ -133,6 +139,12 @@ class MitmViewModel(
                 mitmSession = mitmSession,
                 mitmSessionSummary = mitmSession.summary.ifBlank {
                     resourceProvider.getString(R.string.mitm_session_idle)
+                },
+                blockedHostAddress = activeBlock,
+                connectionBlockSummary = if (activeBlock.isNotBlank()) {
+                    resourceProvider.getString(R.string.block_current_target, activeBlock)
+                } else {
+                    _uiState.value.connectionBlockSummary
                 }
             )
         }
@@ -202,7 +214,7 @@ class MitmViewModel(
                 )
             )
 
-            val result = withContext(Dispatchers.Default) {
+            val result = withContext(Dispatchers.IO) {
                 startMitmSessionUseCase(
                     MitmLaunchRequest(
                         mode = state.selectedMitmMode,
@@ -236,7 +248,7 @@ class MitmViewModel(
                 mitmSessionSummary = resourceProvider.getString(R.string.mitm_session_stopping)
             )
 
-            val result = withContext(Dispatchers.Default) {
+            val result = withContext(Dispatchers.IO) {
                 stopMitmSessionUseCase()
             }
 
@@ -269,7 +281,7 @@ class MitmViewModel(
             )
 
             val command = buildMitmDiagnosticsCommand(s, state)
-            val result = withContext(Dispatchers.Default) {
+            val result = withContext(Dispatchers.IO) {
                 runShellCommandUseCase(command = command, asRoot = true, timeoutMs = MITM_DIAGNOSTICS_TIMEOUT_MS)
             }
             val diagnosticsOutput = result.output.ifBlank {
@@ -332,7 +344,7 @@ class MitmViewModel(
                 }
             )
 
-            val result = withContext(Dispatchers.Default) {
+            val result = withContext(Dispatchers.IO) {
                 if (block) {
                     blockHostUseCase(
                         hostAddress,

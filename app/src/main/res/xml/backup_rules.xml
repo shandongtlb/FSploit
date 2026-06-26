@@ -1,2 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<full-backup-content />
+<!--
+  Legacy auto-backup rules (API < 31). allowBackup is false, so this is belt-and-suspenders:
+  even if backup is ever re-enabled, never let captured loot (pcaps, credentials.log,
+  cookies.jsonl under filesDir/mitm/) or the credential-bearing prefs leave the device.
+-->
+<full-backup-content>
+    <exclude domain="file" path="mitm/" />
+    <exclude domain="sharedpref" path="fsploit_settings.xml" />
+</full-backup-content>

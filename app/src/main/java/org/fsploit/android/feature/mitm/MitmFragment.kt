@@ -197,6 +197,13 @@ class MitmFragment : Fragment() {
         syncInput(binding.mitmSecondaryInput, m.mitmSecondaryInput)
         syncInput(binding.mitmPayloadInput, m.mitmPayloadInput)
 
+        // Keep the foreground "you are intercepting traffic" notification in lockstep with whether a
+        // session or a standalone connection block is live. Idempotent, so safe to call every render.
+        MitmGuardService.sync(
+            requireContext(),
+            m.mitmSession.active || m.blockedHostAddress.isNotBlank()
+        )
+
         renderModeFields(mode)
     }
 

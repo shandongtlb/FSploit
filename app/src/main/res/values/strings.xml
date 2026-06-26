@@ -461,6 +461,7 @@
     <string name="port_scan_no_selected_host">No responsive host is selected for port scanning.</string>
     <string name="port_scan_select_target">Select a responsive host before running a port scan.</string>
     <string name="port_scan_ready">Ready to scan the configured port set on %1$s.</string>
+    <string name="port_scan_mode_changed">Scan mode changed. Run the scan to refresh results.</string>
     <string name="port_scan_running">Scanning configured TCP ports on %1$s...</string>
     <string name="port_scan_no_open">No open TCP ports were found on %1$s across %2$d requested ports.</string>
     <string name="port_scan_found_open">Found %1$d open TCP port(s) on %2$s across %3$d requested ports.</string>
@@ -496,6 +497,12 @@
     <string name="mitm_session_running">%1$s is running against %2$s.</string>
     <string name="mitm_session_stopping">Stopping MITM session...</string>
     <string name="mitm_session_stopped">MITM session stopped.</string>
+    <string name="mitm_restore_done">All sessions stopped and the network was restored.</string>
+    <string name="mitm_guard_channel_name">Active MITM session</string>
+    <string name="mitm_guard_channel_description">Shown while a MITM session or connection block is live.</string>
+    <string name="mitm_guard_notification_title">FSploit is intercepting traffic</string>
+    <string name="mitm_guard_notification_text">A MITM session or connection block is active. Tap to manage.</string>
+    <string name="mitm_guard_stop_all">Stop all &amp; restore network</string>
     <string name="mitm_session_start_failed">Failed to start the requested MITM session.</string>
     <string name="mitm_interface_required">Select or save a capture interface before starting MITM modes.</string>
     <string name="mitm_gateway_required">No gateway was resolved for %1$s. MITM relay cannot start.</string>

@@ -95,7 +95,7 @@ class SettingsViewModel(
                 mitmSettingsSummary = resourceProvider.getString(R.string.mitm_settings_saving)
             )
 
-            withContext(Dispatchers.Default) {
+            withContext(Dispatchers.IO) {
                 saveMitmToolchainConfigUseCase(
                     config.copy(
                         bettercapPath = config.bettercapPath.trim(),

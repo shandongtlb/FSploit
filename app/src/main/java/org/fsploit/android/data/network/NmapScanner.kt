@@ -116,7 +116,9 @@ class NmapScanner(
         val results = host?.ports.orEmpty().map { port ->
             PortScanResult(
                 port = port.portId,
-                protocol = port.service?.takeIf { it.isNotBlank() } ?: port.protocol.ifBlank { "tcp" },
+                // The transport protocol (tcp/udp), not the service name — a UDP scan must read as
+                // "udp". The service/version still surfaces in `note` and `service`.
+                protocol = port.protocol.ifBlank { if (mode == PortScanMode.UDP) "udp" else "tcp" },
                 state = portState(port.state),
                 note = buildNote(port),
                 service = port.service,

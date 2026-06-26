@@ -99,7 +99,7 @@ class LootViewModel(
     }
 
     private suspend fun refreshOnce(force: Boolean) {
-        val session = withContext(Dispatchers.Default) { loadMitmSessionUseCase() }
+        val session = withContext(Dispatchers.IO) { loadMitmSessionUseCase() }
         val keylogName = preferencesRepository.getPcapKeylogName()
 
         val liveMode = session.mode
@@ -157,13 +157,13 @@ class LootViewModel(
             mode = effectiveMode,
             artifactPath = effectiveArtifact
         )
-        val snapshot = withContext(Dispatchers.Default) { readMitmLootUseCase(effectiveSession) }
+        val snapshot = withContext(Dispatchers.IO) { readMitmLootUseCase(effectiveSession) }
         // SNIFFER produces a binary pcap — analyze it into a flow/HTTP/packet view rather than
         // parsing it as a credential log (which yields nothing). Pass the imported keylog so the
         // tshark engine can decrypt HTTPS when available.
         val pcap = if (effectiveMode == MitmMode.SNIFFER && snapshot.artifactPath.isNotBlank()) {
             val keylogPath = preferencesRepository.getPcapKeylogPath()
-            withContext(Dispatchers.Default) { analyzePcapUseCase(snapshot.artifactPath, keylogPath) }
+            withContext(Dispatchers.IO) { analyzePcapUseCase(snapshot.artifactPath, keylogPath) }
         } else {
             null
         }

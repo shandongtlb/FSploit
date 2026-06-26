@@ -290,6 +290,18 @@ class ExternalToolMitmBackend(
         )
     }
 
+    override fun stopAll(): MitmActionResult {
+        // Both are independent records; tear down whichever exist. Each path restores the network
+        // from its stored state (previous ip_forward, the exact iptables rules it added).
+        stopSession()
+        stopConnectionBlockInternal()
+        return MitmActionResult(
+            success = true,
+            summary = resourceProvider.getString(R.string.mitm_restore_done),
+            session = MitmSession(summary = resourceProvider.getString(R.string.mitm_session_idle))
+        )
+    }
+
     private fun cleanupSession(
         pids: List<Long>,
         redirectPort: Int,
@@ -309,6 +321,17 @@ class ExternalToolMitmBackend(
         if (forwardDropTargetHost.isNotBlank()) {
             runtimeController.clearForwardDrop(forwardDropTargetHost)
         }
+    }
+
+    override fun loadActiveBlock(): String {
+        val record = loadConnectionBlockRecord() ?: return ""
+        // loadConnectionBlockRecord already drops a dead NORMAL-mode caplet; for HOTSPOT verify the
+        // iptables FORWARD DROP is still installed so a manually-flushed rule doesn't read as active.
+        if (record.mode == ConnectionBlockMode.HOTSPOT && !runtimeController.hasForwardDrop(record.targetHost)) {
+            blockStore.clear()
+            return ""
+        }
+        return record.targetHost
     }
 
     private fun loadConnectionBlockRecord(): ActiveConnectionBlockRecord? {

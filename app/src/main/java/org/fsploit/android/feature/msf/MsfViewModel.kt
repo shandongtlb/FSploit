@@ -155,7 +155,7 @@ class MsfViewModel(
         }
         helperEnsured = true
         viewModelScope.launch {
-            val status = withContext(Dispatchers.Default) { ensureMsgrpcScriptUseCase() }
+            val status = withContext(Dispatchers.IO) { ensureMsgrpcScriptUseCase() }
             val message = when (status) {
                 MsgrpcHelperStatus.NO_CHROOT -> resourceProvider.getString(R.string.msf_helper_no_chroot)
                 MsgrpcHelperStatus.NO_MSF -> resourceProvider.getString(R.string.msf_helper_no_msf)
@@ -227,7 +227,7 @@ class MsfViewModel(
                 msfSettingsSummary = resourceProvider.getString(R.string.msf_settings_saving)
             )
 
-            withContext(Dispatchers.Default) {
+            withContext(Dispatchers.IO) {
                 saveMsfRpcConfigUseCase(
                     config.copy(
                         host = config.host.trim(),
@@ -267,7 +267,7 @@ class MsfViewModel(
                 msfSummary = resourceProvider.getString(R.string.msf_probe_running)
             )
 
-            val overview = withContext(Dispatchers.Default) {
+            val overview = withContext(Dispatchers.IO) {
                 loadMsfOverviewUseCase(config)
             }
 
@@ -301,7 +301,7 @@ class MsfViewModel(
                 isPushingTarget = true,
                 pushTargetSummary = resourceProvider.getString(R.string.msf_push_target_running, host)
             )
-            val message = withContext(Dispatchers.Default) {
+            val message = withContext(Dispatchers.IO) {
                 pushMsfTargetUseCase(_uiState.value.msfRpcConfig, host).message
             }
             _uiState.value = _uiState.value.copy(isPushingTarget = false, pushTargetSummary = message)
@@ -338,7 +338,7 @@ class MsfViewModel(
                 scanSummary = resourceProvider.getString(R.string.msf_scan_running, state.scanModulePath),
                 scanOutput = ""
             )
-            val result = withContext(Dispatchers.Default) {
+            val result = withContext(Dispatchers.IO) {
                 runMsfScanUseCase(_uiState.value.msfRpcConfig, state.scanModulePath, rhosts)
             }
             _uiState.value = _uiState.value.copy(
@@ -378,7 +378,7 @@ class MsfViewModel(
                 isRunningMsfAction = true,
                 msfActionSummary = resourceProvider.getString(R.string.msf_action_running)
             )
-            val message = withContext(Dispatchers.Default) { action() }
+            val message = withContext(Dispatchers.IO) { action() }
             _uiState.value = _uiState.value.copy(
                 isRunningMsfAction = false,
                 msfActionSummary = message
@@ -415,7 +415,7 @@ class MsfViewModel(
                 isStartingHandler = true,
                 handlerSummary = resourceProvider.getString(R.string.msf_handler_starting)
             )
-            val message = withContext(Dispatchers.Default) {
+            val message = withContext(Dispatchers.IO) {
                 startMsfHandlerUseCase(_uiState.value.msfRpcConfig, state.payload, state.lhost, state.lport).message
             }
             _uiState.value = _uiState.value.copy(isStartingHandler = false, handlerSummary = message)

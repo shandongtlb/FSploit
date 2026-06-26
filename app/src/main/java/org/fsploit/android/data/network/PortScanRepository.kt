@@ -97,40 +97,50 @@ class PortScanRepository(
         port: Int,
         connectTimeoutMs: Int
     ): PortScanResult {
-        val protocol = protocolForPort(port)
+        // The builtin engine is a TCP socket connect-scan, so the transport is always tcp. The
+        // well-known service guess goes in `service`/`note`, not the protocol column.
+        val serviceGuess = protocolForPort(port).takeIf { it != "tcp" }
+        fun note(base: String): String =
+            if (serviceGuess != null) "$serviceGuess · $base" else base
         return try {
             Socket().use { socket ->
                 socket.connect(InetSocketAddress(hostAddress, port), connectTimeoutMs)
                 PortScanResult(
                     port = port,
-                    protocol = protocol,
+                    protocol = "tcp",
                     state = PortState.OPEN,
-                    note = resourceProvider.getString(R.string.port_note_accepted_connection)
+                    note = note(resourceProvider.getString(R.string.port_note_accepted_connection)),
+                    service = serviceGuess
                 )
             }
         } catch (_: ConnectException) {
             PortScanResult(
                 port = port,
-                protocol = protocol,
+                protocol = "tcp",
                 state = PortState.CLOSED,
-                note = resourceProvider.getString(R.string.port_note_actively_refused)
+                note = note(resourceProvider.getString(R.string.port_note_actively_refused)),
+                service = serviceGuess
             )
         } catch (_: SocketTimeoutException) {
             PortScanResult(
                 port = port,
-                protocol = protocol,
+                protocol = "tcp",
                 state = PortState.FILTERED,
-                note = resourceProvider.getString(R.string.port_note_timed_out)
+                note = note(resourceProvider.getString(R.string.port_note_timed_out)),
+                service = serviceGuess
             )
         } catch (exception: Exception) {
             PortScanResult(
                 port = port,
-                protocol = protocol,
+                protocol = "tcp",
                 state = PortState.FILTERED,
-                note = resourceProvider.getString(
-                    R.string.port_note_exception,
-                    exception.javaClass.simpleName
-                )
+                note = note(
+                    resourceProvider.getString(
+                        R.string.port_note_exception,
+                        exception.javaClass.simpleName
+                    )
+                ),
+                service = serviceGuess
             )
         }
     }

@@ -6,6 +6,7 @@ import org.fsploit.android.data.settings.AppPreferencesRepository
 import org.fsploit.android.domain.usecase.AnalyzePcapUseCase
 import org.fsploit.android.domain.usecase.BlockHostUseCase
 import org.fsploit.android.domain.usecase.GetPreferredInterfaceUseCase
+import org.fsploit.android.domain.usecase.LoadActiveBlockUseCase
 import org.fsploit.android.domain.usecase.LoadMitmReadinessUseCase
 import org.fsploit.android.domain.usecase.LoadMitmSessionUseCase
 import org.fsploit.android.domain.usecase.LoadMitmToolchainConfigUseCase
@@ -76,6 +77,7 @@ class FSploitViewModelFactory(
     private val runShellCommand: RunShellCommandUseCase,
     private val blockHost: BlockHostUseCase,
     private val unblockHost: UnblockHostUseCase,
+    private val loadActiveBlock: LoadActiveBlockUseCase,
     private val saveMitmToolchainConfig: SaveMitmToolchainConfigUseCase,
     private val saveMsfRpcConfig: SaveMsfRpcConfigUseCase,
     private val startMitmSession: StartMitmSessionUseCase,
@@ -104,6 +106,7 @@ class FSploitViewModelFactory(
                 loadMitmSessionUseCase = loadMitmSession,
                 blockHostUseCase = blockHost,
                 unblockHostUseCase = unblockHost,
+                loadActiveBlockUseCase = loadActiveBlock,
                 startMitmSessionUseCase = startMitmSession,
                 stopMitmSessionUseCase = stopMitmSession,
                 runShellCommandUseCase = runShellCommand

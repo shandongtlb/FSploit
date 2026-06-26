@@ -1,2 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<data-extraction-rules />
+<!--
+  Data extraction rules (API 31+). Device-to-device transfer is NOT governed by allowBackup,
+  so loot and credential-bearing prefs must be excluded here explicitly for both cloud backup
+  and device transfer. Captured pcaps / credentials.log / cookies.jsonl live under filesDir/mitm/.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="mitm/" />
+        <exclude domain="sharedpref" path="fsploit_settings.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="mitm/" />
+        <exclude domain="sharedpref" path="fsploit_settings.xml" />
+    </device-transfer>
+</data-extraction-rules>

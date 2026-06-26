@@ -57,6 +57,13 @@ class MainActivity : AppCompatActivity() {
         refreshFromUi()
     }
 
+    // Notifications aren't required for any core function, so they're requested separately and are
+    // never part of the "permissions granted" gate — granting only lets the active-MITM foreground
+    // notification actually appear (the service runs either way).
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* no-op */ }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val appContainer = (application as FSploitApp).appContainer
         viewModelFactory = appContainer.viewModelFactory
@@ -133,6 +140,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             refreshFromUi()
         }
+        maybeRequestNotificationPermission()
         if (bettercapPackageManager.syncInstalledBinaryPath() ||
             mitmdumpPackageManager.syncInstalledBinaryPath() ||
             nmapPackageManager.syncInstalledBinaryPath()
@@ -169,6 +177,15 @@ class MainActivity : AppCompatActivity() {
             .run {
                 if (commitNow) commitNow() else commit()
             }
+    }
+
+    private fun maybeRequestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 
     fun requestPermissionsFromUi() {
