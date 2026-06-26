@@ -237,10 +237,11 @@
     <string name="settings_port_profile_value">Ports: %1$s\nTimeout: %2$s ms\nParallelism: %3$s</string>
     <string name="language_follow_system">Follow system language. Supported: English and Simplified Chinese.</string>
 
-    <string name="msf_module_intro">Independent Metasploit RPC workspace for NetHunter chroot or remote framework endpoints. This module stays separate from MITM orchestration.</string>
-    <string name="msf_status_title">MSF module summary</string>
-    <string name="msf_saved_config_label">Saved RPC endpoint</string>
-    <string name="msf_config_value">Host: %1$s\nPort: %2$d\nUser: %3$s\nTransport: %4$s</string>
+    <string name="msf_tab_overview">Overview</string>
+    <string name="msf_tab_exploit">Exploit</string>
+    <string name="msf_tab_sessions">Sessions</string>
+    <string name="msf_connection_title">Connection</string>
+    <string name="msf_target_title">Target (RHOSTS)</string>
     <string name="msf_rpc_config_title">RPC configuration</string>
     <string name="msf_rpc_host">RPC host</string>
     <string name="msf_rpc_port">RPC port</string>
@@ -253,7 +254,6 @@
     <string name="msf_apply_msfrpcd_preset">NetHunter msfrpcd</string>
     <string name="msf_save_settings">Save MSF Settings</string>
     <string name="msf_launch_rpc">Run Launch Command</string>
-    <string name="msf_connect_hint">FSploit only connects — start the console yourself: run msgrpc in the NetHunter terminal (tap the ⓘ above), then Probe RPC Overview.</string>
     <string name="msf_sessions_jobs_title">Sessions / Jobs</string>
     <string name="msf_push_target">Push host to MSF (set RHOSTS)</string>
     <string name="msf_push_target_idle">Connect, then push the selected host into the shared msgrpc instance.</string>
@@ -296,11 +296,6 @@
     <string name="msf_session_peer">Tunnel peer: %1$s</string>
     <string name="msf_session_via">Via exploit: %1$s</string>
     <string name="msf_value_unknown">Unknown</string>
-    <string name="msf_ssl_enabled">HTTPS / SSL</string>
-    <string name="msf_ssl_disabled">HTTP / plain</string>
-    <string name="msf_summary_pending">Preparing the standalone Metasploit RPC workspace...</string>
-    <string name="msf_summary_remote">Configured for an independent RPC endpoint at %1$s:%2$d over %3$s. Add a local launch command only if you want FSploit to start NetHunter services itself.</string>
-    <string name="msf_summary_local_launch">Configured for %1$s:%2$d over %3$s with a local launch command. FSploit can save the endpoint and trigger a NetHunter-backed RPC startup without involving MITM flows.</string>
     <string name="msf_settings_idle">No MSF RPC settings changes have been saved yet.</string>
     <string name="msf_settings_saving">Saving MSF RPC settings...</string>
     <string name="msf_settings_saved">MSF RPC settings saved.</string>

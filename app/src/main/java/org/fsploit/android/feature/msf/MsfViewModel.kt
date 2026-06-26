@@ -83,7 +83,7 @@ class MsfViewModel(
 
     private val _uiState = MutableStateFlow(
         MsfUiState(
-            msfSummary = resourceProvider.getString(R.string.msf_summary_pending),
+            msfSummary = "",
             msfSettingsSummary = resourceProvider.getString(R.string.msf_settings_idle),
             msfActionSummary = resourceProvider.getString(R.string.msf_action_idle),
             pushTargetSummary = resourceProvider.getString(R.string.msf_push_target_idle),
@@ -133,13 +133,7 @@ class MsfViewModel(
     fun refresh() {
         if (!configLoaded) {
             configLoaded = true
-            val stored = loadMsfRpcConfigUseCase()
-            _uiState.value = _uiState.value.copy(
-                msfRpcConfig = stored,
-                msfSummary = buildMsfSummary(stored)
-            )
-        } else {
-            _uiState.value = _uiState.value.copy(msfSummary = buildMsfSummary(_uiState.value.msfRpcConfig))
+            _uiState.value = _uiState.value.copy(msfRpcConfig = loadMsfRpcConfigUseCase())
         }
         ensureHelperScript()
     }
@@ -239,7 +233,6 @@ class MsfViewModel(
 
             _uiState.value = _uiState.value.copy(
                 isSavingMsfRpcConfig = false,
-                msfSummary = buildMsfSummary(_uiState.value.msfRpcConfig),
                 msfSettingsSummary = resourceProvider.getString(R.string.msf_settings_saved)
             )
         }
@@ -279,7 +272,9 @@ class MsfViewModel(
                 msfApiVersion = overview.apiVersion,
                 msfSessions = overview.sessions,
                 msfJobs = overview.jobs,
-                msfSummary = overview.summary
+                msfSummary = overview.summary,
+                // Once connected the "run msfstart" helper hint is moot — drop it.
+                helperStatusSummary = if (overview.connected) "" else _uiState.value.helperStatusSummary
             )
         }
     }
@@ -442,14 +437,4 @@ class MsfViewModel(
         }
     }
 
-    private fun buildMsfSummary(config: MsfRpcConfig): String {
-        return resourceProvider.getString(
-            R.string.msf_summary_remote,
-            config.host,
-            config.port,
-            resourceProvider.getString(
-                if (config.useSsl) R.string.msf_ssl_enabled else R.string.msf_ssl_disabled
-            )
-        )
-    }
 }

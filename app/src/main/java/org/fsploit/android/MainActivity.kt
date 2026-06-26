@@ -27,7 +27,7 @@ import org.fsploit.android.databinding.ActivityMainBinding
 import org.fsploit.android.feature.discovery.DiscoveryFragment
 import org.fsploit.android.feature.host.HostWorkspaceFragment
 import org.fsploit.android.feature.session.SessionViewModel
-import org.fsploit.android.feature.msf.MsfFragment
+import org.fsploit.android.feature.msf.MsfWorkspaceFragment
 import org.fsploit.android.feature.overview.OverviewFragment
 import org.fsploit.android.feature.settings.SettingsFragment
 import org.fsploit.android.feature.tools.ToolsFragment
@@ -165,7 +165,7 @@ class MainActivity : AppCompatActivity() {
         updateScreenUi(screen)
         val fragment = when (screen) {
             MainScreen.OVERVIEW -> OverviewFragment()
-            MainScreen.MSF -> MsfFragment()
+            MainScreen.MSF -> MsfWorkspaceFragment()
             MainScreen.DISCOVERY -> DiscoveryFragment()
             MainScreen.TARGET_DETAIL -> HostWorkspaceFragment()
             MainScreen.TOOLS -> ToolsFragment()

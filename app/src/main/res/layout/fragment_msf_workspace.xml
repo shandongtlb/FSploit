@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/fsploit_background"
+    android:orientation="vertical">
+
+    <!-- Shared connection header: RPC status stays visible across all MSF tabs -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="@dimen/fs_screen_margin"
+        android:paddingTop="@dimen/fs_screen_margin"
+        android:paddingEnd="@dimen/fs_screen_margin"
+        android:paddingBottom="12dp">
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.FSploit.Card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/dotMsfConnected"
+                        android:layout_width="9dp"
+                        android:layout_height="9dp"
+                        android:src="@drawable/status_dot"
+                        android:contentDescription="@null" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:text="@string/msf_rpc_status_label"
+                        android:textAppearance="@style/TextAppearance.FSploit.Label" />
+
+                    <TextView
+                        android:id="@+id/msfConnectedValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.FSploit.Value" />
+
+                    <ImageView
+                        android:id="@+id/msfHelpInfo"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_marginStart="10dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:src="@drawable/ic_info"
+                        android:contentDescription="@string/msf_help_title" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/msfSummaryValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Body" />
+
+                <TextView
+                    android:id="@+id/msfHelperStatusValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textAppearance="@style/TextAppearance.FSploit.Body" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/msfTabLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/fsploit_background"
+        app:tabGravity="fill"
+        app:tabMode="fixed"
+        app:tabIndicatorColor="@color/fsploit_primary"
+        app:tabTextColor="@color/fsploit_text_secondary"
+        app:tabSelectedTextColor="@color/fsploit_primary" />
+
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/msfPager"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+</LinearLayout>
