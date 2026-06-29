@@ -27,46 +27,63 @@ class AnalyzePcapUseCase(
     private val parser: PcapParser = PcapParser()
 ) {
     suspend operator fun invoke(pcapPath: String, keylogPath: String = ""): PcapAnalysis {
-        val baseline = analyzeWithKotlin(pcapPath)
-        if (!baseline.available) {
+        val path = pcapPath.trim()
+        if (path.isBlank()) {
+            return PcapAnalysis(available = false, note = "no capture path")
+        }
+
+        // The Kotlin engine base64's the whole file through a shell, so the capture lands on the heap
+        // ~3x over (shell output + filtered copy + decoded bytes) — a large capture would OOM the
+        // phone. tshark, by contrast, streams from disk inside the chroot, so an oversized capture
+        // skips the in-memory engine but is NOT given up on: we fall through to tshark below.
+        val sizeBytes = fileSizeBytes(path)
+        val oversizeNote = sizeBytes?.let { oversizeCaptureNote(it) }
+
+        val baseline = if (oversizeNote != null) {
+            PcapAnalysis(available = false, note = oversizeNote)
+        } else {
+            analyzeWithKotlin(path)
+        }
+
+        // A non-oversize failure (empty / decode error / unreadable) means tshark would read the same
+        // file and fare no better, so the Kotlin verdict is final. Oversize is the one unavailable
+        // case where tshark can still rescue the analysis, so it falls through.
+        if (!baseline.available && oversizeNote == null) {
             return baseline
         }
+
         return when (ensureTshark()) {
+            // Oversized + no chroot ⇒ nothing can analyze it on-device; surface the size note as-is.
             TsharkStatus.NO_CHROOT -> baseline
             TsharkStatus.NO_TSHARK -> baseline.copy(
                 note = mergeNote(baseline.note, resourceProvider.getString(R.string.loot_pcap_hint_install_tshark))
             )
             TsharkStatus.READY -> {
-                val http = runTshark(pcapPath, keylogPath.trim())
-                if (http == null) {
-                    baseline.copy(
+                val http = runTshark(path, keylogPath.trim())
+                when {
+                    http == null -> baseline.copy(
                         note = mergeNote(baseline.note, resourceProvider.getString(R.string.loot_pcap_hint_tshark_failed))
                     )
-                } else {
-                    baseline.copy(
+                    baseline.available -> baseline.copy(
                         engine = PcapEngine.TSHARK,
                         decrypted = keylogPath.isNotBlank(),
                         http = if (http.isNotEmpty()) http else baseline.http
+                    )
+                    // Oversized capture: tshark carried the analysis alone (HTTP only — the flow and
+                    // packet lists need the in-memory engine, which we skipped).
+                    else -> PcapAnalysis(
+                        available = true,
+                        engine = PcapEngine.TSHARK,
+                        decrypted = keylogPath.isNotBlank(),
+                        http = http,
+                        note = resourceProvider.getString(R.string.loot_pcap_hint_oversize_tshark)
                     )
                 }
             }
         }
     }
 
-    private suspend fun analyzeWithKotlin(pcapPath: String): PcapAnalysis {
-        val path = pcapPath.trim()
-        if (path.isBlank()) {
-            return PcapAnalysis(available = false, note = "no capture path")
-        }
-        // Guard memory before reading: the file is base64'd through a shell, so the whole capture
-        // lands on the heap ~3x over (shell output string + filtered copy + decoded bytes). A large
-        // capture would OOM the phone, so refuse oversized files up front and point at tshark instead.
-        val sizeBytes = fileSizeBytes(path)
-        if (sizeBytes != null) {
-            oversizeCaptureNote(sizeBytes)?.let { note ->
-                return PcapAnalysis(available = false, note = note)
-            }
-        }
+    private suspend fun analyzeWithKotlin(path: String): PcapAnalysis {
         val result = runShellCommand(
             command = "base64 ${singleQuote(path)} 2>/dev/null",
             asRoot = true,

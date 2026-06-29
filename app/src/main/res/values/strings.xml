@@ -77,6 +77,7 @@
     <string name="loot_pcap_engine_tshark_decrypted">Engine: tshark · TLS decrypted with imported key</string>
     <string name="loot_pcap_hint_install_tshark">Install tshark in Kali (apt install tshark) to decrypt HTTPS.</string>
     <string name="loot_pcap_hint_tshark_failed">tshark run failed — showing built-in parse.</string>
+    <string name="loot_pcap_hint_oversize_tshark">Large capture: analyzed with tshark (HTTP only; flow/packet view skipped).</string>
     <string name="loot_pcap_key_label">SSL key (TLS keylog)</string>
     <string name="loot_pcap_key_none">No key imported — HTTPS stays encrypted.</string>
     <string name="loot_pcap_key_imported">Key: %1$s</string>
