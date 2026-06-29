@@ -46,7 +46,9 @@ class MitmSessionStore(
             forwardingEnabled = properties.getProperty(KEY_FORWARDING_ENABLED)?.toBoolean() == true,
             previousForwardingEnabled = properties.getProperty(KEY_PREVIOUS_FORWARDING_ENABLED)
                 ?.toBooleanStrictOrNull(),
-            forwardDropTargetHost = properties.getProperty(KEY_FORWARD_DROP_TARGET).orEmpty()
+            forwardDropTargetHost = properties.getProperty(KEY_FORWARD_DROP_TARGET).orEmpty(),
+            victimForwardingTargetHost = properties.getProperty(KEY_VICTIM_FORWARDING_TARGET).orEmpty(),
+            victimForwardingInterface = properties.getProperty(KEY_VICTIM_FORWARDING_INTERFACE).orEmpty()
         )
     }
 
@@ -66,6 +68,8 @@ class MitmSessionStore(
                 setProperty(KEY_PREVIOUS_FORWARDING_ENABLED, it.toString())
             }
             setProperty(KEY_FORWARD_DROP_TARGET, record.forwardDropTargetHost)
+            setProperty(KEY_VICTIM_FORWARDING_TARGET, record.victimForwardingTargetHost)
+            setProperty(KEY_VICTIM_FORWARDING_INTERFACE, record.victimForwardingInterface)
         }
         FileOutputStream(sessionFile).use { stream ->
             properties.store(stream, "FSploit MITM session")
@@ -90,5 +94,7 @@ class MitmSessionStore(
         private const val KEY_FORWARDING_ENABLED = "forwarding_enabled"
         private const val KEY_PREVIOUS_FORWARDING_ENABLED = "previous_forwarding_enabled"
         private const val KEY_FORWARD_DROP_TARGET = "forward_drop_target"
+        private const val KEY_VICTIM_FORWARDING_TARGET = "victim_forwarding_target"
+        private const val KEY_VICTIM_FORWARDING_INTERFACE = "victim_forwarding_interface"
     }
 }

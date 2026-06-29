@@ -144,6 +144,7 @@ class MitmSessionLauncher(
         state.artifactPath = File(sessionDirectory, "capture.pcap").absolutePath
         ensureForwardingEnabled(state)
         if (networkMode == ConnectionBlockMode.NORMAL) {
+            enableVictimForwarding(state, targetHost, interfaceName)
             val bettercapPid = requirePid(
                 runtimeController.startBettercapCaplet(
                     config = config,
@@ -156,6 +157,7 @@ class MitmSessionLauncher(
                 )
             )
             state.pids.add(bettercapPid)
+            startKeepalive(state, targetHost, sessionDirectory)
         }
 
         val tcpdumpPid = requirePid(
@@ -181,6 +183,9 @@ class MitmSessionLauncher(
     ): MitmLaunchArtifacts {
         state.artifactPath = File(sessionDirectory, "credentials.log").absolutePath
         ensureForwardingEnabled(state)
+        if (networkMode == ConnectionBlockMode.NORMAL) {
+            enableVictimForwarding(state, targetHost, interfaceName)
+        }
         val bettercapPid = requirePid(
             runtimeController.startBettercapCaplet(
                 config = config,
@@ -197,6 +202,9 @@ class MitmSessionLauncher(
             )
         )
         state.pids.add(bettercapPid)
+        if (networkMode == ConnectionBlockMode.NORMAL) {
+            startKeepalive(state, targetHost, sessionDirectory)
+        }
         return state.toArtifacts()
     }
 
@@ -217,6 +225,9 @@ class MitmSessionLauncher(
         state.artifactPath = File(sessionDirectory, "dns.spoof.hosts").absolutePath
         File(state.artifactPath).writeText(bettercapCapletFactory.normalizeDnsRules(dnsRules))
         ensureForwardingEnabled(state)
+        if (networkMode == ConnectionBlockMode.NORMAL) {
+            enableVictimForwarding(state, targetHost, interfaceName)
+        }
         val bettercapPid = requirePid(
             runtimeController.startBettercapCaplet(
                 config = config,
@@ -233,6 +244,9 @@ class MitmSessionLauncher(
             )
         )
         state.pids.add(bettercapPid)
+        if (networkMode == ConnectionBlockMode.NORMAL) {
+            startKeepalive(state, targetHost, sessionDirectory)
+        }
         return state.toArtifacts()
     }
 
@@ -269,6 +283,7 @@ class MitmSessionLauncher(
         ensureForwardingEnabled(state)
         runtimeController.applyPortRedirect(state.redirectPort)
         if (networkMode == ConnectionBlockMode.NORMAL) {
+            enableVictimForwarding(state, targetHost, interfaceName)
             val bettercapPid = requirePid(
                 runtimeController.startBettercapCaplet(
                     config = config,
@@ -281,9 +296,35 @@ class MitmSessionLauncher(
                 )
             )
             state.pids.add(bettercapPid)
+            startKeepalive(state, targetHost, sessionDirectory)
         }
 
         return state.toArtifacts()
+    }
+
+    private fun startKeepalive(state: LaunchState, targetHost: String, sessionDirectory: File) {
+        // Best-effort: a failed keepalive must not abort the session, the capture just reverts to the
+        // pre-fix "works only while the target is awake" behaviour. Tracked as a pid so the normal
+        // cleanup loop tears it down with everything else.
+        val pid = runtimeController.startDetachedProcess(
+            name = "target_keepalive",
+            sessionDirectory = sessionDirectory,
+            logFile = File(sessionDirectory, "keepalive.log"),
+            body = runtimeController.buildKeepaliveScript(targetHost)
+        )
+        if (pid != null) {
+            state.pids.add(pid)
+        }
+    }
+
+    private fun enableVictimForwarding(state: LaunchState, targetHost: String, interfaceName: String) {
+        if (state.victimForwardingTargetHost.isNotBlank()) {
+            return
+        }
+        if (runtimeController.applyVictimForwarding(targetHost, interfaceName)) {
+            state.victimForwardingTargetHost = targetHost
+            state.victimForwardingInterface = interfaceName
+        }
     }
 
     private fun requirePid(pid: Long?): Long {
@@ -314,6 +355,12 @@ class MitmSessionLauncher(
         if (artifacts.forwardDropTargetHost.isNotBlank()) {
             runtimeController.clearForwardDrop(artifacts.forwardDropTargetHost)
         }
+        if (artifacts.victimForwardingTargetHost.isNotBlank()) {
+            runtimeController.clearVictimForwarding(
+                artifacts.victimForwardingTargetHost,
+                artifacts.victimForwardingInterface
+            )
+        }
     }
 
     private class LaunchState {
@@ -322,6 +369,8 @@ class MitmSessionLauncher(
         var forwardingEnabled: Boolean = false
         var previousForwardingEnabled: Boolean? = null
         var forwardDropTargetHost: String = ""
+        var victimForwardingTargetHost: String = ""
+        var victimForwardingInterface: String = ""
         val pids = mutableListOf<Long>()
 
         fun toArtifacts(): MitmLaunchArtifacts {
@@ -331,6 +380,8 @@ class MitmSessionLauncher(
                 forwardingEnabled = forwardingEnabled,
                 previousForwardingEnabled = previousForwardingEnabled,
                 forwardDropTargetHost = forwardDropTargetHost,
+                victimForwardingTargetHost = victimForwardingTargetHost,
+                victimForwardingInterface = victimForwardingInterface,
                 pids = pids.toList()
             )
         }
@@ -343,5 +394,7 @@ data class MitmLaunchArtifacts(
     val forwardingEnabled: Boolean = false,
     val previousForwardingEnabled: Boolean? = null,
     val forwardDropTargetHost: String = "",
+    val victimForwardingTargetHost: String = "",
+    val victimForwardingInterface: String = "",
     val pids: List<Long> = emptyList()
 )

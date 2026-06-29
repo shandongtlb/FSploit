@@ -126,30 +126,39 @@ class ShellRepository(
 
         val outputBuffer = StringBuilder()
         val readerThread = thread(start = true, isDaemon = true) {
-            process.inputStream.bufferedReader().use { reader ->
-                if (onLine != null) {
-                    // Line-by-line so callers can observe progress as it streams in.
-                    while (true) {
-                        val line = reader.readLine() ?: break
-                        synchronized(outputBuffer) {
-                            outputBuffer.append(line).append('\n')
-                        }
-                        runCatching { onLine(line) }
-                    }
-                } else {
-                    val buffer = CharArray(DEFAULT_BUFFER_SIZE)
-                    while (true) {
-                        val read = reader.read(buffer)
-                        if (read < 0) {
-                            break
-                        }
-                        if (read > 0) {
+            // When the command times out we call destroyForcibly(), which closes this stream from
+            // another thread and makes the in-flight read() throw InterruptedIOException. That is
+            // expected teardown, not a failure: swallow it (along with any other reader fault) so a
+            // background reader thread can never bring the whole app down. Partial output captured so
+            // far is still returned to the caller.
+            try {
+                process.inputStream.bufferedReader().use { reader ->
+                    if (onLine != null) {
+                        // Line-by-line so callers can observe progress as it streams in.
+                        while (true) {
+                            val line = reader.readLine() ?: break
                             synchronized(outputBuffer) {
-                                outputBuffer.append(buffer, 0, read)
+                                outputBuffer.append(line).append('\n')
+                            }
+                            runCatching { onLine(line) }
+                        }
+                    } else {
+                        val buffer = CharArray(DEFAULT_BUFFER_SIZE)
+                        while (true) {
+                            val read = reader.read(buffer)
+                            if (read < 0) {
+                                break
+                            }
+                            if (read > 0) {
+                                synchronized(outputBuffer) {
+                                    outputBuffer.append(buffer, 0, read)
+                                }
                             }
                         }
                     }
                 }
+            } catch (_: Exception) {
+                // Stream closed underneath us (timeout/destroy) or read failed; nothing to recover.
             }
         }
 

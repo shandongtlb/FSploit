@@ -93,6 +93,9 @@ class ExternalToolMitmBackend(
         }
 
         stopSession()
+        // Reap any orphaned bettercap/tcpdump from a crashed session (or another package variant)
+        // before standing up a fresh one, so a leaked spoofer cannot keep fighting on the interface.
+        runtimeController.sweepStaleProcesses()
 
         val config = toolchainProbe.loadConfig()
         val startedAt = System.currentTimeMillis()
@@ -141,7 +144,9 @@ class ExternalToolMitmBackend(
                 redirectPort = launchArtifacts.redirectPort,
                 forwardingEnabled = launchArtifacts.forwardingEnabled,
                 previousForwardingEnabled = launchArtifacts.previousForwardingEnabled,
-                forwardDropTargetHost = launchArtifacts.forwardDropTargetHost
+                forwardDropTargetHost = launchArtifacts.forwardDropTargetHost,
+                victimForwardingTargetHost = launchArtifacts.victimForwardingTargetHost,
+                victimForwardingInterface = launchArtifacts.victimForwardingInterface
             )
         )
 
@@ -165,7 +170,9 @@ class ExternalToolMitmBackend(
             record.redirectPort,
             record.forwardingEnabled,
             record.previousForwardingEnabled,
-            record.forwardDropTargetHost
+            record.forwardDropTargetHost,
+            record.victimForwardingTargetHost,
+            record.victimForwardingInterface
         )
         sessionStore.clear()
 
@@ -309,7 +316,9 @@ class ExternalToolMitmBackend(
         redirectPort: Int,
         forwardingEnabled: Boolean,
         previousForwardingEnabled: Boolean?,
-        forwardDropTargetHost: String
+        forwardDropTargetHost: String,
+        victimForwardingTargetHost: String = "",
+        victimForwardingInterface: String = ""
     ) {
         pids.forEach { pid ->
             runtimeController.terminateProcess(pid)
@@ -322,6 +331,9 @@ class ExternalToolMitmBackend(
         }
         if (forwardDropTargetHost.isNotBlank()) {
             runtimeController.clearForwardDrop(forwardDropTargetHost)
+        }
+        if (victimForwardingTargetHost.isNotBlank()) {
+            runtimeController.clearVictimForwarding(victimForwardingTargetHost, victimForwardingInterface)
         }
     }
 
