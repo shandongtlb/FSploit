@@ -2,6 +2,7 @@ package org.fsploit.android.data.mitm
 
 import android.content.Context
 import org.fsploit.android.R
+import org.fsploit.android.core.FsLog
 import org.fsploit.android.core.ResourceProvider
 import org.fsploit.android.data.settings.AppPreferencesRepository
 import org.fsploit.android.data.shell.ShellRepository
@@ -110,7 +111,8 @@ class ExternalToolMitmBackend(
         } catch (exception: IllegalArgumentException) {
             cleanupSession(emptyList(), 0, false, null, "")
             return MitmActionResult(success = false, summary = exception.message.orEmpty())
-        } catch (_: Exception) {
+        } catch (exception: Exception) {
+            FsLog.warn(TAG, "MITM session launch failed", exception)
             cleanupSession(emptyList(), 0, false, null, "")
             return MitmActionResult(
                 success = false,
@@ -429,5 +431,9 @@ class ExternalToolMitmBackend(
         } catch (_: Exception) {
             null
         }
+    }
+
+    private companion object {
+        private const val TAG = "ExternalToolMitm"
     }
 }

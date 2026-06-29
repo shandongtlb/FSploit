@@ -82,6 +82,19 @@ class MsfRepository(
      * spawns still lands in the shared instance, so the terminal sees it too.
      */
     fun runScan(config: MsfRpcConfig, modulePath: String, rhosts: String): MsfConsoleResult {
+        // The module path and RHOSTS are interpolated into a console.write payload where '\n'
+        // separates msfconsole commands. Reject any embedded newline/carriage-return so a crafted
+        // value can't smuggle extra commands into the shared instance.
+        if (modulePath.any { it == '\n' || it == '\r' } || rhosts.any { it == '\n' || it == '\r' }) {
+            return MsfConsoleResult(
+                success = false,
+                data = "",
+                message = resourceProvider.getString(
+                    R.string.msf_action_failed,
+                    "invalid module/RHOSTS input"
+                )
+            )
+        }
         val client = MsfRpcClient(config)
         return try {
             val created = client.call("console.create") as? Map<*, *>

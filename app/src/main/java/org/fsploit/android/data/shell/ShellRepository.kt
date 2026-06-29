@@ -1,6 +1,7 @@
 package org.fsploit.android.data.shell
 
 import org.fsploit.android.R
+import org.fsploit.android.core.FsLog
 import org.fsploit.android.core.ResourceProvider
 import org.fsploit.android.domain.model.ShellCommandResult
 import org.fsploit.android.domain.model.ShellStatus
@@ -108,7 +109,8 @@ class ShellRepository(
         return try {
             val result = runProcess(2_000L, null, *command)
             if (result.timedOut) "" else result.output
-        } catch (_: Exception) {
+        } catch (exception: Exception) {
+            FsLog.warn(TAG, "runCommand failed: ${command.joinToString(" ")}", exception)
             ""
         }
     }
@@ -178,6 +180,7 @@ class ShellRepository(
     )
 
     companion object {
+        private const val TAG = "ShellRepository"
         private const val PROCESS_EXIT_GRACE_MS = 500L
         private const val OUTPUT_JOIN_TIMEOUT_MS = 500L
     }

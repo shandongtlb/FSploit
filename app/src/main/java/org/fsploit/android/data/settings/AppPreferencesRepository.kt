@@ -2,6 +2,7 @@ package org.fsploit.android.data.settings
 
 import android.content.Context
 import android.content.SharedPreferences
+import org.fsploit.android.core.FsLog
 import org.fsploit.android.domain.model.HostScanResult
 import org.fsploit.android.domain.model.MsfRpcConfig
 import org.fsploit.android.domain.model.MitmToolchainConfig
@@ -129,7 +130,8 @@ class AppPreferencesRepository(
                     osInfo = obj.optString(LAST_SWEEP_OS).takeIf { it.isNotBlank() }
                 )
             }
-        } catch (_: Exception) {
+        } catch (exception: Exception) {
+            FsLog.warn(TAG, "failed to parse persisted last sweep; dropping it", exception)
             emptyList()
         }
     }
@@ -157,6 +159,7 @@ class AppPreferencesRepository(
     }
 
     companion object {
+        private const val TAG = "AppPreferencesRepo"
         private const val PREFS_NAME = "fsploit_settings"
         private const val KEY_PREFERRED_INTERFACE = "preferred_interface"
         private const val KEY_PORT_SPEC = "port_spec"

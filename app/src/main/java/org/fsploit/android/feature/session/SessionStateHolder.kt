@@ -3,6 +3,7 @@ package org.fsploit.android.feature.session
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 /**
  * Process-wide single source of truth for [SessionState]. A plain (non-ViewModel) holder so that
@@ -16,6 +17,6 @@ class SessionStateHolder {
     val value: SessionState get() = _state.value
 
     fun update(transform: (SessionState) -> SessionState) {
-        _state.value = transform(_state.value)
+        _state.update(transform)
     }
 }

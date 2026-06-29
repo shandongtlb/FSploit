@@ -126,17 +126,18 @@ class MitmRuntimeController(
     }
 
     fun applyForwardDrop(targetHost: String): Boolean {
+        val host = shellQuote(targetHost)
         val result = shellRepository.execute(
             command = buildString {
                 append("iptables -C FORWARD -s ")
-                append(targetHost)
+                append(host)
                 append(" -j DROP 2>/dev/null || iptables -I FORWARD -s ")
-                append(targetHost)
+                append(host)
                 append(" -j DROP\n")
                 append("iptables -C FORWARD -d ")
-                append(targetHost)
+                append(host)
                 append(" -j DROP 2>/dev/null || iptables -I FORWARD -d ")
-                append(targetHost)
+                append(host)
                 append(" -j DROP\n")
             },
             asRoot = true,
@@ -146,13 +147,14 @@ class MitmRuntimeController(
     }
 
     fun clearForwardDrop(targetHost: String) {
+        val host = shellQuote(targetHost)
         shellRepository.execute(
             command = buildString {
                 append("while iptables -D FORWARD -s ")
-                append(targetHost)
+                append(host)
                 append(" -j DROP 2>/dev/null; do :; done\n")
                 append("while iptables -D FORWARD -d ")
-                append(targetHost)
+                append(host)
                 append(" -j DROP 2>/dev/null; do :; done\n")
             },
             asRoot = true,
@@ -161,13 +163,14 @@ class MitmRuntimeController(
     }
 
     fun hasForwardDrop(targetHost: String): Boolean {
+        val host = shellQuote(targetHost)
         val result = shellRepository.execute(
             command = buildString {
                 append("iptables -C FORWARD -s ")
-                append(targetHost)
+                append(host)
                 append(" -j DROP >/dev/null 2>&1 && ")
                 append("iptables -C FORWARD -d ")
-                append(targetHost)
+                append(host)
                 append(" -j DROP >/dev/null 2>&1")
             },
             asRoot = true,
