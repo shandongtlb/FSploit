@@ -29,7 +29,7 @@ class AnalyzePcapUseCase(
     suspend operator fun invoke(pcapPath: String, keylogPath: String = ""): PcapAnalysis {
         val path = pcapPath.trim()
         if (path.isBlank()) {
-            return PcapAnalysis(available = false, note = "no capture path")
+            return PcapAnalysis(available = false, note = resourceProvider.getString(R.string.loot_pcap_note_no_path))
         }
 
         // The Kotlin engine base64's the whole file through a shell, so the capture lands on the heap
@@ -37,7 +37,15 @@ class AnalyzePcapUseCase(
         // phone. tshark, by contrast, streams from disk inside the chroot, so an oversized capture
         // skips the in-memory engine but is NOT given up on: we fall through to tshark below.
         val sizeBytes = fileSizeBytes(path)
-        val oversizeNote = sizeBytes?.let { oversizeCaptureNote(it) }
+        val oversizeNote = if (sizeBytes != null && isOversize(sizeBytes)) {
+            resourceProvider.getString(
+                R.string.loot_pcap_note_too_large,
+                (sizeBytes / BYTES_PER_MB).toInt(),
+                (MAX_CAPTURE_BYTES / BYTES_PER_MB).toInt()
+            )
+        } else {
+            null
+        }
 
         val baseline = if (oversizeNote != null) {
             PcapAnalysis(available = false, note = oversizeNote)
@@ -90,19 +98,19 @@ class AnalyzePcapUseCase(
             timeoutMs = ANALYZE_TIMEOUT_MS
         )
         if (result.timedOut) {
-            return PcapAnalysis(available = false, note = "read timed out (capture may be large)")
+            return PcapAnalysis(available = false, note = resourceProvider.getString(R.string.loot_pcap_note_read_timeout))
         }
         if (result.exitCode != null && result.exitCode != 0) {
-            return PcapAnalysis(available = false, note = "could not read capture (root required?)")
+            return PcapAnalysis(available = false, note = resourceProvider.getString(R.string.loot_pcap_note_unreadable))
         }
         val encoded = result.output.filterNot { it.isWhitespace() }
         if (encoded.isEmpty()) {
-            return PcapAnalysis(available = false, note = "capture is empty")
+            return PcapAnalysis(available = false, note = resourceProvider.getString(R.string.loot_pcap_note_empty))
         }
         val bytes = try {
             Base64.getMimeDecoder().decode(encoded)
         } catch (e: Exception) {
-            return PcapAnalysis(available = false, note = "decode failed: ${e.message}")
+            return PcapAnalysis(available = false, note = resourceProvider.getString(R.string.loot_pcap_note_decode_failed, e.message ?: ""))
         }
         return parser.parse(bytes)
     }
@@ -198,15 +206,10 @@ class AnalyzePcapUseCase(
         internal const val MAX_CAPTURE_BYTES = 64L * BYTES_PER_MB
 
         /**
-         * Returns an explanatory note when [sizeBytes] exceeds [MAX_CAPTURE_BYTES], or null when the
-         * capture is small enough to load. Pure so it can be unit-tested without a shell.
+         * Whether [sizeBytes] is past the in-memory engine's cap (the localized "too large" note is
+         * built by the caller). Pure so it can be unit-tested without a shell or Android resources.
          */
-        internal fun oversizeCaptureNote(sizeBytes: Long): String? =
-            if (sizeBytes > MAX_CAPTURE_BYTES) {
-                "capture too large (${sizeBytes / BYTES_PER_MB} MB > ${MAX_CAPTURE_BYTES / BYTES_PER_MB} MB) — analyze with tshark or on a desktop"
-            } else {
-                null
-            }
+        internal fun isOversize(sizeBytes: Long): Boolean = sizeBytes > MAX_CAPTURE_BYTES
         private const val VIEW_PCAP = "fsploit-view.pcap"
         private const val KEYLOG_FILE = "fsploit-keylog.txt"
         private const val TSHARK_BIN = "/usr/bin/tshark"

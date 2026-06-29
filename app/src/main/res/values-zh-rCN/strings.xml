@@ -77,6 +77,13 @@
     <string name="loot_pcap_engine_tshark_decrypted">引擎：tshark · 已用导入密钥解密 TLS</string>
     <string name="loot_pcap_hint_install_tshark">在 Kali 安装 tshark（apt install tshark）以解密 HTTPS。</string>
     <string name="loot_pcap_hint_tshark_failed">tshark 执行失败 — 已回落内置解析。</string>
+    <string name="loot_pcap_hint_oversize_tshark">大容量抓包：已用 tshark 分析（仅 HTTP；跳过流/数据包视图）。</string>
+    <string name="loot_pcap_note_no_path">没有抓包路径。</string>
+    <string name="loot_pcap_note_read_timeout">读取超时（抓包可能过大）。</string>
+    <string name="loot_pcap_note_unreadable">无法读取抓包（需要 root？）。</string>
+    <string name="loot_pcap_note_empty">抓包为空。</string>
+    <string name="loot_pcap_note_decode_failed">解码失败：%1$s</string>
+    <string name="loot_pcap_note_too_large">抓包过大（%1$d MB &gt; %2$d MB）—— 请用 tshark 或在桌面端分析。</string>
     <string name="loot_pcap_key_label">SSL 密钥（TLS keylog）</string>
     <string name="loot_pcap_key_none">未导入密钥 — HTTPS 保持加密。</string>
     <string name="loot_pcap_key_imported">密钥：%1$s</string>
@@ -337,7 +344,7 @@
     <string name="shell_no_root_tooling">当前设备不可用 root 工具链。</string>
     <string name="root_gate_pending">正在检查 root 就绪状态...</string>
     <string name="root_gate_ready">Root 已可用，可以运行受 root 保护的模块。</string>
-    <string name="root_gate_blocked">FSploit 功能依赖 root。获得 root 之前各模块保持阻断状态。</string>
+    <string name="root_gate_blocked">FSploit 功能依赖 root，授权前各模块保持阻断。</string>
     <string name="shell_mode_standard">标准 shell</string>
     <string name="shell_mode_root">Root shell</string>
     <string name="shell_command_idle">尚未执行任何命令。</string>

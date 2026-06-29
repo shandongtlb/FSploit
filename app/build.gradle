@@ -2,6 +2,16 @@ plugins {
     id 'com.android.application'
 }
 
+// Release signing credentials live in a gitignored keystore.properties at the repo root
+// (keystore itself is under /root/keys). When absent — other machines, CI — the release
+// build falls back to the debug key so it still builds.
+def keystorePropsFile = rootProject.file("keystore.properties")
+def hasReleaseKeystore = keystorePropsFile.exists()
+def keystoreProps = new Properties()
+if (hasReleaseKeystore) {
+    keystoreProps.load(new FileInputStream(keystorePropsFile))
+}
+
 android {
     namespace 'org.fsploit.android'
     compileSdk 37
@@ -10,10 +20,21 @@ android {
         applicationId "org.fsploit.android"
         minSdk 28
         targetSdk 37
-        versionCode 1
-        versionName "0.1.0"
+        versionCode 2
+        versionName "1.1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            release {
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
     }
 
     buildTypes {
@@ -24,6 +45,8 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // 用 /root/keys 的正式发布密钥签名;keystore.properties 缺失时(其它机器/CI)回落 debug 签名以免构建中断。
+            signingConfig hasReleaseKeystore ? signingConfigs.release : signingConfigs.debug
         }
     }
 

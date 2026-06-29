@@ -40,3 +40,6 @@ app/debug/
 
 # Keep wrapper artifacts
 !gradle/wrapper/gradle-wrapper.jar
+
+# Signing credentials (never commit)
+keystore.properties
