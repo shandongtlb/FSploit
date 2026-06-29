@@ -160,6 +160,13 @@ class MainActivity : AppCompatActivity() {
         outState.putString(KEY_SCREEN, currentScreen.name)
     }
 
+    override fun onDestroy() {
+        // The exit-confirm Toast holds an Activity reference; drop it so it can't outlive us.
+        exitToast?.cancel()
+        exitToast = null
+        super.onDestroy()
+    }
+
     fun openScreen(screen: MainScreen, commitNow: Boolean = false) {
         currentScreen = screen
         updateScreenUi(screen)

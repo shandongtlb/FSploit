@@ -80,27 +80,31 @@ class MsfRpcClient(
             connection.sslSocketFactory = localTrustAllSslContext.socketFactory
         }
 
-        val requestBody = packRequest(method, args)
-        connection.outputStream.use { stream ->
-            stream.write(requestBody)
-            stream.flush()
-        }
+        try {
+            val requestBody = packRequest(method, args)
+            connection.outputStream.use { stream ->
+                stream.write(requestBody)
+                stream.flush()
+            }
 
-        val statusCode = connection.responseCode
-        val responseBytes = if (statusCode in 200..299) {
-            connection.inputStream.use { it.readBytes() }
-        } else {
-            val errorText = connection.errorStream?.use { it.readBytes().decodeToString() }.orEmpty()
-            throw IOException("RPC HTTP $statusCode ${connection.responseMessage.orEmpty()} $errorText".trim())
-        }
+            val statusCode = connection.responseCode
+            val responseBytes = if (statusCode in 200..299) {
+                connection.inputStream.use { it.readBytes() }
+            } else {
+                val errorText = connection.errorStream?.use { it.readBytes().decodeToString() }.orEmpty()
+                throw IOException("RPC HTTP $statusCode ${connection.responseMessage.orEmpty()} $errorText".trim())
+            }
 
-        val unpacker = MessagePack.newDefaultUnpacker(responseBytes)
-        val value = unpacker.unpackValue()
-        val decoded = decodeValue(value)
-        if (decoded is Map<*, *> && decoded["error"] == true) {
-            throw IOException(decoded["error_message"]?.toString() ?: "Unknown MSF RPC error")
+            val unpacker = MessagePack.newDefaultUnpacker(responseBytes)
+            val value = unpacker.unpackValue()
+            val decoded = decodeValue(value)
+            if (decoded is Map<*, *> && decoded["error"] == true) {
+                throw IOException(decoded["error_message"]?.toString() ?: "Unknown MSF RPC error")
+            }
+            return decoded
+        } finally {
+            connection.disconnect()
         }
-        return decoded
     }
 
     private fun packRequest(method: String, args: Array<out Any?>): ByteArray {

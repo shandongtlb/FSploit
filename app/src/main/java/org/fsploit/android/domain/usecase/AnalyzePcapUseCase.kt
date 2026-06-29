@@ -58,6 +58,15 @@ class AnalyzePcapUseCase(
         if (path.isBlank()) {
             return PcapAnalysis(available = false, note = "no capture path")
         }
+        // Guard memory before reading: the file is base64'd through a shell, so the whole capture
+        // lands on the heap ~3x over (shell output string + filtered copy + decoded bytes). A large
+        // capture would OOM the phone, so refuse oversized files up front and point at tshark instead.
+        val sizeBytes = fileSizeBytes(path)
+        if (sizeBytes != null) {
+            oversizeCaptureNote(sizeBytes)?.let { note ->
+                return PcapAnalysis(available = false, note = note)
+            }
+        }
         val result = runShellCommand(
             command = "base64 ${singleQuote(path)} 2>/dev/null",
             asRoot = true,
@@ -142,6 +151,19 @@ class AnalyzePcapUseCase(
             .toList()
     }
 
+    /** Returns the capture's size in bytes via a root `wc -c`, or null if it can't be determined. */
+    private suspend fun fileSizeBytes(path: String): Long? {
+        val result = runShellCommand(
+            command = "wc -c < ${singleQuote(path)} 2>/dev/null",
+            asRoot = true,
+            timeoutMs = SIZE_PROBE_TIMEOUT_MS
+        )
+        if (result.timedOut || (result.exitCode != null && result.exitCode != 0)) {
+            return null
+        }
+        return result.output.trim().toLongOrNull()
+    }
+
     private fun mergeNote(existing: String, added: String): String =
         if (existing.isBlank()) added else "$existing · $added"
 
@@ -149,8 +171,25 @@ class AnalyzePcapUseCase(
 
     companion object {
         private const val ANALYZE_TIMEOUT_MS = 20_000L
+        private const val SIZE_PROBE_TIMEOUT_MS = 5_000L
         private const val TSHARK_TIMEOUT_MS = 30_000L
         private const val MAX_HTTP = 500
+
+        private const val BYTES_PER_MB = 1024L * 1024L
+
+        /** The in-memory Kotlin engine refuses captures past this size to avoid OOM (see [analyzeWithKotlin]). */
+        internal const val MAX_CAPTURE_BYTES = 64L * BYTES_PER_MB
+
+        /**
+         * Returns an explanatory note when [sizeBytes] exceeds [MAX_CAPTURE_BYTES], or null when the
+         * capture is small enough to load. Pure so it can be unit-tested without a shell.
+         */
+        internal fun oversizeCaptureNote(sizeBytes: Long): String? =
+            if (sizeBytes > MAX_CAPTURE_BYTES) {
+                "capture too large (${sizeBytes / BYTES_PER_MB} MB > ${MAX_CAPTURE_BYTES / BYTES_PER_MB} MB) — analyze with tshark or on a desktop"
+            } else {
+                null
+            }
         private const val VIEW_PCAP = "fsploit-view.pcap"
         private const val KEYLOG_FILE = "fsploit-keylog.txt"
         private const val TSHARK_BIN = "/usr/bin/tshark"
